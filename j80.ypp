@@ -4,24 +4,24 @@
   
   #define YYDEBUG 0
   
-  extern FILE *yyin;
+  extern FILE *j80in;
 
 	extern "C"
 	{
     typedef struct yy_buffer_state *YY_BUFFER_STATE;
     
-    int yyparse(void);
-    int yylex(void);  
+    int j80parse(void);
+    int j80lex(void);
     //int cyywrap();
     /*{
      return 1;
      }*/
-    void yyerror(const char *s);
+    void j80error(const char *s);
         
-    extern int yylineno;
-    extern char *yytext;
+    extern int j80lineno;
+    extern char *j80text;
     
-    extern int yyparse();
+    extern int j80parse();
 
     //extern YY_BUFFER_STATE yy_scan_string(const char *line);
     extern void yy_delete_buffer(YY_BUFFER_STATE);
@@ -207,7 +207,7 @@ BinaryCode assembleLine(const char* line)
   init();
   
   //yy_scan_string(line);
-  yyparse();
+  j80parse();
   
   /**/ 
   //yy_delete_buffer(yb);
@@ -226,9 +226,9 @@ BinaryCode assemble(const char *filename)
   yydebug = 1;
   #endif
   
-  yyin = fopen(filename, "r");
-  if(yyin)
-    yyparse();
+  j80in = fopen(filename, "r");
+  if(j80in)
+    j80parse();
     
   BinaryCode code;
 
@@ -239,8 +239,8 @@ BinaryCode assemble(const char *filename)
 }
 
 
-void yyerror(const char *s)
+void j80error(const char *s)
 {
 	failed = true;
-	fprintf(stderr, "PARSING ERROR on line %d!  Parse error: %s\n", yylineno, yytext);
+	fprintf(stderr, "PARSING ERROR on line %d!  Parse error: %s\n", j80lineno, j80text);
 }

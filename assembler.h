@@ -2,7 +2,7 @@
 #define _GB_ASSEMBLER_H_
 
 
-#include "gbopcodes.h"
+#include "opcodes.h"
 #include <cstdio>
 #include <cstdlib>
 #include <string>
