@@ -30,13 +30,11 @@
     
 	}
   
-    bool failed = false;
+    static bool failed = false;
     
     bool correctRSTAddress(u16 val);
-    void init();
     BinaryCode assemble(const char *filename);
     BinaryCode assembleLine(const char* line);
-    void assert(bool value, const char *message);
 
 %}
 
@@ -185,17 +183,6 @@ label:
 
 %%
 
-void assert(bool value, const char *message)
-{
-  if (!value)
-    fprintf(stderr, "[ASSEMBLER] Error: %s\n", message);
-}
-
-void init()
-{
-  failed = false;
-  Assembler::init();
-}
 
 BinaryCode assembleLine(const char* line)
 {
@@ -204,7 +191,8 @@ BinaryCode assembleLine(const char* line)
   
   //yy_switch_to_buffer(yb);
   
-  init();
+  Assembler::init();
+  failed = false;
   
   //yy_scan_string(line);
   j80parse();

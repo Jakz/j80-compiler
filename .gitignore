@@ -3,3 +3,7 @@
 *.output
 *.1
 *.o
+j80.tab.*
+nanoc.tab.*
+lex.j80yy.*
+lex.nanocyy.*

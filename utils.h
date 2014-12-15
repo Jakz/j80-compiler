@@ -97,6 +97,12 @@ class Utils
     {
       return value & ~(1 << bit);
     }
+  
+    static void assert(bool condition, const char* type, const char* message)
+    {
+      if (!condition)
+        printf("[%s] ERROR: %s", type, message);
+    }
 };
 
 

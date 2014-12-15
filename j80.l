@@ -9,7 +9,7 @@
     extern int j80lex(void);
 	}
   
-  std::string buffer;
+  static std::string buffer;
 %}
 
 %x sstring
