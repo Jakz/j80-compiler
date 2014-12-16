@@ -1,43 +1,48 @@
 #include "assembler.h"
 
+#include <iostream>
+#include <fstream>
+
 using namespace std;
+using namespace Assembler;
 
-u16 Assembler::position = 0;
+constexpr BinaryCode J80Assembler::INVALID;
 
-list<Instruction> Assembler::instructions;
+J80Assembler::J80Assembler() : currentIrq(-1), dataSegment(new DataSegment()), codeSegment(new CodeSegment()), position(0)
+{
+  
+}
 
-vector<pair<u16, std::string> > Assembler::jumps;
-vector<std::pair<u16, DataReference> > Assembler::dataReferences;
-
-unordered_map<string,u16> Assembler::labels;
-unordered_map<std::string, DataSegmentEntry> Assembler::data;
-
-DataSegment* Assembler::dataSegment = new DataSegment();
-CodeSegment* Assembler::codeSegment = new CodeSegment();
-
-s8 Assembler::currentIrq = -1;
-std::list<Instruction> Assembler::irqs[4];
-
-
-constexpr BinaryCode Assembler::INVALID;
-
-void Assembler::init()
+bool J80Assembler::parse(const std::string &filename)
 {
   instructions.clear();
   position = 0;
+  
+  file = filename;
+  
+  bool shouldGenerateTrace = false;
+  
+  ifstream is;
+  is.open(filename);
+  
+  Assembler::Lexer lexer = Assembler::Lexer(*this, &is);
+  Assembler::Parser parser(lexer, *this);
+  parser.set_debug_level(shouldGenerateTrace);
+  int res = parser.parse();
+  return res == 0;
 }
 
-void Assembler::assemble(int opcode, int opcode2, int opcode3)
+void J80Assembler::assemble(int opcode, int opcode2, int opcode3)
 {
 
 }
 
-void Assembler::placeLabel(char *label)
+void J80Assembler::placeLabel(const std::string& label)
 {
   labels[label] = position;
 }
 
-bool Assembler::solveJumps()
+bool J80Assembler::solveJumps()
 {
   for (auto &jump : jumps)
   {
@@ -61,12 +66,22 @@ bool Assembler::solveJumps()
   return true;
 }
 
+void J80Assembler::error (const Assembler::location& l, const std::string& m)
+{
+  cerr << "Assembler error at " << file << ":" << l.begin.line << "," << l.begin.column << " : " << m << endl;
+}
+
+void J80Assembler::error (const std::string& m)
+{
+  cerr << "Assembler error: " << m << endl;
+}
+
 /*u16 Assembler::size()
 {
   return position;
 }*/
 
-BinaryCode Assembler::consolidate()
+BinaryCode J80Assembler::consolidate()
 {
   BinaryCode pack;
   pack.code = nullptr;

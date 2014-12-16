@@ -1,147 +1,166 @@
 %{
 	#include "j80parser.hpp"
-  //#include <cassert>
+  #include "j80lexer.h"
   #include "opcodes.h"
+  #include "assembler.h"
   #include <string>
   
-  extern "C"
-	{
-    extern int j80lex(void);
-	}
+  typedef Assembler::Parser::token token;
+  
+  #define yyterminate() Assembler::Parser::make_END(loc);
+
+
+//
   
   static std::string buffer;
+  
+  static Assembler::location loc;
+  
+  using namespace Assembler;
 %}
 
 %x sstring
 
+%option nodefault
 %option noyywrap
-%option yylineno
+%option c++
+%option yyclass="Lexer"
+%option prefix="J80"
+
+
+%{
+  # define YY_USER_ACTION  loc.columns(yyleng);
+%}
+
 
 %%
 
-":" { return T_COLON; }
-"," { return T_COMMA; }
-"'" { return T_QUOTE; }
+%{
+  loc.step ();
+%}
 
-"A"|"a" { j80lval.us = REG_A; return TOKEN_REG8; }
-"B"|"b" { j80lval.us = REG_B; return TOKEN_REG8; }
-"X"|"x" { j80lval.us = REG_X; return TOKEN_REG8; }
-"Y"|"y" { j80lval.us = REG_Y; return TOKEN_REG8; }
-"C"|"s" { j80lval.us = REG_C; return TOKEN_REG8; }
-"D"|"t" { j80lval.us = REG_D; return TOKEN_REG8; }
-"E"|"p" { j80lval.us = REG_E; return TOKEN_REG8; }
-"F"|"c" { j80lval.us = REG_F; return TOKEN_REG8; }
+":" { return Parser::make_COLON(loc); }
+"," { return Parser::make_COMMA(loc); }
+"'" { return Parser::make_QUOTE(loc); }
 
-"BA"|"ba" { j80lval.us = REG_BA; return TOKEN_REG16; }
-"XY"|"xy" { j80lval.us = REG_XY; return TOKEN_REG16; }
-"SP"|"sp" { j80lval.us = REG_SP; return TOKEN_REG16; }
-"FP"|"fp" { j80lval.us = REG_FP; return TOKEN_REG16; }
-"CD"|"cd" { j80lval.us = REG_CD; return TOKEN_REG16; }
-"EF"|"ef" { j80lval.us = REG_EF; return TOKEN_REG16; }
-"IX"|"ix" { j80lval.us = REG_IX; return TOKEN_REG16; }
-"IY"|"iy" { j80lval.us = REG_IY; return TOKEN_REG16; }
+"A"|"a" { return Parser::make_REG8(REG_A, loc); }
+"B"|"b" { return Parser::make_REG8(REG_B, loc); }
+"X"|"x" { return Parser::make_REG8(REG_X, loc); }
+"Y"|"y" { return Parser::make_REG8(REG_Y, loc); }
+"C"|"C" { return Parser::make_REG8(REG_C, loc); }
+"D"|"D" { return Parser::make_REG8(REG_D, loc); }
+"E"|"E" { return Parser::make_REG8(REG_E, loc); }
+"F"|"F" { return Parser::make_REG8(REG_F, loc); }
 
-"ADD"|"add" { j80lval.us = ALU_ADD8; return TOKEN_ALU; }
-"ADC"|"adc" { j80lval.us = ALU_ADC8; return TOKEN_ALU; }
-"SUB"|"sub" { j80lval.us = ALU_SUB8; return TOKEN_ALU; }
-"SBC"|"sbc" { j80lval.us = ALU_SBC8; return TOKEN_ALU; }
-"AND"|"and" { j80lval.us = ALU_AND8; return TOKEN_ALU; }
-"XOR"|"xor" { j80lval.us = ALU_XOR8; return TOKEN_ALU; }
-"OR"|"or" { j80lval.us = ALU_OR8; return TOKEN_ALU; }
-"NOT"|"not" { j80lval.us = ALU_NOT8; return TOKEN_ALU; }
+"BA"|"ba" { return Parser::make_REG16(REG_BA, loc); }
+"XY"|"xy" { return Parser::make_REG16(REG_XY, loc); }
+"SP"|"sp" { return Parser::make_REG16(REG_SP, loc); }
+"FP"|"fp" { return Parser::make_REG16(REG_FP, loc); }
+"CD"|"cd" { return Parser::make_REG16(REG_CD, loc); }
+"EF"|"ef" { return Parser::make_REG16(REG_EF, loc); }
+"IX"|"ix" { return Parser::make_REG16(REG_IX, loc); }
+"IY"|"iy" { return Parser::make_REG16(REG_IY, loc); }
 
-"JMP"|"jmp" { j80lval.us = COND_UNCOND; return TOKEN_JMP; }
-"JMPC"|"jmpc" { j80lval.us = COND_CARRY; return TOKEN_JMP; }
-"JMPNC"|"jmpnc" { j80lval.us = COND_NCARRY; return TOKEN_JMP; }
-"JMPZ"|"jmpz" { j80lval.us = COND_ZERO; return TOKEN_JMP; }
-"JMPNZ"|"jmpnz" { j80lval.us = COND_NZERO; return TOKEN_JMP; }
-"JMPV"|"jmpv" { j80lval.us = COND_OVERFLOW; return TOKEN_JMP; }
-"JMPNV"|"jmpnv" { j80lval.us = COND_NOVERFLOW; return TOKEN_JMP; }
-"JMPN"|"jmpn" { j80lval.us = COND_SIGN; return TOKEN_JMP; }
-"JMPNN"|"jmpnn" { j80lval.us = COND_NSIGN; return TOKEN_JMP; }
+"ADD"|"add" { return Parser::make_ALU(ALU_ADD8, loc); }
+"ADC"|"adc" { return Parser::make_ALU(ALU_ADC8, loc); }
+"SUB"|"sub" { return Parser::make_ALU(ALU_SUB8, loc); }
+"SBC"|"sbc" { return Parser::make_ALU(ALU_SBC8, loc); }
+"AND"|"and" { return Parser::make_ALU(ALU_AND8, loc); }
+"XOR"|"xor" { return Parser::make_ALU(ALU_XOR8, loc); }
+"OR"|"or" { return Parser::make_ALU(ALU_OR8, loc); }
+"NOT"|"not" { return Parser::make_ALU(ALU_NOT8, loc); }
 
-"CALL"|"jmp" { j80lval.us = COND_UNCOND; return TOKEN_CALL; }
-"CALLC"|"jmpc" { j80lval.us = COND_CARRY; return TOKEN_CALL; }
-"CALLNC"|"jmpnc" { j80lval.us = COND_NCARRY; return TOKEN_CALL; }
-"CALLZ"|"jmpz" { j80lval.us = COND_ZERO; return TOKEN_CALL; }
-"CALLNZ"|"jmpnz" { j80lval.us = COND_NZERO; return TOKEN_CALL; }
-"CALLV"|"jmpv" { j80lval.us = COND_OVERFLOW; return TOKEN_CALL; }
-"CALLNV"|"jmpnv" { j80lval.us = COND_NOVERFLOW; return TOKEN_CALL; }
-"CALLN"|"jmpn" { j80lval.us = COND_SIGN; return TOKEN_CALL; }
-"CALLNN"|"jmpnn" { j80lval.us = COND_NSIGN; return TOKEN_CALL; }
+"JMP"|"jmp" { return Parser::make_JMP(COND_UNCOND, loc); }
+"JMPC"|"jmpc" { return Parser::make_JMP(COND_CARRY, loc); }
+"JMPNC"|"jmpnc" { return Parser::make_JMP(COND_NCARRY, loc); }
+"JMPZ"|"jmpz" { return Parser::make_JMP(COND_ZERO, loc); }
+"JMPNZ"|"jmpnz" { return Parser::make_JMP(COND_NZERO, loc); }
+"JMPV"|"jmpv" { return Parser::make_JMP(COND_OVERFLOW, loc); }
+"JMPNV"|"jmpnv" { return Parser::make_JMP(COND_NOVERFLOW, loc); }
+"JMPN"|"jmpn" { return Parser::make_JMP(COND_SIGN, loc); }
+"JMPNN"|"jmpnn" { return Parser::make_JMP(COND_NSIGN, loc); }
 
-"RET"|"jmp" { j80lval.us = COND_UNCOND; return TOKEN_RET; }
-"RETC"|"jmpc" { j80lval.us = COND_CARRY; return TOKEN_RET; }
-"RETNC"|"jmpnc" { j80lval.us = COND_NCARRY; return TOKEN_RET; }
-"RETZ"|"jmpz" { j80lval.us = COND_ZERO; return TOKEN_RET; }
-"RETNZ"|"jmpnz" { j80lval.us = COND_NZERO; return TOKEN_RET; }
-"RETV"|"jmpv" { j80lval.us = COND_OVERFLOW; return TOKEN_RET; }
-"RETNV"|"jmpnv" { j80lval.us = COND_NOVERFLOW; return TOKEN_RET; }
-"RETN"|"jmpn" { j80lval.us = COND_SIGN; return TOKEN_RET; }
-"RETNN"|"jmpnn" { j80lval.us = COND_NSIGN; return TOKEN_RET; }
+"CALL"|"jmp" { return Parser::make_CALL(COND_UNCOND, loc); }
+"CALLC"|"jmpc" { return Parser::make_CALL(COND_CARRY, loc); }
+"CALLNC"|"jmpnc" { return Parser::make_CALL(COND_NCARRY, loc); }
+"CALLZ"|"jmpz" { return Parser::make_CALL(COND_ZERO, loc); }
+"CALLNZ"|"jmpnz" { return Parser::make_CALL(COND_NZERO, loc); }
+"CALLV"|"jmpv" { return Parser::make_CALL(COND_OVERFLOW, loc); }
+"CALLNV"|"jmpnv" { return Parser::make_CALL(COND_NOVERFLOW, loc); }
+"CALLN"|"jmpn" { return Parser::make_CALL(COND_SIGN, loc); }
+"CALLNN"|"jmpnn" { return Parser::make_CALL(COND_NSIGN, loc); }
 
-"IRQ0"|"irq0" { j80lval.us = 0; return TOKEN_INTERRUPT; }
-"IRQ1"|"irq1" { j80lval.us = 1; return TOKEN_INTERRUPT; }
-"IRQ2"|"irq2" { j80lval.us = 2; return TOKEN_INTERRUPT; }
-"IRQ3"|"irq3" { j80lval.us = 3; return TOKEN_INTERRUPT; }
-"IRQEND"|"irqend" { return TOKEN_INTERRUPT_END; }
+"RET"|"jmp" { return Parser::make_RET(COND_UNCOND, loc); }
+"RETC"|"jmpc" { return Parser::make_RET(COND_CARRY, loc); }
+"RETNC"|"jmpnc" { return Parser::make_RET(COND_NCARRY, loc); }
+"RETZ"|"jmpz" { return Parser::make_RET(COND_ZERO, loc); }
+"RETNZ"|"jmpnz" { return Parser::make_RET(COND_NZERO, loc); }
+"RETV"|"jmpv" { return Parser::make_RET(COND_OVERFLOW, loc); }
+"RETNV"|"jmpnv" { return Parser::make_RET(COND_NOVERFLOW, loc); }
+"RETN"|"jmpn" { return Parser::make_RET(COND_SIGN, loc); }
+"RETNN"|"jmpnn" { return Parser::make_RET(COND_NSIGN, loc); }
 
-"NEAR"|"near" { return TOKEN_NEAR; }
+"IRQ0"|"irq0" { return Parser::make_INTSTART(0, loc); }
+"IRQ1"|"irq1" { return Parser::make_INTSTART(1, loc); }
+"IRQ2"|"irq2" { return Parser::make_INTSTART(2, loc); }
+"IRQ3"|"irq3" { return Parser::make_INTSTART(3, loc); }
+"IRQEND"|"irqend" { return Parser::make_INTEND(loc); }
 
-"LD"|"ld" { return TOKEN_LD; }
-"MOV"|"mov" { return TOKEN_LD; }
-"ST"|"st" { return TOKEN_ST; }
-"STORE"|"store" { return TOKEN_ST; }
-"LOAD"|"load" { return TOKEN_LD; }
-"LF"|"lf" { return TOKEN_LF; }
-"SF"|"sf" { return TOKEN_SF; }
-"LSH"|"lsh" { return TOKEN_LSH; }
-"RSH"|"rsh" { return TOKEN_RSH; }
-"CMP"|"cmp" { return TOKEN_CMP; }
-"(" { return T_LPAREN; }
-")" { return T_RPAREN; }
-"[" { return T_LBRACK; }
-"]" { return T_RBRACK; }
+"LD"|"ld" { return Parser::make_LD(loc); }
+"MOV"|"mov" { return Parser::make_LD(loc); }
+"ST"|"st" { return Parser::make_ST(loc); }
+"STORE"|"store" { return Parser::make_ST(loc); }
+"LOAD"|"load" { return Parser::make_LD(loc); }
+"LF"|"lf" { return Parser::make_LF(loc); }
+"SF"|"sf" { return Parser::make_SF(loc); }
+"LSH"|"lsh" { return Parser::make_LSH(loc); }
+"RSH"|"rsh" { return Parser::make_RSH(loc); }
+"CMP"|"cmp" { return Parser::make_CMP(loc); }
+"(" { return Parser::make_LPAREN(loc); }
+")" { return Parser::make_RPAREN(loc); }
+"[" { return Parser::make_LBRACK(loc); }
+"]" { return Parser::make_RBRACK(loc); }
 
-"PUSH"|"push" { return TOKEN_PUSH; }
-"POP"|"pop" { return TOKEN_POP; }
-"EI"|"ei" { return TOKEN_EI; }
-"DI"|"di" { return TOKEN_DI; }
-"INT"|"int" { return TOKEN_INT; }
-"NOP"|"nop" { return TOKEN_NOP; }
+"PUSH"|"push" { return Parser::make_PUSH(loc); }
+"POP"|"pop" { return Parser::make_POP(loc); }
+"EI"|"ei" { return Parser::make_EI(loc); }
+"DI"|"di" { return Parser::make_DI(loc); }
+"INT"|"int" { return Parser::make_INT(loc); }
+"NOP"|"nop" { return Parser::make_NOP(loc); }
 
-"LENGTH"|"length" { return TOKEN_LENGTH; }
-".ASCII"|".ascii" { return TOKEN_DATA_ASCII; }
-".RESERVE"|".reserve" { return TOKEN_DATA_RESERVE; }
-".RAW"|".raw" { return TOKEN_DATA_RAW; }
+"LENGTH"|"length" { return Parser::make_DATA_LENGTH(loc); }
+".ASCII"|".ascii" { return Parser::make_DATA_ASCII(loc); }
+".RESERVE"|".reserve" { return Parser::make_DATA_RESERVE(loc); }
+".RAW"|".raw" { return Parser::make_DATA_RAW(loc); }
 
 
-"0x"[a-fA-F0-9]+ { j80lval.us = strtol( &yytext[2], NULL, 16); return U16; }
-[a-fA-F0-9]+"H" { j80lval.us = strtol( yytext, NULL, 16); return U16; }
-[a-fA-F0-9]+"h" { j80lval.us = strtol( yytext, NULL, 16); return U16; }
-"0b"[0-1]+ { j80lval.us = strtol( &yytext[2], NULL, 2); return U16; }
-[0-1]+"B" { j80lval.us = strtol( yytext, NULL, 2); return U16; }
-[0-1]+"b" { j80lval.us = strtol( yytext, NULL, 2); return U16; }
-[+\-]?[0-9]+ { j80lval.us = atoi(yytext); return U16;}
-"'"[ -~]"'" { j80lval.us = yytext[1]; return U16; }
+"0x"[a-fA-F0-9]+ { return Parser::make_U16(strtol( &yytext[2], NULL, 16), loc); }
+[a-fA-F0-9]+"H" { return Parser::make_U16(strtol( yytext, NULL, 16), loc); }
+[a-fA-F0-9]+"h" { return Parser::make_U16(strtol( yytext, NULL, 16), loc); }
+"0b"[0-1]+ { return Parser::make_U16(strtol( &yytext[2], NULL, 2), loc); }
+[0-1]+"B" { return Parser::make_U16(strtol( yytext, NULL, 2), loc); }
+[0-1]+"b" { return Parser::make_U16(strtol( yytext, NULL, 2), loc); }
+[+\-]?[0-9]+ { return Parser::make_U16(atoi(yytext), loc);}
+"'"[ -~]"'" { return Parser::make_U16(yytext[1], loc); }
 
 \" { buffer.clear(); BEGIN(sstring); }
 
-<sstring>\" { BEGIN(INITIAL); j80lval.str = strdup(buffer.c_str()); return STRING_LITERAL; }
+<sstring>\" { BEGIN(INITIAL); return Parser::make_LITERAL(buffer.c_str(), loc); }
 <sstring>\\n { buffer += '\n'; }
 <sstring>\\0 { buffer += '\0'; printf(">>>>>>>> ANTANI!\n"); }
 <sstring>\\(.|\n) { buffer += yytext[1]; }
 <sstring>[^\\\n\"]+ { char *ptr = yytext; while (*ptr) buffer += *ptr++; }
 
-#[^\\\n]+\n { }
+[a-zA-Z_][a-zA-Z0-9_]* { return Parser::make_STRING(yytext,loc); }
 
-[a-zA-Z_][a-zA-Z0-9_]* { j80lval.str = strdup(yytext); return STRING; }
+"#"[^\n]*\n{1,1} { Parser::make_EOL(loc); loc.lines(yyleng); loc.step(); }
 
 
-
-\n|"\r\n" { return T_EOL; }
-[ \t] { /* ignore whitespace */ }
+\n|"\r\n" { Parser::make_EOL(loc); loc.lines(yyleng); loc.step();  }
+[ \t] { loc.step(); /* ignore whitespace */ }
 . { printf("Mystery character %c\n", *yytext); }
+
+<<EOF>> { return yyterminate(); }
 
 %%
 

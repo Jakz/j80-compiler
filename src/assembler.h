@@ -10,6 +10,13 @@
 #include <vector>
 #include <list>
 
+#include "assembler/j80lexer.h"
+#include "assembler/j80parser.hpp"
+#include "assembler/location.hh"
+
+namespace Assembler
+{
+
 struct BinaryCode
 {
   u8 *code;
@@ -43,7 +50,7 @@ struct DataSegmentEntry
   u16 offset;
   
   DataSegmentEntry() : data(nullptr), length(0), offset(0) { }
-  DataSegmentEntry(char *ascii) { offset = 0x0000; data = (u8*)ascii; length = strlen(ascii); }
+  DataSegmentEntry(const std::string& ascii) { offset = 0x0000; data = reinterpret_cast<u8*>(strdup(ascii.c_str())); length = ascii.length(); }
   DataSegmentEntry(u16 size) { offset = 0x0000; data = new u8[size]; memset(data, 0, size); length = size; }
 };
   
@@ -91,45 +98,53 @@ struct DataReference
 BinaryCode assemble(const char*);
 BinaryCode assembleLine(const char *);
 
-class Assembler
+class J80Assembler
 {
   private:
-    static u16 position;
-    static std::list<Instruction> instructions;
-    static std::unordered_map<std::string,u16> labels;
+    u16 position;
+    std::list<Instruction> instructions;
+    std::unordered_map<std::string,u16> labels;
   
-    static std::vector<std::pair<u16, std::string> > jumps;
-    static std::vector<std::pair<u16, DataReference> > dataReferences;
+    std::vector<std::pair<u16, std::string> > jumps;
+    std::vector<std::pair<u16, DataReference> > dataReferences;
   
-    static std::unordered_map<std::string, DataSegmentEntry> data;
+    std::unordered_map<std::string, DataSegmentEntry> data;
   
-    static s8 currentIrq;
-    static std::list<Instruction> irqs[4];
+    s8 currentIrq;
+    std::list<Instruction> irqs[4];
   
     //static Instruction *build(InstructionLength len) { return new Instruction(len, position); }
     //static void insert(Instruction *i) { position += i->length; instructions.push_back(i); }
   
   public:
-    static DataSegment* dataSegment;
-    static CodeSegment* codeSegment;
+    J80Assembler();
   
-    static void init();
-    static void assemble(int opcode, int opcode2 = -1, int opcode3 = -1);
+    DataSegment* dataSegment;
+    CodeSegment* codeSegment;
+  
+    std::string file;
+  
+    void error (const Assembler::location& l, const std::string& m);
+    void error (const std::string& m);
+  
+    bool parse(const std::string& filename);
+  
+    void assemble(int opcode, int opcode2 = -1, int opcode3 = -1);
     //static u16 size();
-    static BinaryCode consolidate();
+    BinaryCode consolidate();
 
-    static Instruction preamble(InstructionLength len)
+    Instruction preamble(InstructionLength len)
     {
       return Instruction(len, position);
     }
   
-    static void postamble(Instruction &i)
+    void postamble(Instruction &i)
     {
       position += i.length;
       instructions.push_back(i);
     }
   
-    static void assembleLD_RSH_LSH(Reg dst, Reg src, AluOp opcode, bool extended)
+    void assembleLD_RSH_LSH(Reg dst, Reg src, AluOp opcode, bool extended)
     {
       Instruction i = preamble(LENGTH_2_BYTES);
       if (extended) opcode = static_cast<AluOp>(opcode | 0b1);
@@ -138,10 +153,10 @@ class Assembler
       postamble(i);
     }
   
-    static void assembleLD_NN(Reg dst, u8 value, char* label = nullptr)
+    void assembleLD_NN(Reg dst, u8 value, const std::string& label = std::string())
     {
       //TODO: add reference for length of data label
-      if (label)
+      if (!label.empty())
         dataReferences.push_back(std::make_pair(position, DataReference(label, DataReference::Type::LENGTH8)));
       
       Instruction i = preamble(LENGTH_3_BYTES);
@@ -151,9 +166,9 @@ class Assembler
       postamble(i);
     }
   
-    static void assembleLD_NNNN(Reg dst, u16 value, char *label = nullptr, s8 offset = 0)
+    void assembleLD_NNNN(Reg dst, u16 value, const std::string& label = std::string(), s8 offset = 0)
     {
-      if (label)
+      if (!label.empty())
         dataReferences.push_back(std::make_pair(position, DataReference(label,offset)));
       
       Instruction i = preamble(LENGTH_3_BYTES);
@@ -163,9 +178,9 @@ class Assembler
       postamble(i);
     }
   
-    static void assembleLD_PTR_NNNN(Reg dst, u16 address, char *label = nullptr, s8 offset = 0)
+    void assembleLD_PTR_NNNN(Reg dst, u16 address, const std::string& label = std::string(), s8 offset = 0)
     {
-      if (label)
+      if (!label.empty())
         dataReferences.push_back(std::make_pair(position, DataReference(label,offset)));
       
       Instruction i = preamble(LENGTH_3_BYTES);
@@ -175,7 +190,7 @@ class Assembler
       postamble(i);
     }
   
-    static void assembleLD_PTR_PP(Reg dst, Reg src, s8 value)
+    void assembleLD_PTR_PP(Reg dst, Reg src, s8 value)
     {
       Instruction i = preamble(LENGTH_3_BYTES);
       i.data[0] = (OPCODE_LD_PTR_PP << 3) | dst;
@@ -184,9 +199,9 @@ class Assembler
       postamble(i);
     }
   
-    static void assembleSD_PTR_NNNN(Reg src, u16 address, char *label = nullptr, s8 offset = 0)
+    void assembleSD_PTR_NNNN(Reg src, u16 address, const std::string& label = std::string(), s8 offset = 0)
     {
-      if (label)
+      if (!label.empty())
         dataReferences.push_back(std::make_pair(position, DataReference(label,offset)));
       
       Instruction i = preamble(LENGTH_3_BYTES);
@@ -196,7 +211,7 @@ class Assembler
       postamble(i);
     }
   
-    static void assembleSD_PTR_PP(Reg src, Reg raddr, s8 value)
+    void assembleSD_PTR_PP(Reg src, Reg raddr, s8 value)
     {
       Instruction i = preamble(LENGTH_3_BYTES);
       i.data[0] = (OPCODE_SD_PTR_PP << 3) | src;
@@ -205,7 +220,7 @@ class Assembler
       postamble(i);
     }
   
-    static void assembleALU_REG(Reg dst, Reg src1, Reg src2, AluOp opcode, bool extended)
+    void assembleALU_REG(Reg dst, Reg src1, Reg src2, AluOp opcode, bool extended)
     {
       Instruction i = preamble(LENGTH_3_BYTES);
       if (extended) opcode = static_cast<AluOp>(opcode | 0b1);
@@ -216,7 +231,7 @@ class Assembler
       postamble(i);
     }
   
-    static void assembleALU_NN(Reg dst, Reg src1, AluOp opcode, u8 value)
+    void assembleALU_NN(Reg dst, Reg src1, AluOp opcode, u8 value)
     {
       Instruction i = preamble(LENGTH_3_BYTES);
       
@@ -226,7 +241,7 @@ class Assembler
       postamble(i);
     }
   
-    static void assembleALU_NNNN(Reg dst, Reg src1, AluOp opcode, u16 value)
+    void assembleALU_NNNN(Reg dst, Reg src1, AluOp opcode, u16 value)
     {
       Instruction i = preamble(LENGTH_4_BYTES);
       opcode = static_cast<AluOp>(opcode | 0b1);
@@ -238,9 +253,9 @@ class Assembler
       postamble(i);
     }
   
-    static void assembleJMP_NNNN(JumpCondition cond, const char *label)
+    void assembleJMP_NNNN(JumpCondition cond, const std::string& label)
     {
-      jumps.push_back(std::make_pair(position, std::string(label)));
+      jumps.push_back(std::make_pair(position, label));
       
       Instruction i = preamble(LENGTH_3_BYTES);
 
@@ -252,7 +267,7 @@ class Assembler
 
     }
   
-    static void assembleJMP_PP(JumpCondition cond, Reg reg)
+    void assembleJMP_PP(JumpCondition cond, Reg reg)
     {
       Instruction i = preamble(LENGTH_2_BYTES);
       
@@ -269,30 +284,30 @@ class Assembler
      
      */
   
-    static void assembleShort(Opcode opcode)
+    void assembleShort(Opcode opcode)
     {
       Instruction i = preamble(LENGTH_1_BYTES);
       i.data[0] = opcode << 3;
       postamble(i);
     }
   
-    static void assembleShortWithReg(Opcode opcode, Reg reg)
+    void assembleShortWithReg(Opcode opcode, Reg reg)
     {
       Instruction i = preamble(LENGTH_1_BYTES);
       i.data[0] = (opcode << 3) | reg;
       postamble(i);
     }
   
-    static void assembleRET(JumpCondition cond)
+    void assembleRET(JumpCondition cond)
     {
       Instruction i = preamble(LENGTH_1_BYTES);
       i.data[0] = (OPCODE_RETC << 3) | cond;
       postamble(i);
     }
   
-    static void assembleCALL_NNNN(JumpCondition cond, const char *label)
+    void assembleCALL_NNNN(JumpCondition cond, const std::string& label)
     {
-      jumps.push_back(std::make_pair(position, std::string(label)));
+      jumps.push_back(std::make_pair(position, label));
 
       
       Instruction i = preamble(LENGTH_3_BYTES);
@@ -304,7 +319,7 @@ class Assembler
       postamble(i);
     }
   
-    static void assembleCMP_REG(Reg dst, Reg src1, bool extended)
+    void assembleCMP_REG(Reg dst, Reg src1, bool extended)
     {
       Instruction i = preamble(LENGTH_3_BYTES);
       AluOp opcode = ALU_SUB8;
@@ -315,7 +330,7 @@ class Assembler
       postamble(i);
     }
     
-    static void assembleCMP_NN(Reg dst, u8 value)
+    void assembleCMP_NN(Reg dst, u8 value)
     {
       Instruction i = preamble(LENGTH_3_BYTES);
       i.data[0] = (OPCODE_CMP_NN << 3) | dst;
@@ -324,7 +339,7 @@ class Assembler
       postamble(i);
     }
     
-    static void assembleCMP_NNNN(Reg dst, u16 value)
+    void assembleCMP_NNNN(Reg dst, u16 value)
     {
       Instruction i = preamble(LENGTH_4_BYTES);      
       i.data[0] = (OPCODE_CMP_NNNN << 3) | dst;
@@ -335,20 +350,20 @@ class Assembler
     }
   
   
-    static bool solveJumps();
+    bool solveJumps();
   
   
-    static void addAsciiData(char *label, char *sdata)
+    void addAsciiData(const std::string& label, const std::string& sdata)
     {
       data[label] = DataSegmentEntry(sdata);
     }
   
-    static void addEmptyData(char *label, u16 size)
+    void addEmptyData(const std::string& label, u16 size)
     {
       data[label] = DataSegmentEntry(size);
     }
   
-    static void buildDataSegment()
+    void buildDataSegment()
     {
       printf("Building data segment.\n");
       u16 totalSize = 0;
@@ -372,7 +387,7 @@ class Assembler
       }
     }
   
-    static void buildCodeSegment()
+    void buildCodeSegment()
     {
       printf("Building code segment.\n");
 
@@ -399,7 +414,7 @@ class Assembler
       }
     }
   
-    static void solveDataReferences()
+    void solveDataReferences()
     {
       printf("Solving data references.\n");
       
@@ -439,7 +454,7 @@ class Assembler
       
     }
   
-    static void assemble()
+    void assemble()
     {
       buildCodeSegment();
       codeSegment->offset = 0;
@@ -449,19 +464,21 @@ class Assembler
       solveDataReferences();
     }
   
-    static void interruptStart(u8 index) { currentIrq = index; }
-    static void interruptEnd() { currentIrq = -1; }
+    void interruptStart(u8 index) { currentIrq = index; }
+    void interruptEnd() { currentIrq = -1; }
   
-    static void placeLabel(char *label);
+    void placeLabel(const std::string& label);
     //static Instruction at(size_t i) { return *std::next(instructions.begin(),i); }
     //static size_t size() { return instructions.size(); }
   
-    static std::list<Instruction>::iterator iterator() { return instructions.begin(); }
-    static bool hasNext(std::list<Instruction>::iterator it) { return it  != instructions.end(); }
+    std::list<Instruction>::iterator iterator() { return instructions.begin(); }
+    bool hasNext(std::list<Instruction>::iterator it) { return it  != instructions.end(); }
 
   
     constexpr static const BinaryCode INVALID = BinaryCode{nullptr, 0};
   
 };
+  
+}
 
 #endif

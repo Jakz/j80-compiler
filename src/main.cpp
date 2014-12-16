@@ -14,7 +14,7 @@
 #include "ast.h"
 
 using namespace std;
-
+/*
 int main(int argc, const char * argv[])
 {
   ASTList* list = new ASTList();
@@ -27,29 +27,31 @@ int main(int argc, const char * argv[])
   list->add(unique_ptr<ASTNode>(list2));
   list->recursivePrint(0);
   
+
+  
   
   
   return 0;
-}
+}*/
 
-/*
+
 int main(int argc, const char * argv[])
 {
-  assemble("test.j80");
+  Assembler::J80Assembler assembler;
+  assembler.parse("test.j80");
+  assembler.assemble();
 
-  Assembler::assemble();
-  
   u16 pos = 0;
   char buffer[64];
-  while (pos < Assembler::codeSegment->length)
+  while (pos < assembler.codeSegment->length)
   {
     printf("%04X: ", pos);
     
-    u8 length = Opcodes::printInstruction(Assembler::codeSegment->data+pos, buffer);
+    u8 length = Opcodes::printInstruction(assembler.codeSegment->data+pos, buffer);
     
     for (int w = 0; w < length; ++w)
     {
-      printf("%02X", Assembler::codeSegment->data[pos+w]);
+      printf("%02X", assembler.codeSegment->data[pos+w]);
     }
     //fprintf(bin,"\n");
     
@@ -63,7 +65,7 @@ int main(int argc, const char * argv[])
     printf("%s\n", buffer);
   }
   
-  u16 dataLen = Assembler::dataSegment->length;
+  u16 dataLen = assembler.dataSegment->length;
   for (int i = 0; i < dataLen / 8 + (dataLen % 8 != 0 ? 1 : 0); ++i)
   {
     printf("%04X: ", pos + i*8);
@@ -71,7 +73,7 @@ int main(int argc, const char * argv[])
     for (int j = 0; j < 8; ++j)
     {
       if (i*8+j < dataLen)
-        printf("%02X", Assembler::dataSegment->data[i*8 + j]);
+        printf("%02X", assembler.dataSegment->data[i*8 + j]);
       else
         printf("  ");
     }
@@ -80,8 +82,8 @@ int main(int argc, const char * argv[])
     
     for (int j = 0; j < 8; ++j)
     {
-      if (i*8+j < dataLen &&  Assembler::dataSegment->data[i*8 + j] >= 0x20 && Assembler::dataSegment->data[i*8 + j] <= 0x7E)
-        printf("%c", Assembler::dataSegment->data[i*8 + j]);
+      if (i*8+j < dataLen &&  assembler.dataSegment->data[i*8 + j] >= 0x20 && assembler.dataSegment->data[i*8 + j] <= 0x7E)
+        printf("%c", assembler.dataSegment->data[i*8 + j]);
       else
         printf(" ");
     }
@@ -92,14 +94,14 @@ int main(int argc, const char * argv[])
   FILE *bin = fopen("test.bin", "wb");
   fprintf(bin, "v2.0 raw\n");
   
-  for (int i = 0; i < Assembler::codeSegment->length; ++i)
-    fprintf(bin, "%02x\n", Assembler::codeSegment->data[i]);
+  for (int i = 0; i < assembler.codeSegment->length; ++i)
+    fprintf(bin, "%02x\n", assembler.codeSegment->data[i]);
   
-  for (int i = 0; i < Assembler::dataSegment->length; ++i)
-    fprintf(bin, "%02x\n", Assembler::dataSegment->data[i]);
+  for (int i = 0; i < assembler.dataSegment->length; ++i)
+    fprintf(bin, "%02x\n", assembler.dataSegment->data[i]);
   
   fclose(bin);
   
   return 0;
-}*/
+}
 

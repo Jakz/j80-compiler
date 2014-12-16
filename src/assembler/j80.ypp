@@ -1,234 +1,230 @@
-%{
-  #include "assembler.h"
+%skeleton "lalr1.cc"
+%require "3.0.2"
+
+%defines
+%define api.namespace {Assembler}
+%define parser_class_name {Parser}
+
+%define api.token.constructor
+%define api.value.type variant
+%define parse.assert true
+
+%code requires {
   #include "opcodes.h"
-  
-  #define YYDEBUG 0
-  
-  extern FILE *j80in;
 
-	extern "C"
-	{
-    typedef struct yy_buffer_state *YY_BUFFER_STATE;
-    
-    int j80parse(void);
-    int j80lex(void);
-    //int cyywrap();
-    /*{
-     return 1;
-     }*/
-    void j80error(const char *s);
-        
-    extern int j80lineno;
-    extern char *j80text;
-    
-    extern int j80parse();
-
-    //extern YY_BUFFER_STATE yy_scan_string(const char *line);
-    extern void yy_delete_buffer(YY_BUFFER_STATE);
-    extern void yy_switch_to_buffer(YY_BUFFER_STATE);
-    
-    
-	}
-  
-    static bool failed = false;
-    
-    bool correctRSTAddress(u16 val);
-    BinaryCode assemble(const char *filename);
-    BinaryCode assembleLine(const char* line);
-
-%}
-
-%union
-{
-	unsigned short us;
-  signed short ss;
-	char *str;
+  namespace Assembler
+  {
+    class Lexer;
+    class J80Assembler;
+  }
 }
 
-%token T_EOL T_COLON T_COMMA T_LPAREN T_RPAREN T_QUOTE T_RBRACK T_LBRACK TOKEN_LENGTH
+%lex-param { Assembler::Lexer &lexer }
+%lex-param { Assembler::J80Assembler &assembler }
+%parse-param { Assembler::Lexer &lexer }
+%parse-param { Assembler::J80Assembler &assembler }
 
-%token TOKEN_REG8 TOKEN_REG16
-%token TOKEN_ALU TOKEN_COND TOKEN_NEAR
-%token TOKEN_LD TOKEN_JMP TOKEN_ST TOKEN_LF TOKEN_SF TOKEN_LSH TOKEN_RSH TOKEN_CMP
-%token TOKEN_CALL TOKEN_RET TOKEN_PUSH TOKEN_POP TOKEN_INT TOKEN_EI TOKEN_DI TOKEN_NOP
-%token TOKEN_DATA_ASCII TOKEN_DATA_RESERVE TOKEN_DATA_RAW
-%token TOKEN_INTERRUPT TOKEN_INTERRUPT_END
+%locations
+%initial-action
+{
+  @$.begin.filename = @$.end.filename = &assembler.file;
+};
 
-%token U16 STRING STRING_LITERAL
+%define parse.trace
+%define parse.error verbose
 
-%type<us> instruction
+%code top {
+  #include "assembler.h"
+  #include "j80lexer.h"
+  #include "j80parser.hpp"
+  
+  static Assembler::Parser::symbol_type yylex(Assembler::Lexer &scanner, Assembler::J80Assembler &assembler) {
+    return scanner.get_next_token();
+  }
+  
+  using namespace Assembler;
+}
 
-%type<us> TOKEN_REG8 TOKEN_REG16 TOKEN_ALU TOKEN_JMP TOKEN_RET TOKEN_CALL TOKEN_INTERRUPT
+%define api.token.prefix {T_}
+%token
+  END 0 "end of file"
+  EOL "\n"
+  COLON ":"
+  COMMA ","
+  LPAREN "("
+  RPAREN ")"
+  QUOTE "\""
+  RBRACK "["
+  LBRACK "]"
+  DATA_LENGTH "LENGTH"
+;
 
-%type<us> U16
-%type<str> STRING STRING_LITERAL
+%token <std::string>
+  STRING "identifier"
+  LITERAL "string literal"
+;
+
+%token <Reg>
+  REG8
+  REG16
+;
+
+%token <u16> U16;
+
+%token <AluOp> ALU;
+
+%token <JumpCondition>
+  JMP
+  CALL
+  RET
+;
+
+%token <u8> INTSTART;
+
+%token
+  LD
+  ST
+  LF
+  SF
+  LSH
+  RSH
+  CMP
+  PUSH
+  POP
+  EI
+  DI
+  NOP
+  DATA_ASCII
+  DATA_RESERVE
+  DATA_RAW
+  INTEND
+  INT
+;
+
+
+%printer { yyoutput << $$; } <*>
 
 %%
 
 start:
-  { Assembler::init(); } instructions { }
+  { } instructions { }
 ;
 
 instructions:
   | instructions instruction { }
-  | instructions T_EOL { }
-  /*| instructions label T_EOL { }*/
+  | instructions EOL { }
+  /*| instructions label EOL { }*/
 ;
 
 instruction:
   
-  TOKEN_LD TOKEN_REG8 T_COMMA TOKEN_REG8 { Assembler::assembleLD_RSH_LSH((Reg)$2, (Reg)$4, ALU_TRANSFER_A8, false); }
-| TOKEN_LD TOKEN_REG8 T_COMMA U16 { Assembler::assembleLD_NN((Reg)$2, (u8)$4); }
-| TOKEN_LD TOKEN_REG8 T_COMMA TOKEN_LENGTH T_LPAREN STRING T_RPAREN { Assembler::assembleLD_NN((Reg)$2, 0, $6); }
+  LD REG8 COMMA REG8 { assembler.assembleLD_RSH_LSH((Reg)$2, (Reg)$4, ALU_TRANSFER_A8, false); }
+| LD REG8 COMMA U16 { assembler.assembleLD_NN((Reg)$2, (u8)$4); }
+| LD REG8 COMMA DATA_LENGTH LPAREN STRING RPAREN { assembler.assembleLD_NN((Reg)$2, 0, $6); }
 
-| TOKEN_LD TOKEN_REG16 T_COMMA TOKEN_REG16 { Assembler::assembleLD_RSH_LSH((Reg)$2, (Reg)$4, ALU_TRANSFER_A16, true); }
+| LD REG16 COMMA REG16 { assembler.assembleLD_RSH_LSH((Reg)$2, (Reg)$4, ALU_TRANSFER_A16, true); }
 
-| TOKEN_LD TOKEN_REG8 T_COMMA T_LBRACK U16 T_RBRACK { Assembler::assembleLD_PTR_NNNN((Reg)$2, $5); }
-| TOKEN_LD TOKEN_REG8 T_COMMA T_LBRACK STRING T_RBRACK { Assembler::assembleLD_PTR_NNNN((Reg)$2, 0, $5, 0); }
-| TOKEN_LD TOKEN_REG8 T_COMMA T_LBRACK STRING U16 T_RBRACK { Assembler::assembleLD_PTR_NNNN((Reg)$2, 0, $5, (s8)$6); }
+| LD REG8 COMMA LBRACK U16 RBRACK { assembler.assembleLD_PTR_NNNN((Reg)$2, $5); }
+| LD REG8 COMMA LBRACK STRING RBRACK { assembler.assembleLD_PTR_NNNN((Reg)$2, 0, $5, 0); }
+| LD REG8 COMMA LBRACK STRING U16 RBRACK { assembler.assembleLD_PTR_NNNN((Reg)$2, 0, $5, (s8)$6); }
 
-| TOKEN_LD TOKEN_REG8 T_COMMA T_LBRACK TOKEN_REG16 U16 T_RBRACK { Assembler::assembleLD_PTR_PP((Reg)$2, (Reg)$5, (s8)$6); }
-| TOKEN_LD TOKEN_REG8 T_COMMA T_LBRACK TOKEN_REG16 T_RBRACK { Assembler::assembleLD_PTR_PP((Reg)$2, (Reg)$5, 0); }
+| LD REG8 COMMA LBRACK REG16 U16 RBRACK { assembler.assembleLD_PTR_PP((Reg)$2, (Reg)$5, (s8)$6); }
+| LD REG8 COMMA LBRACK REG16 RBRACK { assembler.assembleLD_PTR_PP((Reg)$2, (Reg)$5, 0); }
 
-| TOKEN_LD TOKEN_REG16 T_COMMA U16 { Assembler::assembleLD_NNNN((Reg)$2, $4); }
-| TOKEN_LD TOKEN_REG16 T_COMMA STRING { Assembler::assembleLD_NNNN((Reg)$2, 0, $4, 0); }
-| TOKEN_LD TOKEN_REG16 T_COMMA STRING U16 { Assembler::assembleLD_NNNN((Reg)$2, 0, $4, (s8)$5); }
+| LD REG16 COMMA U16 { assembler.assembleLD_NNNN((Reg)$2, $4); }
+| LD REG16 COMMA STRING { assembler.assembleLD_NNNN((Reg)$2, 0, $4, 0); }
+| LD REG16 COMMA STRING U16 { assembler.assembleLD_NNNN((Reg)$2, 0, $4, (s8)$5); }
 
-| TOKEN_ST T_LBRACK U16 T_RBRACK T_COMMA TOKEN_REG8 { Assembler::assembleSD_PTR_NNNN((Reg)$6, $3); }
-| TOKEN_ST T_LBRACK STRING T_RBRACK T_COMMA TOKEN_REG8 { Assembler::assembleSD_PTR_NNNN((Reg)$6, 0, $3, 0); }
-| TOKEN_ST T_LBRACK STRING U16 T_RBRACK T_COMMA TOKEN_REG8 { Assembler::assembleSD_PTR_NNNN((Reg)$7, 0, $3, (s8)$4); }
-| TOKEN_ST T_LBRACK TOKEN_REG16 U16 T_RBRACK T_COMMA TOKEN_REG8 { Assembler::assembleSD_PTR_PP((Reg)$7, (Reg)$3, (s8)$4); }
-| TOKEN_ST T_LBRACK TOKEN_REG16 T_RBRACK T_COMMA TOKEN_REG8 { Assembler::assembleSD_PTR_PP((Reg)$6, (Reg)$3, 0); }
+| ST LBRACK U16 RBRACK COMMA REG8 { assembler.assembleSD_PTR_NNNN((Reg)$6, $3); }
+| ST LBRACK STRING RBRACK COMMA REG8 { assembler.assembleSD_PTR_NNNN((Reg)$6, 0, $3, 0); }
+| ST LBRACK STRING U16 RBRACK COMMA REG8 { assembler.assembleSD_PTR_NNNN((Reg)$7, 0, $3, (s8)$4); }
+| ST LBRACK REG16 U16 RBRACK COMMA REG8 { assembler.assembleSD_PTR_PP((Reg)$7, (Reg)$3, (s8)$4); }
+| ST LBRACK REG16 RBRACK COMMA REG8 { assembler.assembleSD_PTR_PP((Reg)$6, (Reg)$3, 0); }
 
 
-| TOKEN_ALU TOKEN_REG8 T_COMMA TOKEN_REG8 T_COMMA TOKEN_REG8 { Assembler::assembleALU_REG((Reg)$2, (Reg)$4, (Reg)$6, (AluOp)$1, false); }
-| TOKEN_ALU TOKEN_REG8 T_COMMA TOKEN_REG8 { Assembler::assembleALU_REG((Reg)$2, (Reg)$2, (Reg)$4, (AluOp)$1, false); }
-| TOKEN_ALU TOKEN_REG8 { Assembler::assembleALU_REG((Reg)$2, (Reg)$2, (Reg)$2, (AluOp)$1, false); }
+| ALU REG8 COMMA REG8 COMMA REG8 { assembler.assembleALU_REG((Reg)$2, (Reg)$4, (Reg)$6, (AluOp)$1, false); }
+| ALU REG8 COMMA REG8 { assembler.assembleALU_REG((Reg)$2, (Reg)$2, (Reg)$4, (AluOp)$1, false); }
+| ALU REG8 { assembler.assembleALU_REG((Reg)$2, (Reg)$2, (Reg)$2, (AluOp)$1, false); }
 
-| TOKEN_ALU TOKEN_REG16 T_COMMA TOKEN_REG16 T_COMMA TOKEN_REG16 { Assembler::assembleALU_REG((Reg)$2, (Reg)$4, (Reg)$6, (AluOp)$1, true); }
-| TOKEN_ALU TOKEN_REG16 T_COMMA TOKEN_REG16 { Assembler::assembleALU_REG((Reg)$2, (Reg)$2, (Reg)$4, (AluOp)$1, true); }
-| TOKEN_ALU TOKEN_REG16 { Assembler::assembleALU_REG((Reg)$2, (Reg)$2, (Reg)$2, (AluOp)$1, true); }
+| ALU REG16 COMMA REG16 COMMA REG16 { assembler.assembleALU_REG((Reg)$2, (Reg)$4, (Reg)$6, (AluOp)$1, true); }
+| ALU REG16 COMMA REG16 { assembler.assembleALU_REG((Reg)$2, (Reg)$2, (Reg)$4, (AluOp)$1, true); }
+| ALU REG16 { assembler.assembleALU_REG((Reg)$2, (Reg)$2, (Reg)$2, (AluOp)$1, true); }
 
-| TOKEN_ALU TOKEN_REG8 T_COMMA U16 { Assembler::assembleALU_NN((Reg)$2, (Reg)$2, (AluOp)$1, (u8)$4); }
-| TOKEN_ALU TOKEN_REG16 T_COMMA U16 { Assembler::assembleALU_NNNN((Reg)$2, (Reg)$2, (AluOp)$1, $4); }
-| TOKEN_ALU TOKEN_REG8 T_COMMA TOKEN_REG8 T_COMMA U16 { Assembler::assembleALU_NN((Reg)$2, (Reg)$4, (AluOp)$1, (u8)$6); }
-| TOKEN_ALU TOKEN_REG16 T_COMMA TOKEN_REG16 T_COMMA U16 { Assembler::assembleALU_NNNN((Reg)$2, (Reg)$4, (AluOp)$1, $6); }
+| ALU REG8 COMMA U16 { assembler.assembleALU_NN((Reg)$2, (Reg)$2, (AluOp)$1, (u8)$4); }
+| ALU REG16 COMMA U16 { assembler.assembleALU_NNNN((Reg)$2, (Reg)$2, (AluOp)$1, $4); }
+| ALU REG8 COMMA REG8 COMMA U16 { assembler.assembleALU_NN((Reg)$2, (Reg)$4, (AluOp)$1, (u8)$6); }
+| ALU REG16 COMMA REG16 COMMA U16 { assembler.assembleALU_NNNN((Reg)$2, (Reg)$4, (AluOp)$1, $6); }
 
-| TOKEN_LSH TOKEN_REG8 T_COMMA TOKEN_REG8 { Assembler::assembleLD_RSH_LSH((Reg)$2, (Reg)$4, ALU_LSH8, false); }
-| TOKEN_RSH TOKEN_REG8 T_COMMA TOKEN_REG8 { Assembler::assembleLD_RSH_LSH((Reg)$2, (Reg)$4, ALU_RSH8, false); }
-| TOKEN_LSH TOKEN_REG8 { Assembler::assembleLD_RSH_LSH((Reg)$2, (Reg)$2, ALU_LSH8, false); }
-| TOKEN_RSH TOKEN_REG8 { Assembler::assembleLD_RSH_LSH((Reg)$2, (Reg)$2, ALU_RSH8, false); }
-| TOKEN_LSH TOKEN_REG16 T_COMMA TOKEN_REG16 { Assembler::assembleLD_RSH_LSH((Reg)$2, (Reg)$4, ALU_LSH16, false); }
-| TOKEN_RSH TOKEN_REG16 T_COMMA TOKEN_REG16 { Assembler::assembleLD_RSH_LSH((Reg)$2, (Reg)$4, ALU_RSH16, false); }
-| TOKEN_LSH TOKEN_REG16 { Assembler::assembleLD_RSH_LSH((Reg)$2, (Reg)$2, ALU_LSH16, false); }
-| TOKEN_RSH TOKEN_REG16 { Assembler::assembleLD_RSH_LSH((Reg)$2, (Reg)$2, ALU_RSH16, false); }
+| LSH REG8 COMMA REG8 { assembler.assembleLD_RSH_LSH((Reg)$2, (Reg)$4, ALU_LSH8, false); }
+| RSH REG8 COMMA REG8 { assembler.assembleLD_RSH_LSH((Reg)$2, (Reg)$4, ALU_RSH8, false); }
+| LSH REG8 { assembler.assembleLD_RSH_LSH((Reg)$2, (Reg)$2, ALU_LSH8, false); }
+| RSH REG8 { assembler.assembleLD_RSH_LSH((Reg)$2, (Reg)$2, ALU_RSH8, false); }
+| LSH REG16 COMMA REG16 { assembler.assembleLD_RSH_LSH((Reg)$2, (Reg)$4, ALU_LSH16, false); }
+| RSH REG16 COMMA REG16 { assembler.assembleLD_RSH_LSH((Reg)$2, (Reg)$4, ALU_RSH16, false); }
+| LSH REG16 { assembler.assembleLD_RSH_LSH((Reg)$2, (Reg)$2, ALU_LSH16, false); }
+| RSH REG16 { assembler.assembleLD_RSH_LSH((Reg)$2, (Reg)$2, ALU_RSH16, false); }
 
-| TOKEN_JMP STRING { Assembler::assembleJMP_NNNN((JumpCondition)$1, $2); }
-| TOKEN_JMP TOKEN_REG16 { Assembler::assembleJMP_PP((JumpCondition)$1, (Reg)$2); }
-| TOKEN_CALL STRING { Assembler::assembleCALL_NNNN((JumpCondition)$1, $2); }
-| TOKEN_RET { Assembler::assembleRET((JumpCondition)$1); }
+| JMP STRING { assembler.assembleJMP_NNNN((JumpCondition)$1, $2); }
+| JMP REG16 { assembler.assembleJMP_PP((JumpCondition)$1, (Reg)$2); }
+| CALL STRING { assembler.assembleCALL_NNNN((JumpCondition)$1, $2); }
+| RET { assembler.assembleRET((JumpCondition)$1); }
 
-| TOKEN_PUSH TOKEN_REG8 { Assembler::assembleShortWithReg(OPCODE_PUSH, (Reg)$2); }
-| TOKEN_POP TOKEN_REG8 { Assembler::assembleShortWithReg(OPCODE_POP, (Reg)$2); }
+| PUSH REG8 { assembler.assembleShortWithReg(OPCODE_PUSH, (Reg)$2); }
+| POP REG8 { assembler.assembleShortWithReg(OPCODE_POP, (Reg)$2); }
 
-| TOKEN_PUSH TOKEN_REG16 {
+| PUSH REG16 {
   // otherwise should be an error!
   if ((((Reg)$2) & 0b100) == 0)
   {
-    Assembler::assembleShortWithReg(OPCODE_PUSH, (Reg)$2);
-    Assembler::assembleShortWithReg(OPCODE_PUSH, (Reg)($2 | 0b100));
+    assembler.assembleShortWithReg(OPCODE_PUSH, (Reg)$2);
+    assembler.assembleShortWithReg(OPCODE_PUSH, (Reg)($2 | 0b100));
   }
 }
 
-| TOKEN_POP TOKEN_REG16 {
+| POP REG16 {
   // otherwise should be an error!
   if ((((Reg)$2) & 0b100) == 0)
   {
-    Assembler::assembleShortWithReg(OPCODE_POP, (Reg)($2 | 0b100));
-    Assembler::assembleShortWithReg(OPCODE_POP, (Reg)$2);
+    assembler.assembleShortWithReg(OPCODE_POP, (Reg)($2 | 0b100));
+    assembler.assembleShortWithReg(OPCODE_POP, (Reg)$2);
   }
 }
 
-| TOKEN_LF TOKEN_REG8 { Assembler::assembleShortWithReg(OPCODE_LF, (Reg)$2); }
-| TOKEN_SF TOKEN_REG8 { Assembler::assembleShortWithReg(OPCODE_SF, (Reg)$2); }
+| LF REG8 { assembler.assembleShortWithReg(OPCODE_LF, (Reg)$2); }
+| SF REG8 { assembler.assembleShortWithReg(OPCODE_SF, (Reg)$2); }
 
-| TOKEN_EI { Assembler::assembleShort(OPCODE_EI); }
-| TOKEN_DI { Assembler::assembleShort(OPCODE_DI); }
-| TOKEN_INT { Assembler::assembleShort(OPCODE_INT); }
-| TOKEN_NOP { Assembler::assembleShort(OPCODE_NOP); }
+| EI { assembler.assembleShort(OPCODE_EI); }
+| DI { assembler.assembleShort(OPCODE_DI); }
+| INT { assembler.assembleShort(OPCODE_INT); }
+| NOP { assembler.assembleShort(OPCODE_NOP); }
 
-| TOKEN_CMP TOKEN_REG8 T_COMMA TOKEN_REG8 { Assembler::assembleCMP_REG((Reg)$2, (Reg)$4, false); }
-| TOKEN_CMP TOKEN_REG16 T_COMMA TOKEN_REG16 { Assembler::assembleCMP_REG((Reg)$2, (Reg)$4, true); }
-| TOKEN_CMP TOKEN_REG8 T_COMMA U16 { Assembler::assembleCMP_NN((Reg)$2, (u8)$4); }
-| TOKEN_CMP TOKEN_REG16 T_COMMA U16 { Assembler::assembleCMP_NNNN((Reg)$2, $4); }
-| TOKEN_CMP TOKEN_REG8 { Assembler::assembleCMP_NN((Reg)$2, 0); }
-| TOKEN_CMP TOKEN_REG16 { Assembler::assembleCMP_NNNN((Reg)$2, 0); }
+| CMP REG8 COMMA REG8 { assembler.assembleCMP_REG((Reg)$2, (Reg)$4, false); }
+| CMP REG16 COMMA REG16 { assembler.assembleCMP_REG((Reg)$2, (Reg)$4, true); }
+| CMP REG8 COMMA U16 { assembler.assembleCMP_NN((Reg)$2, (u8)$4); }
+| CMP REG16 COMMA U16 { assembler.assembleCMP_NNNN((Reg)$2, $4); }
+| CMP REG8 { assembler.assembleCMP_NN((Reg)$2, 0); }
+| CMP REG16 { assembler.assembleCMP_NNNN((Reg)$2, 0); }
 
-| TOKEN_DATA_ASCII STRING STRING_LITERAL { Assembler::addAsciiData($2,$3); }
-| TOKEN_DATA_RESERVE STRING U16 { Assembler::addEmptyData($2,$3); }
+| DATA_ASCII STRING LITERAL { assembler.addAsciiData($2,$3); }
+| DATA_RESERVE STRING U16 { assembler.addEmptyData($2,$3); }
 
 
-| TOKEN_INTERRUPT T_COLON { Assembler::interruptStart($1); }
-| STRING T_COLON { Assembler::placeLabel($1); }
+| INTSTART COLON { assembler.interruptStart($1); }
+| STRING COLON { assembler.placeLabel($1); }
 
-/*  | T_JUMP STRING T_EOL { ASSEMBLER->asmJump($2, false); }
-  | T_JUMPC STRING T_EOL { ASSEMBLER->asmJump($2, true); }*/
+/*  | JUMP STRING EOL { ASSEMBLER->asmJump($2, false); }
+  | JUMPC STRING EOL { ASSEMBLER->asmJump($2, true); }*/
 
 ;
 
 /*
 label:
-  STRING T_COLON { ASSEMBLER->addLabelHere($1); }
+  STRING COLON { ASSEMBLER->addLabelHere($1); }
 ;*/
 
 %%
 
-
-BinaryCode assembleLine(const char* line)
+void Assembler::Parser::error(const location_type& l, const std::string& m)
 {
-  //YY_BUFFER_STATE yb;
-  /*yb = */
-  
-  //yy_switch_to_buffer(yb);
-  
-  Assembler::init();
-  failed = false;
-  
-  //yy_scan_string(line);
-  j80parse();
-  
-  /**/ 
-  //yy_delete_buffer(yb);
-  
-
-  
-  if (!failed)
-    return Assembler::consolidate();
-  else
-    return Assembler::INVALID;
-}
-
-BinaryCode assemble(const char *filename)
-{
-  #if YYDEBUG 
-  yydebug = 1;
-  #endif
-  
-  j80in = fopen(filename, "r");
-  if(j80in)
-    j80parse();
-    
-  BinaryCode code;
-
-  if (!failed)
-    return Assembler::consolidate();
-  else
-    return Assembler::INVALID;
-}
-
-
-void j80error(const char *s)
-{
-	failed = true;
-	fprintf(stderr, "PARSING ERROR on line %d!  Parse error: %s\n", j80lineno, j80text);
+  assembler.error(l,m);
 }

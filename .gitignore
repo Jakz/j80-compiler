@@ -3,7 +3,9 @@
 *.output
 *.1
 *.o
-j80.tab.*
-nanoc.tab.*
-lex.j80yy.*
-lex.nanocyy.*
+src/assembler/j80parser.*
+src/assembler/j80lexer.cpp
+j80
+src/assembler/location.hh
+src/assembler/position.hh
+src/assembler/stack.hh
