@@ -45,7 +45,7 @@ void Compiler::error (const std::string& m)
   cerr << "Compiler error: " << m << endl;
 }
 
-ASTNode* Compiler::createDeclaration(const std::string& name, Type type, u16 data)
+ASTDeclaration* Compiler::createDeclaration(const std::string& name, Type type, u16 data)
 {
   switch (type)
   {
@@ -60,5 +60,39 @@ ASTNode* Compiler::createDeclaration(const std::string& name, Type type, u16 dat
     case Type::BYTE_ARRAY:
     case Type::WORD_ARRAY:
       return new ASTDeclarationArray(name, type, data);
+    
+    default:
+      return nullptr;
   }
+}
+
+void Compiler::pruneAST()
+{
+  const UniqueNode& node = ast;
+  
+  ASTListRecur *asRecList = dynamic_cast<ASTListRecur*>(node.get());
+
+  if (asRecList)
+  {
+    ASTListRecur* rlist = asRecList;
+    ASTListSeq *list = new ASTListSeq();
+    
+    while (rlist)
+    {
+      UniqueNode item = rlist->stealItem();
+      
+      if (item.get())
+        list->prepend(std::move(item));
+      
+      rlist = rlist->getNext();
+    }
+    
+    this->ast = UniqueNode(list);
+  }
+}
+
+void Compiler::printAST()
+{
+  if (ast.get())
+    ast->recursivePrint(0);
 }

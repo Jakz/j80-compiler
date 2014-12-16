@@ -11,7 +11,21 @@ void ASTNode::recursivePrint(u16 pad) const
   printf("\n");
 }
 
-void ASTList::recursivePrint(u16 pad) const
+void ASTListRecur::recursivePrint(u16 pad) const
+{
+  ASTNode::recursivePrint(pad);
+  
+  const ASTListRecur* next = this;
+  
+  while (next)
+  {
+    if (next->item)
+      next->item->recursivePrint(pad+1);
+    next = next->next.get();
+  }
+}
+
+void ASTListSeq::recursivePrint(u16 pad) const
 {
   ASTNode::recursivePrint(pad);
   for (const auto& child : children)

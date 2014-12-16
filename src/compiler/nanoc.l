@@ -47,7 +47,9 @@
 "[" { return Parser::make_LBRACK(loc); }
 "]" { return Parser::make_RBRACK(loc); }
 "*" { return Parser::make_STAR(loc); }
+"=" { return Parser::make_EQUAL(loc); }
 
+"void" { return Parser::make_TYPE(Type::VOID, loc);}
 "byte" { return Parser::make_TYPE(Type::BYTE, loc); }
 "byte"[\t ]*"*" { return Parser::make_TYPE(Type::BYTE_PTR, loc); }
 "word" { return Parser::make_TYPE(Type::WORD, loc); }

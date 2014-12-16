@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <vector>
+#include <list>
 #include <string>
 
 #include "utils.h"
@@ -17,7 +18,8 @@ enum Type
   BYTE_PTR,
   WORD_PTR,
   BYTE_ARRAY,
-  WORD_ARRAY
+  WORD_ARRAY,
+  VOID
 };
 
 enum Unary
@@ -27,6 +29,17 @@ enum Unary
   DECR,
   NEG
 };
+  
+struct Argument
+{
+  std::string name;
+  Type type;
+  
+  Argument(std::string name, Type type) : name(name), type(type) { }
+};
+
+class ASTNode;
+using UniqueNode = std::unique_ptr<ASTNode>;
 
 
 class ASTNode
@@ -36,21 +49,43 @@ class ASTNode
 public:
   virtual void recursivePrint(u16 pad) const;
 };
+  
+  class ASTList
+  {
+    
+  };
 
+  class ASTListRecur : public ASTNode, public ASTList
+  {
+  private:
+    std::unique_ptr<ASTListRecur> next;
+    std::unique_ptr<ASTNode> item;
+    
+  public:
+    ASTListRecur(ASTNode* item, ASTListRecur* next = nullptr) :
+      next(std::unique_ptr<ASTListRecur>(next)), item(std::unique_ptr<ASTNode>(item)) { }
+    
+    ASTListRecur* getNext() { return next.get(); }
+    std::unique_ptr<ASTNode> stealItem() { return std::move(item); }
+    
+    void print() const override { printf("List"); }
 
+    void recursivePrint(u16 pad) const override;
+    
+  };
 
-
-class ASTList : public ASTNode
+class ASTListSeq : public ASTNode, public ASTList
 {
 private:
-  std::vector<std::unique_ptr<ASTNode>> children;
+  std::list<std::unique_ptr<ASTNode>> children;
 
   void print() const override { printf("List"); }
   
 public:
   void recursivePrint(u16 pad) const override;
   
-  void add(std::unique_ptr<ASTNode> item) { children.push_back(std::move(item)); }
+  void prepend(UniqueNode item) { children.push_front(std::move(item)); }
+  void append(UniqueNode item) { children.push_back(std::move(item)); }
 };
 
 
@@ -78,10 +113,11 @@ public:
       case Type::WORD_PTR: return "word*";
       case Type::BYTE_ARRAY: return "byte[]";
       case Type::WORD_ARRAY: return "word[]";
+      case Type::VOID: return "void";
     }
   }
 };
-
+  
 class ASTDeclarationByte : public ASTDeclaration
 {
 private:
@@ -126,6 +162,38 @@ public:
   std::string getTypeName() const override  { return  std::string(type == Type::WORD_PTR ? "word[" : "byte[")+std::to_string(length)+"]"; }
 };
 
+  class ASTFuncDeclaration : public ASTNode
+  {
+    std::string name;
+    Type returnType;
+    std::list<Argument> arguments;
+    
+    void print() const override
+    {
+      printf("FunctionDeclaration(%s, %s, ", name.c_str(), ASTDeclaration::nameForType(returnType));
+      if (!arguments.empty())
+      {
+        printf("[");
+        bool first = true;
+        for (const auto& arg : arguments)
+        {
+          if (!first) printf(", ");
+          printf("%s %s", ASTDeclaration::nameForType(arg.type), arg.name.c_str());
+          first = false;
+        }
+        printf("]");
+      }
+      printf(")");
+    }
+    
+  public:
+    ASTFuncDeclaration(std::string name, Type returnType, std::list<Argument>& arguments) : name(name), returnType(returnType), arguments(arguments)
+    {
+      
+    }
+    
+
+  };
 
 
 class ASTNumber : public ASTNode

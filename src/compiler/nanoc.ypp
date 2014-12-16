@@ -58,6 +58,7 @@
   RBRACK "["
   LBRACK "]"
   STAR "*"
+  EQUAL "="
 ;
 
 %token <Type> TYPE "type";
@@ -69,24 +70,46 @@
 
 %token<u16> U16 "numeric constant"
 
-%type<ASTNode*> instruction, instructions;
+%type<ASTNode*> start declaration;
 
+%type<ASTFuncDeclaration*> function_declaration;
+%type<ASTDeclaration*> variable_declaration;
+%type<ASTListRecur*> declarations;
+
+%type<std::list<Argument>> type_list;
+
+%printer { for (const auto& x : $$) yyoutput << x.name; } <std::list<Argument>>
 %printer { yyoutput << $$; } <*>
 
 %%
 
 start:
-  { } instructions { }
+  declarations {
+    compiler.setAST($1);
+    compiler.pruneAST();
+    compiler.printAST();
+  }
 ;
 
-instructions:
-  | instructions instruction { }
-  | instructions EOL { }
-  /*| instructions label EOL { }*/
+declarations:
+  /* empty */ { $$ = nullptr; }
+  | declarations declaration { $$ = !$1 ? new ASTListRecur($2) : new ASTListRecur($2, $1); }
 ;
 
-instruction: 
-  | TYPE IDENTIFIER SEMICOL { $$ = compiler.createDeclaration($2, $1, 0); $$->recursivePrint(0); };
+declaration:
+  variable_declaration { $$ = $1; }
+  | function_declaration { $$ = $1; }
+;
+
+variable_declaration:
+  TYPE IDENTIFIER SEMICOL { $$ = compiler.createDeclaration($2, $1, 0); };
+
+function_declaration:
+  TYPE IDENTIFIER LPAREN type_list RPAREN { $$ = new ASTFuncDeclaration($2, $1, $4); }
+
+type_list:
+  TYPE IDENTIFIER { $$ = std::list<Argument>(); $$.push_front(Argument($2, $1)); }
+  | type_list COMMA TYPE IDENTIFIER { $1.push_back(Argument($4, $3)); $$ = $1; }
 
 %%
 

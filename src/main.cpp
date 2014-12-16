@@ -39,7 +39,7 @@ int main(int argc, const char * argv[])
 int main(int argc, const char * argv[])
 {
   nanoc::Compiler compiler;
-  compiler.parseString("byte antani;\nword* foti;");
+  compiler.parse("test.nc");
   
   return 0;
   

@@ -21,26 +21,33 @@ using UniqueNode = std::unique_ptr<nanoc::ASTNode>;
 namespace nanoc
 {
 
-class Compiler
-{
-  private:
-    hash_map<std::string, Type> globalVariables;
-  
-  public:
-    Compiler() { }
-  
-    std::string file;
-  
-    void error (const nanoc::location& l, const std::string& m);
-    void error (const std::string& m);
-  
-    bool parseString(const std::string& string);
-    bool parse(const std::string& filename);
+  class Compiler
+  {
+    private:
+      hash_map<std::string, Type> globalVariables;
     
-
-    ASTNode* createDeclaration(const std::string& name, Type type, u16 param);
-  
-};
+      std::unique_ptr<ASTNode> ast;
+    
+    public:
+      Compiler() { }
+    
+      std::string file;
+    
+      void error (const nanoc::location& l, const std::string& m);
+      void error (const std::string& m);
+    
+      bool parseString(const std::string& string);
+      bool parse(const std::string& filename);
+    
+      void setAST(ASTNode* node) { ast = std::unique_ptr<ASTNode>(node); }
+    
+      void pruneAST();
+    
+      void printAST();
+    
+      ASTDeclaration* createDeclaration(const std::string& name, Type type, u16 param);
+    
+  };
   
 }
 
