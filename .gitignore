@@ -5,6 +5,9 @@
 *.o
 src/assembler/j80parser.*
 src/assembler/j80lexer.cpp
+src/compiler/nanocparser.cpp
+src/compiler/nanocparser.hpp
+src/compiler/nanoclexer.cpp
 j80
 location.hh
 position.hh
