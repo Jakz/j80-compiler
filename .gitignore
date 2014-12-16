@@ -6,6 +6,6 @@
 src/assembler/j80parser.*
 src/assembler/j80lexer.cpp
 j80
-src/assembler/location.hh
-src/assembler/position.hh
-src/assembler/stack.hh
+location.hh
+position.hh
+stack.hh

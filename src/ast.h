@@ -7,7 +7,10 @@
 
 #include "utils.h"
 
-enum class Type
+namespace nanoc
+{
+
+enum Type
 {
   BYTE,
   WORD,
@@ -17,7 +20,7 @@ enum class Type
   WORD_ARRAY
 };
 
-enum class Unary
+enum Unary
 {
   NOT,
   INCR,
@@ -106,8 +109,9 @@ private:
   Type type;
 public:
   ASTDeclarationPtr(const std::string& name, Type type, u16 address = 0) : ASTDeclaration(name), type(type), address(address) { }
-  Type getType() const override { return type == Type::WORD ? Type::WORD_PTR : Type::BYTE_PTR; }
-  std::string getTypeName() const override  { return type == Type::WORD ? "word*" : "byte*"; }
+  Type getType() const override { return type; }
+  Type getItemType() const { return type == Type::WORD_PTR ? Type::WORD : Type::BYTE; }
+  std::string getTypeName() const override  { return type == Type::WORD_PTR ? "word*" : "byte*"; }
 };
 
 class ASTDeclarationArray : public ASTDeclaration
@@ -117,8 +121,9 @@ private:
   Type type;
 public:
   ASTDeclarationArray(const std::string& name, Type type, u16 length = 0) : ASTDeclaration(name), type(type), length(length) { }
-  Type getType() const override { return type == Type::WORD ? Type::WORD_ARRAY : Type::BYTE_ARRAY; }
-  std::string getTypeName() const override  { return  std::string(type == Type::WORD ? "word[" : "byte[")+std::to_string(length)+"]"; }
+  Type getType() const override { return type; }
+  Type getItemType() const { return type == Type::WORD_PTR ? Type::WORD : Type::BYTE; }
+  std::string getTypeName() const override  { return  std::string(type == Type::WORD_PTR ? "word[" : "byte[")+std::to_string(length)+"]"; }
 };
 
 
@@ -183,5 +188,7 @@ public:
  string y = "antani"
  
 */
+
+}
 
 #endif

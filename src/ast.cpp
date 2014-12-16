@@ -1,5 +1,6 @@
 #include "ast.h"
 
+using namespace nanoc;
 
 void ASTNode::recursivePrint(u16 pad) const
 {

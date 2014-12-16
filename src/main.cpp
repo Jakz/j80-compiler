@@ -10,6 +10,7 @@
 #include <cstdio>
 
 #include "assembler.h"
+#include "compiler.h"
 
 #include "ast.h"
 
@@ -37,6 +38,11 @@ int main(int argc, const char * argv[])
 
 int main(int argc, const char * argv[])
 {
+  nanoc::Compiler compiler;
+  compiler.parseString("byte antani;\nword* foti;");
+  
+  return 0;
+  
   Assembler::J80Assembler assembler;
   assembler.parse("test.j80");
   assembler.assemble();
