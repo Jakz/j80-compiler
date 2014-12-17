@@ -48,6 +48,21 @@
 "]" { return Parser::make_RBRACK(loc); }
 "*" { return Parser::make_STAR(loc); }
 "=" { return Parser::make_EQUAL(loc); }
+"{" { return Parser::make_LBRACE(loc); }
+"}" { return Parser::make_RBRACE(loc); }
+"+" { return Parser::make_PLUS(loc); }
+"-" { return Parser::make_MINUS(loc); }
+"!" { return Parser::make_BANG(loc); }
+"&" { return Parser::make_AND(loc); }
+"|" { return Parser::make_OR(loc); }
+"^" { return Parser::make_XOR(loc); }
+
+"!=" { return Parser::make_COMP(Binary::NEQ, loc); }
+"==" { return Parser::make_COMP(Binary::EQ, loc); }
+">=" { return Parser::make_COMP(Binary::GREATEREQ, loc); }
+"<=" { return Parser::make_COMP(Binary::LESSEQ, loc); }
+">" { return Parser::make_COMP(Binary::GREATER, loc); }
+"<" { return Parser::make_COMP(Binary::LESS, loc); }
 
 "void" { return Parser::make_TYPE(Type::VOID, loc);}
 "byte" { return Parser::make_TYPE(Type::BYTE, loc); }
@@ -75,7 +90,7 @@
 
 [a-zA-Z_][a-zA-Z0-9_]* { return Parser::make_IDENTIFIER(yytext,loc); }
 
-"#"[^\n]*\n{1,1} { Parser::make_EOL(loc); loc.lines(yyleng); loc.step(); }
+"#"[^\n]*\n { Parser::make_EOL(loc); loc.step(); }
 
 
 \n|"\r\n" { Parser::make_EOL(loc); loc.lines(yyleng); loc.step();  }

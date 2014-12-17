@@ -8,7 +8,7 @@ using namespace Assembler;
 
 constexpr BinaryCode J80Assembler::INVALID;
 
-J80Assembler::J80Assembler() : currentIrq(-1), dataSegment(new DataSegment()), codeSegment(new CodeSegment()), position(0)
+J80Assembler::J80Assembler() : currentIrq(-1), dataSegment(DataSegment()), codeSegment(CodeSegment()), position(0)
 {
   
 }
@@ -16,8 +16,15 @@ J80Assembler::J80Assembler() : currentIrq(-1), dataSegment(new DataSegment()), c
 bool J80Assembler::parse(const std::string &filename)
 {
   instructions.clear();
-  position = 0;
+  labels.clear();
+  jumps.clear();
+  dataReferences.clear();
+  data.clear();
   
+  position = 0;
+  dataSegment = DataSegment();
+  codeSegment = CodeSegment();
+
   file = filename;
   
   bool shouldGenerateTrace = false;
@@ -50,11 +57,11 @@ bool J80Assembler::solveJumps()
     
     if (it != labels.end())
     {
-      u16 realAddress = codeSegment->offset + it->second;
+      u16 realAddress = codeSegment.offset + it->second;
 
       printf("Jump to %s at address %04X - %p\n", jump.second.c_str(), it->second, &jump.first);
-      codeSegment->data[jump.first+1] = realAddress & 0xFF;
-      codeSegment->data[jump.first+2] = (realAddress >> 8) & 0xFF;
+      codeSegment.data[jump.first+1] = realAddress & 0xFF;
+      codeSegment.data[jump.first+2] = (realAddress >> 8) & 0xFF;
     }
     else
     {
@@ -76,11 +83,6 @@ void J80Assembler::error (const std::string& m)
   cerr << "Assembler error: " << m << endl;
 }
 
-/*u16 Assembler::size()
-{
-  return position;
-}*/
-
 BinaryCode J80Assembler::consolidate()
 {
   BinaryCode pack;
@@ -88,4 +90,82 @@ BinaryCode J80Assembler::consolidate()
   pack.length = position;
 
   return pack;
+}
+
+void J80Assembler::printProgram() const
+{
+  u16 pos = 0;
+  char buffer[64];
+
+  while (pos < codeSegment.length)
+  {
+    printf("%04X: ", pos);
+    
+    u8 length = Opcodes::printInstruction(codeSegment.data+pos, buffer);
+    
+    for (int w = 0; w < length; ++w)
+    {
+      printf("%02X", codeSegment.data[pos+w]);
+    }
+    //fprintf(bin,"\n");
+    
+    if (length == 1) printf("      ");
+    if (length == 2) printf("    ");
+    if (length == 3) printf("  ");
+    printf("  ");
+    
+    pos += length;
+    
+    printf("%s\n", buffer);
+  }
+  
+  u16 dataLen = dataSegment.length;
+  for (int i = 0; i < dataLen / 8 + (dataLen % 8 != 0 ? 1 : 0); ++i)
+  {
+    printf("%04X: ", pos + i*8);
+    
+    for (int j = 0; j < 8; ++j)
+    {
+      if (i*8+j < dataLen)
+        printf("%02X", dataSegment.data[i*8 + j]);
+      else
+        printf("  ");
+    }
+    
+    printf(" ");
+    
+    for (int j = 0; j < 8; ++j)
+    {
+      if (i*8+j < dataLen &&  dataSegment.data[i*8 + j] >= 0x20 && dataSegment.data[i*8 + j] <= 0x7E)
+        printf("%c", dataSegment.data[i*8 + j]);
+      else
+        printf(" ");
+    }
+    
+    printf("\n");
+  }
+}
+
+void J80Assembler::saveForLogisim(const std::string &filename) const
+{
+  FILE *bin = fopen(filename.c_str(), "wb");
+  fprintf(bin, "v2.0 raw\n");
+  
+  for (int i = 0; i < codeSegment.length; ++i)
+    fprintf(bin, "%02x\n", codeSegment.data[i]);
+  
+  for (int i = 0; i < dataSegment.length; ++i)
+    fprintf(bin, "%02x\n", dataSegment.data[i]);
+  
+  fclose(bin);
+}
+
+void J80Assembler::saveBinary(const std::string &filename) const
+{
+  FILE *bin = fopen(filename.c_str(), "wb");
+  
+  fwrite(codeSegment.data, sizeof(u8), codeSegment.length, bin);
+  fwrite(dataSegment.data, sizeof(u8), dataSegment.length, bin);
+  
+  fclose(bin);
 }

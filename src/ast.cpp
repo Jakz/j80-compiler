@@ -31,9 +31,3 @@ void ASTListSeq::recursivePrint(u16 pad) const
   for (const auto& child : children)
     child->recursivePrint(pad+1);
 }
-
-void ASTUnaryOperator::recursivePrint(u16 pad) const
-{
-  ASTNode::recursivePrint(pad);
-  child->recursivePrint(pad+1);
-}

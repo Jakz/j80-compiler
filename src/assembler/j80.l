@@ -153,10 +153,10 @@
 
 [a-zA-Z_][a-zA-Z0-9_]* { return Parser::make_STRING(yytext,loc); }
 
-"#"[^\n]*\n{1,1} { Parser::make_EOL(loc); loc.lines(yyleng); loc.step(); }
+"#"[^\n]*\n{1,1} { Parser::make_EOL(loc); loc.lines(yyleng); }
 
 
-\n|"\r\n" { Parser::make_EOL(loc); loc.lines(yyleng); loc.step();  }
+\n|"\r\n" { Parser::make_EOL(loc); loc.lines(yyleng); }
 [ \t] { loc.step(); /* ignore whitespace */ }
 . { printf("Mystery character %c\n", *yytext); }
 

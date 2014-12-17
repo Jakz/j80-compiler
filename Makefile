@@ -54,10 +54,10 @@ $(ASSEMBLER)/j80lexer.cpp: $(ASSEMBLER)/j80.l
 	$(FLEX) -c++ --outfile=$@ $<
 
 $(COMPILER)/nanocparser.cpp: $(COMPILER)/nanoc.ypp $(COMPILER)/nanoclexer.cpp
-	$(BISON) --output-file=$(COMPILER)/nanocparser.cpp -v $<
+	$(BISON) -v --output-file=$(COMPILER)/nanocparser.cpp $<
 
 $(ASSEMBLER)/j80parser.cpp: $(ASSEMBLER)/j80.ypp $(ASSEMBLER)/j80lexer.cpp
-	$(BISON) --output-file=$(ASSEMBLER)/j80parser.cpp -v $<
+	$(BISON) -v --output-file=$(ASSEMBLER)/j80parser.cpp $<
 
 $(TARGET) : $(addprefix $(BUILD)/, $(OBJS))
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)

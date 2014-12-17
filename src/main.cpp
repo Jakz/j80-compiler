@@ -8,6 +8,8 @@
 
 #include <iostream>
 #include <cstdio>
+#include <vector>
+#include <string>
 
 #include "assembler.h"
 #include "compiler.h"
@@ -35,9 +37,66 @@ int main(int argc, const char * argv[])
   return 0;
 }*/
 
+bool stringEndsWith(const string& text, const string& suffix)
+{
+  return suffix.size() <= text.size() && std::equal(suffix.rbegin(), suffix.rend(), text.rbegin());
+}
+
+string trimExtension(const string& text)
+{
+  size_t lastindex = text.find_last_of(".");
+  size_t lastSlash = text.find_last_of("/");
+  
+  if (lastindex != string::npos && (lastSlash == string::npos || lastSlash < lastindex))
+    return text.substr(0, lastindex);
+  else
+    return text;
+}
+
+void runWithArgs(const vector<string>& args)
+{
+  if (args.size() == 2)
+  {
+    if (stringEndsWith(args[1], ".j80"))
+    {
+      cout << "Assembling " << args[1] << ".." << endl;
+      Assembler::J80Assembler assembler;
+      bool success = assembler.parse(args[1]);
+      
+      if (success)
+      {
+        assembler.assemble();
+        
+        cout << "Program Assembled, output:" << endl;
+        assembler.printProgram();
+        
+        string output = trimExtension(args[1]) + ".bin";
+        assembler.saveForLogisim(output);
+      }
+    }
+    else if (stringEndsWith(args[1], ".nc"))
+    {
+      nanoc::Compiler compiler;
+      compiler.parse(args[1]);
+    }
+  }
+}
+
 
 int main(int argc, const char * argv[])
 {
+  if (argc > 1)
+  {
+    vector<string> args;
+    
+    for (int i = 0; i < argc; ++i)
+      args.push_back(argv[i]);
+    
+    runWithArgs(args);
+    return 0;
+  }
+    
+  
   nanoc::Compiler compiler;
   compiler.parse("test.nc");
   
@@ -46,68 +105,10 @@ int main(int argc, const char * argv[])
   Assembler::J80Assembler assembler;
   assembler.parse("test.j80");
   assembler.assemble();
-
-  u16 pos = 0;
-  char buffer[64];
-  while (pos < assembler.codeSegment->length)
-  {
-    printf("%04X: ", pos);
-    
-    u8 length = Opcodes::printInstruction(assembler.codeSegment->data+pos, buffer);
-    
-    for (int w = 0; w < length; ++w)
-    {
-      printf("%02X", assembler.codeSegment->data[pos+w]);
-    }
-    //fprintf(bin,"\n");
-    
-    if (length == 1) printf("      ");
-    if (length == 2) printf("    ");
-    if (length == 3) printf("  ");
-    printf("  ");
-    
-    pos += length;
-
-    printf("%s\n", buffer);
-  }
   
-  u16 dataLen = assembler.dataSegment->length;
-  for (int i = 0; i < dataLen / 8 + (dataLen % 8 != 0 ? 1 : 0); ++i)
-  {
-    printf("%04X: ", pos + i*8);
-    
-    for (int j = 0; j < 8; ++j)
-    {
-      if (i*8+j < dataLen)
-        printf("%02X", assembler.dataSegment->data[i*8 + j]);
-      else
-        printf("  ");
-    }
-    
-    printf(" ");
-    
-    for (int j = 0; j < 8; ++j)
-    {
-      if (i*8+j < dataLen &&  assembler.dataSegment->data[i*8 + j] >= 0x20 && assembler.dataSegment->data[i*8 + j] <= 0x7E)
-        printf("%c", assembler.dataSegment->data[i*8 + j]);
-      else
-        printf(" ");
-    }
-    
-    printf("\n");
-  }
-  
-  FILE *bin = fopen("test.bin", "wb");
-  fprintf(bin, "v2.0 raw\n");
-  
-  for (int i = 0; i < assembler.codeSegment->length; ++i)
-    fprintf(bin, "%02x\n", assembler.codeSegment->data[i]);
-  
-  for (int i = 0; i < assembler.dataSegment->length; ++i)
-    fprintf(bin, "%02x\n", assembler.dataSegment->data[i]);
-  
-  fclose(bin);
   
   return 0;
+  
+
 }
 

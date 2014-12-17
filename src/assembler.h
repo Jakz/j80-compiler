@@ -52,6 +52,7 @@ struct DataSegmentEntry
   DataSegmentEntry() : data(nullptr), length(0), offset(0) { }
   DataSegmentEntry(const std::string& ascii) { offset = 0x0000; data = reinterpret_cast<u8*>(strdup(ascii.c_str())); length = ascii.length(); }
   DataSegmentEntry(u16 size) { offset = 0x0000; data = new u8[size]; memset(data, 0, size); length = size; }
+  ~DataSegmentEntry() { /* TODO: can't release because it's copy constructed by STL*/ }
 };
   
 class DataSegment
@@ -63,7 +64,7 @@ class DataSegment
 
     DataSegment() : offset(0), data(nullptr), length(0) { }
     void alloc(u16 length) { if (data) delete[] data; data = new u8[length]; this->length = length;}
-    ~DataSegment() { if (data) delete [] data; }
+    ~DataSegment() { delete [] data; }
 };
   
 class CodeSegment
@@ -73,8 +74,9 @@ class CodeSegment
     u8 *data;
     u16 length;
   
-  CodeSegment() : data(nullptr) { }
-  void alloc(u16 length) { if (data) delete[] data; data = new u8[length]; this->length = length;}
+  CodeSegment() : offset(0), data(nullptr), length(0) { }
+  void alloc(u16 length) { delete[] data; data = new u8[length]; this->length = length;}
+  ~CodeSegment() { delete [] data; }
 };
   
 struct DataReference
@@ -119,8 +121,8 @@ class J80Assembler
   public:
     J80Assembler();
   
-    DataSegment* dataSegment;
-    CodeSegment* codeSegment;
+    DataSegment dataSegment;
+    CodeSegment codeSegment;
   
     std::string file;
   
@@ -372,13 +374,13 @@ class J80Assembler
       
       printf("Data segment size: %u\n", totalSize);
       
-      dataSegment->alloc(totalSize);
+      dataSegment.alloc(totalSize);
       
       totalSize = 0;
       
       for (auto &entry : data)
       {
-        memcpy(&dataSegment->data[totalSize], entry.second.data, entry.second.length);
+        memcpy(&dataSegment.data[totalSize], entry.second.data, entry.second.length);
         entry.second.offset = totalSize;
         
         printf("Data named %s at offset %.4X\n",entry.first.c_str(),entry.second.offset);
@@ -402,13 +404,13 @@ class J80Assembler
       
       printf("Code segment total size: %u\n", totalSize);
       
-      codeSegment->alloc(totalSize);
+      codeSegment.alloc(totalSize);
       totalSize = 0;
       
       it = iterator();
       while (hasNext(it))
       {
-        memcpy(&codeSegment->data[totalSize], it->data, it->length);
+        memcpy(&codeSegment.data[totalSize], it->data, it->length);
         totalSize += it->length;
         ++it;
       }
@@ -428,11 +430,11 @@ class J80Assembler
         {
           if (pair.second.type == DataReference::Type::POINTER)
           {
-            u16 address = it->second.offset + dataSegment->offset + pair.second.offset;
+            u16 address = it->second.offset + dataSegment.offset + pair.second.offset;
             printf("Solving data label '%s' at address %.4X\n", pair.second.label.c_str(), address);
 
-            codeSegment->data[pair.first+1] = address & 0xFF;
-            codeSegment->data[pair.first+2] = (address >> 8) & 0xFF;
+            codeSegment.data[pair.first+1] = address & 0xFF;
+            codeSegment.data[pair.first+2] = (address >> 8) & 0xFF;
           }
           else if (pair.second.type == DataReference::Type::LENGTH8)
           {
@@ -440,14 +442,14 @@ class J80Assembler
             if (entry.length > 256)
               printf("Error! Length of '%s' is over 256 bytes", pair.second.label.c_str());
             else
-              codeSegment->data[pair.first+2] = static_cast<u8>(entry.length);
+              codeSegment.data[pair.first+2] = static_cast<u8>(entry.length);
           }
           else if (pair.second.type == DataReference::Type::LENGTH16)
           {
             u16 length = it->second.length;
             
-            codeSegment->data[pair.first+1] = length & 0xFF;
-            codeSegment->data[pair.first+2] = (length >> 8) & 0xFF;
+            codeSegment.data[pair.first+1] = length & 0xFF;
+            codeSegment.data[pair.first+2] = (length >> 8) & 0xFF;
           }
         }
       }
@@ -457,9 +459,9 @@ class J80Assembler
     void assemble()
     {
       buildCodeSegment();
-      codeSegment->offset = 0;
+      codeSegment.offset = 0;
       buildDataSegment();
-      dataSegment->offset = codeSegment->length;
+      dataSegment.offset = codeSegment.length;
       solveJumps();
       solveDataReferences();
     }
@@ -468,12 +470,13 @@ class J80Assembler
     void interruptEnd() { currentIrq = -1; }
   
     void placeLabel(const std::string& label);
-    //static Instruction at(size_t i) { return *std::next(instructions.begin(),i); }
-    //static size_t size() { return instructions.size(); }
   
     std::list<Instruction>::iterator iterator() { return instructions.begin(); }
     bool hasNext(std::list<Instruction>::iterator it) { return it  != instructions.end(); }
 
+    void printProgram() const;
+    void saveForLogisim(const std::string& filename) const;
+    void saveBinary(const std::string& filename) const;
   
     constexpr static const BinaryCode INVALID = BinaryCode{nullptr, 0};
   
