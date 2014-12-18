@@ -6,8 +6,6 @@
 using namespace std;
 using namespace Assembler;
 
-constexpr BinaryCode J80Assembler::INVALID;
-
 J80Assembler::J80Assembler() : currentIrq(-1), dataSegment(DataSegment()), codeSegment(CodeSegment()), position(0)
 {
   
@@ -41,11 +39,6 @@ bool J80Assembler::parse(const std::string &filename)
   return res == 0;
 }
 
-void J80Assembler::assemble(int opcode, int opcode2, int opcode3)
-{
-
-}
-
 void J80Assembler::placeLabel(const std::string& label)
 {
   labels[label] = position;
@@ -62,8 +55,8 @@ bool J80Assembler::solveJumps()
       u16 realAddress = codeSegment.offset + it->second;
 
       printf("Jump to %s at address %04X - %p\n", jump.second.c_str(), it->second, &jump.first);
-      codeSegment.data[jump.first+2] = realAddress & 0xFF;
-      codeSegment.data[jump.first+1] = (realAddress >> 8) & 0xFF;
+      codeSegment.data[jump.first+codeSegment.offset+2] = realAddress & 0xFF;
+      codeSegment.data[jump.first+codeSegment.offset+1] = (realAddress >> 8) & 0xFF;
     }
     else
     {
@@ -83,15 +76,6 @@ void J80Assembler::error (const Assembler::location& l, const std::string& m)
 void J80Assembler::error (const std::string& m)
 {
   cerr << "Assembler error: " << m << endl;
-}
-
-BinaryCode J80Assembler::consolidate()
-{
-  BinaryCode pack;
-  pack.code = nullptr;
-  pack.length = position;
-
-  return pack;
 }
 
 void J80Assembler::printProgram() const
@@ -125,19 +109,19 @@ void J80Assembler::printProgram() const
       for (int x = 0; x < 20 - strlen(buffer); ++x)
         printf(" ");
       
-      auto it2 = std::find_if(labels.begin(), labels.end(), [&](const pair<std::string, u16>& label){ return label.second == pos; });
+      auto it2 = std::find_if(labels.begin(), labels.end(), [&](const pair<std::string, u16>& label){ return label.second + codeSegment.offset == pos; });
       
       if (it2 != labels.end())
         printf("<%s>  ", it2->first.c_str());
       
-      auto it = std::find_if(jumps.begin(), jumps.end(), [&](const pair<u16, std::string>& jump){ return jump.first == pos; });
+      auto it = std::find_if(jumps.begin(), jumps.end(), [&](const pair<u16, std::string>& jump){ return jump.first + codeSegment.offset == pos; });
       
       if (it != jumps.end())
         printf("%s   ", it->second.c_str());
       
 
     }
-    
+        
     printf("\n");
     
     pos += length;
@@ -168,6 +152,99 @@ void J80Assembler::printProgram() const
     }
     
     printf("\n");
+  }
+}
+
+void J80Assembler::buildDataSegment()
+{
+  printf("Building data segment.\n");
+  u16 totalSize = 0;
+  for (auto &entry : data)
+    totalSize += entry.second.length;
+  
+  printf("Data segment size: %u\n", totalSize);
+  
+  dataSegment.alloc(totalSize);
+  
+  totalSize = 0;
+  
+  for (auto &entry : data)
+  {
+    memcpy(&dataSegment.data[totalSize], entry.second.data, entry.second.length);
+    entry.second.offset = totalSize;
+    
+    printf("Data named %s at offset %.4X\n",entry.first.c_str(),entry.second.offset);
+    
+    totalSize += entry.second.length;
+  }
+}
+
+void J80Assembler::buildCodeSegment()
+{
+  printf("Building code segment.\n");
+  
+  u16 totalSize = 0;
+  
+  std::list<Instruction>::iterator it = iterator();
+  while (hasNext(it))
+  {
+    totalSize += it->length;
+    ++it;
+  }
+  
+  printf("Code segment total size: %u.\n", totalSize);
+  
+  if (entryPoint.isSet())
+    printf("Entry point specified at %.4Xh.\n", entryPoint.get());
+  
+  codeSegment.alloc(totalSize+codeSegment.offset);
+  totalSize = 0;
+  
+  it = iterator();
+  while (hasNext(it))
+  {
+    memcpy(&codeSegment.data[totalSize+codeSegment.offset], it->data, it->length);
+    totalSize += it->length;
+    ++it;
+  }
+}
+
+void J80Assembler::solveDataReferences()
+{
+  printf("Solving data references.\n");
+  
+  for (auto &pair : dataReferences)
+  {
+    std::unordered_map<std::string, DataSegmentEntry>::iterator it = data.find(pair.second.label);
+    
+    if (it == data.end())
+      printf("Unresolved data label '%s'!", pair.second.label.c_str());
+    else
+    {
+      if (pair.second.type == DataReference::Type::POINTER)
+      {
+        u16 address = it->second.offset + dataSegment.offset + pair.second.offset;
+        printf("Solving data label '%s' at address %.4X\n", pair.second.label.c_str(), address);
+        
+        codeSegment.data[pair.first+2] = address & 0xFF;
+        codeSegment.data[pair.first+1] = (address >> 8) & 0xFF;
+      }
+      else if (pair.second.type == DataReference::Type::LENGTH8)
+      {
+        const DataSegmentEntry& entry = it->second;
+        if (entry.length > 256)
+          printf("Error! Length of '%s' is over 256 bytes", pair.second.label.c_str());
+        else
+          codeSegment.data[pair.first+2] = static_cast<u8>(entry.length);
+      }
+      else if (pair.second.type == DataReference::Type::LENGTH16)
+      {
+        u16 length = it->second.length;
+        
+        codeSegment.data[pair.first+2] = length & 0xFF;
+        codeSegment.data[pair.first+1] = (length >> 8) & 0xFF;
+      }
+    }
   }
 }
 

@@ -17,12 +17,6 @@
 namespace Assembler
 {
 
-struct BinaryCode
-{
-  u8 *code;
-  u32 length;
-};
-
 enum InstructionLength : u8
 {
   LENGTH_1_BYTES = 1,
@@ -63,7 +57,7 @@ class DataSegment
     u16 length;
 
     DataSegment() : offset(0), data(nullptr), length(0) { }
-    void alloc(u16 length) { if (data) delete[] data; data = new u8[length]; this->length = length;}
+    void alloc(u16 length) { if (data) delete[] data; data = new u8[length](); this->length = length;}
     ~DataSegment() { delete [] data; }
 };
   
@@ -75,7 +69,7 @@ class CodeSegment
     u16 length;
   
   CodeSegment() : offset(0), data(nullptr), length(0) { }
-  void alloc(u16 length) { delete[] data; data = new u8[length]; this->length = length;}
+  void alloc(u16 length) { delete[] data; data = new u8[length](); this->length = length;}
   ~CodeSegment() { delete [] data; }
 };
   
@@ -95,11 +89,6 @@ struct DataReference
   DataReference(const std::string& label, s8 offset) : type(Type::POINTER), label(label), offset(offset) { }
   DataReference(const std::string& label, Type type) : type(type), label(label), offset(0) { }
 };
-
-
-BinaryCode assemble(const char*);
-BinaryCode assembleLine(const char *);
-
 
 template<typename T>
 struct Optional
@@ -133,14 +122,16 @@ class J80Assembler
     
     Optional<u16> entryPoint;
   
+    DataSegment dataSegment;
+    CodeSegment codeSegment;
+  
     //static Instruction *build(InstructionLength len) { return new Instruction(len, position); }
     //static void insert(Instruction *i) { position += i->length; instructions.push_back(i); }
   
   public:
     J80Assembler();
   
-    DataSegment dataSegment;
-    CodeSegment codeSegment;
+
   
     std::string file;
   
@@ -149,9 +140,7 @@ class J80Assembler
   
     bool parse(const std::string& filename);
   
-    void assemble(int opcode, int opcode2 = -1, int opcode3 = -1);
     //static u16 size();
-    BinaryCode consolidate();
     
     bool setEntryPoint(u16 address)
     {
@@ -415,103 +404,18 @@ class J80Assembler
       data[label] = DataSegmentEntry(size);
     }
   
-    void buildDataSegment()
-    {
-      printf("Building data segment.\n");
-      u16 totalSize = 0;
-      for (auto &entry : data)
-        totalSize += entry.second.length;
-      
-      printf("Data segment size: %u\n", totalSize);
-      
-      dataSegment.alloc(totalSize);
-      
-      totalSize = 0;
-      
-      for (auto &entry : data)
-      {
-        memcpy(&dataSegment.data[totalSize], entry.second.data, entry.second.length);
-        entry.second.offset = totalSize;
-        
-        printf("Data named %s at offset %.4X\n",entry.first.c_str(),entry.second.offset);
-        
-        totalSize += entry.second.length;
-      }
-    }
-  
-    void buildCodeSegment()
-    {
-      printf("Building code segment.\n");
-
-      u16 totalSize = 0;
-      
-      std::list<Instruction>::iterator it = iterator();
-      while (hasNext(it))
-      {
-        totalSize += it->length;
-        ++it;
-      }
-      
-      printf("Code segment total size: %u\n", totalSize);
-      
-      codeSegment.alloc(totalSize);
-      totalSize = 0;
-      
-      it = iterator();
-      while (hasNext(it))
-      {
-        memcpy(&codeSegment.data[totalSize], it->data, it->length);
-        totalSize += it->length;
-        ++it;
-      }
-    }
-  
-    void solveDataReferences()
-    {
-      printf("Solving data references.\n");
-      
-      for (auto &pair : dataReferences)
-      {
-        std::unordered_map<std::string, DataSegmentEntry>::iterator it = data.find(pair.second.label);
-        
-        if (it == data.end())
-          printf("Unresolved data label '%s'!", pair.second.label.c_str());
-        else
-        {
-          if (pair.second.type == DataReference::Type::POINTER)
-          {
-            u16 address = it->second.offset + dataSegment.offset + pair.second.offset;
-            printf("Solving data label '%s' at address %.4X\n", pair.second.label.c_str(), address);
-
-            codeSegment.data[pair.first+2] = address & 0xFF;
-            codeSegment.data[pair.first+1] = (address >> 8) & 0xFF;
-          }
-          else if (pair.second.type == DataReference::Type::LENGTH8)
-          {
-            const DataSegmentEntry& entry = it->second;
-            if (entry.length > 256)
-              printf("Error! Length of '%s' is over 256 bytes", pair.second.label.c_str());
-            else
-              codeSegment.data[pair.first+2] = static_cast<u8>(entry.length);
-          }
-          else if (pair.second.type == DataReference::Type::LENGTH16)
-          {
-            u16 length = it->second.length;
-            
-            codeSegment.data[pair.first+2] = length & 0xFF;
-            codeSegment.data[pair.first+1] = (length >> 8) & 0xFF;
-          }
-        }
-      }
-      
-    }
+    void buildDataSegment();
+    void buildCodeSegment();
+    void solveDataReferences();
   
     void assemble()
     {
+      if (entryPoint.isSet())
+        codeSegment.offset = entryPoint.get();
+      
       buildCodeSegment();
-      codeSegment.offset = 0;
       buildDataSegment();
-      dataSegment.offset = codeSegment.length;
+      dataSegment.offset = codeSegment.length + codeSegment.offset;
       solveJumps();
       solveDataReferences();
     }
@@ -527,9 +431,6 @@ class J80Assembler
     void printProgram() const;
     void saveForLogisim(const std::string& filename) const;
     void saveBinary(const std::string& filename) const;
-  
-    constexpr static const BinaryCode INVALID = BinaryCode{nullptr, 0};
-  
 };
   
 }
