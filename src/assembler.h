@@ -174,9 +174,10 @@ class J80Assembler
         dataReferences.push_back(std::make_pair(position, DataReference(label,offset)));
       
       Instruction i = preamble(LENGTH_3_BYTES);
+      printf("value: %.4X\n",value);
       i.data[0] = (OPCODE_LD_NNNN << 3) | dst;
-      i.data[1] = value & 0xFF;
-      i.data[2] = (value >> 8) & 0xFF;
+      i.data[2] = value & 0xFF;
+      i.data[1] = (value >> 8) & 0xFF;
       postamble(i);
     }
   
@@ -187,8 +188,8 @@ class J80Assembler
       
       Instruction i = preamble(LENGTH_3_BYTES);
       i.data[0] = (OPCODE_LD_PTR_NNNN << 3) | dst;
-      i.data[1] = address & 0xFF;
-      i.data[2] = (address >> 8) & 0xFF;
+      i.data[2] = address & 0xFF;
+      i.data[1] = (address >> 8) & 0xFF;
       postamble(i);
     }
   
@@ -208,8 +209,8 @@ class J80Assembler
       
       Instruction i = preamble(LENGTH_3_BYTES);
       i.data[0] = (OPCODE_SD_PTR_NNNN << 3) | src;
-      i.data[1] = address & 0xFF;
-      i.data[2] = (address >> 8) & 0xFF;
+      i.data[2] = address & 0xFF;
+      i.data[1] = (address >> 8) & 0xFF;
       postamble(i);
     }
   
@@ -266,7 +267,16 @@ class J80Assembler
       i.data[2] = (address >> 8) & 0xFF;*/
       
       postamble(i);
-
+    }
+  
+    void assembleJMP_NNNN(JumpCondition cond, const u16 address)
+    {
+      Instruction i = preamble(LENGTH_3_BYTES);
+      
+      i.data[0] = (OPCODE_JMPC_NNNN << 3) | cond;
+      i.data[2] = address & 0xFF;
+      i.data[1] = (address >> 8) & 0xFF;
+      postamble(i);
     }
   
     void assembleJMP_PP(JumpCondition cond, Reg reg)
@@ -321,9 +331,20 @@ class J80Assembler
       postamble(i);
     }
   
-    void assembleCMP_REG(Reg dst, Reg src1, bool extended)
+    void assembleCALL_NNNN(JumpCondition cond, const u16 address)
     {
       Instruction i = preamble(LENGTH_3_BYTES);
+      
+      i.data[0] = (OPCODE_CALLC << 3) | cond;
+      i.data[2] = address & 0xFF;
+      i.data[1] = (address >> 8) & 0xFF;
+      
+      postamble(i);
+    }
+  
+    void assembleCMP_REG(Reg dst, Reg src1, bool extended)
+    {
+      Instruction i = preamble(LENGTH_2_BYTES);
       AluOp opcode = ALU_SUB8;
       if (extended) opcode = ALU_SUB16;
       
@@ -433,8 +454,8 @@ class J80Assembler
             u16 address = it->second.offset + dataSegment.offset + pair.second.offset;
             printf("Solving data label '%s' at address %.4X\n", pair.second.label.c_str(), address);
 
-            codeSegment.data[pair.first+1] = address & 0xFF;
-            codeSegment.data[pair.first+2] = (address >> 8) & 0xFF;
+            codeSegment.data[pair.first+2] = address & 0xFF;
+            codeSegment.data[pair.first+1] = (address >> 8) & 0xFF;
           }
           else if (pair.second.type == DataReference::Type::LENGTH8)
           {
@@ -448,8 +469,8 @@ class J80Assembler
           {
             u16 length = it->second.length;
             
-            codeSegment.data[pair.first+1] = length & 0xFF;
-            codeSegment.data[pair.first+2] = (length >> 8) & 0xFF;
+            codeSegment.data[pair.first+2] = length & 0xFF;
+            codeSegment.data[pair.first+1] = (length >> 8) & 0xFF;
           }
         }
       }

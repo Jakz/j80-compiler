@@ -151,7 +151,7 @@ namespace nanoc
     virtual void print() const override { printf("UnaryExpression(%s)", nameForType(op)); }
     
   public:
-    ASTUnaryExpression(Unary op, UniqueExpression operand) : op(op), operand(std::move(operand)) { }
+    ASTUnaryExpression(Unary op, ASTExpression* operand) : op(op), operand(UniqueExpression(operand)) { }
     
     void recursivePrint(u16 pad) const override
     {
@@ -206,6 +206,32 @@ namespace nanoc
     void append(UniqueNode item) { children.push_back(std::move(item)); }
   };
 
+  class ASTLeftHand : public ASTNode
+  {
+  private:
+    std::string name;
+    
+  public:
+    ASTLeftHand(const std::string& name) : name(name) { }
+    
+    void print() const override { printf("%s", name.c_str()); }
+  };
+
+  class ASTAssign : public ASTStatement
+  {
+  private:
+    std::unique_ptr<ASTLeftHand> leftHand;
+    UniqueExpression expression;
+    
+  public:
+    ASTAssign(ASTLeftHand *leftHand, ASTExpression* expression) : leftHand(std::unique_ptr<ASTLeftHand>(leftHand)), expression(UniqueExpression(expression))
+    {
+      
+    }
+    
+    void print() const override { printf("Assign("); leftHand->print(); printf(")"); }
+    void recursivePrint(u16 pad) const override { ASTStatement::recursivePrint(pad); expression->recursivePrint(pad+1); }
+  };
 
 
   class ASTDeclaration : public ASTNode
@@ -306,7 +332,7 @@ namespace nanoc
     }
     
   public:
-    ASTFuncDeclaration(std::string name, Type returnType, std::list<Argument>& arguments, std::list<ASTStatement*> statements) : name(name), returnType(returnType), arguments(arguments)
+    ASTFuncDeclaration(std::string name, Type returnType, std::list<Argument>& arguments, std::list<ASTStatement*>& statements) : name(name), returnType(returnType), arguments(arguments)
     {
       for (auto* statement : statements)
         this->statements.push_back(std::unique_ptr<ASTStatement>(statement));
@@ -320,6 +346,30 @@ namespace nanoc
     }
   };
 
+
+class ASTWhile : public ASTStatement
+{
+private:
+  UniqueExpression condition;
+  std::list<std::unique_ptr<ASTStatement>> statements;
+  
+  void print() const override { printf("While"); }
+  
+public:
+  ASTWhile(ASTExpression* condition, std::list<ASTStatement*> statements) : condition(UniqueExpression(condition))
+  {
+    for (auto* statement : statements)
+      this->statements.push_back(std::unique_ptr<ASTStatement>(statement));
+  }
+  
+  void recursivePrint(u16 pad) const override
+  {
+    ASTNode::recursivePrint(pad);
+    condition->recursivePrint(pad+1);
+    for (const auto& statement : statements)
+      statement->recursivePrint(pad+1);
+  }
+};
 
 
 

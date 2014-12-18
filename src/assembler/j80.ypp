@@ -118,65 +118,67 @@ instructions:
 
 instruction:
   
-  LD REG8 COMMA REG8 { assembler.assembleLD_RSH_LSH((Reg)$2, (Reg)$4, ALU_TRANSFER_A8, false); }
-| LD REG8 COMMA U16 { assembler.assembleLD_NN((Reg)$2, (u8)$4); }
-| LD REG8 COMMA DATA_LENGTH LPAREN STRING RPAREN { assembler.assembleLD_NN((Reg)$2, 0, $6); }
+  LD REG8 COMMA REG8 { assembler.assembleLD_RSH_LSH($2, $4, ALU_TRANSFER_A8, false); }
+| LD REG8 COMMA U16 { assembler.assembleLD_NN($2, (u8)$4); }
+| LD REG8 COMMA DATA_LENGTH LPAREN STRING RPAREN { assembler.assembleLD_NN($2, 0, $6); }
 
-| LD REG16 COMMA REG16 { assembler.assembleLD_RSH_LSH((Reg)$2, (Reg)$4, ALU_TRANSFER_A16, true); }
+| LD REG16 COMMA REG16 { assembler.assembleLD_RSH_LSH($2, $4, ALU_TRANSFER_A16, true); }
 
-| LD REG8 COMMA LBRACK U16 RBRACK { assembler.assembleLD_PTR_NNNN((Reg)$2, $5); }
-| LD REG8 COMMA LBRACK STRING RBRACK { assembler.assembleLD_PTR_NNNN((Reg)$2, 0, $5, 0); }
-| LD REG8 COMMA LBRACK STRING U16 RBRACK { assembler.assembleLD_PTR_NNNN((Reg)$2, 0, $5, (s8)$6); }
+| LD REG8 COMMA LBRACK U16 RBRACK { assembler.assembleLD_PTR_NNNN($2, $5); }
+| LD REG8 COMMA LBRACK STRING RBRACK { assembler.assembleLD_PTR_NNNN($2, 0, $5, 0); }
+| LD REG8 COMMA LBRACK STRING U16 RBRACK { assembler.assembleLD_PTR_NNNN($2, 0, $5, (s8)$6); }
 
-| LD REG8 COMMA LBRACK REG16 U16 RBRACK { assembler.assembleLD_PTR_PP((Reg)$2, (Reg)$5, (s8)$6); }
-| LD REG8 COMMA LBRACK REG16 RBRACK { assembler.assembleLD_PTR_PP((Reg)$2, (Reg)$5, 0); }
+| LD REG8 COMMA LBRACK REG16 U16 RBRACK { assembler.assembleLD_PTR_PP($2, $5, (s8)$6); }
+| LD REG8 COMMA LBRACK REG16 RBRACK { assembler.assembleLD_PTR_PP($2, $5, 0); }
 
-| LD REG16 COMMA U16 { assembler.assembleLD_NNNN((Reg)$2, $4); }
-| LD REG16 COMMA STRING { assembler.assembleLD_NNNN((Reg)$2, 0, $4, 0); }
-| LD REG16 COMMA STRING U16 { assembler.assembleLD_NNNN((Reg)$2, 0, $4, (s8)$5); }
+| LD REG16 COMMA U16 { assembler.assembleLD_NNNN($2, $4); }
+| LD REG16 COMMA STRING { assembler.assembleLD_NNNN($2, 0, $4, 0); }
+| LD REG16 COMMA STRING U16 { assembler.assembleLD_NNNN($2, 0, $4, (s8)$5); }
 
-| ST LBRACK U16 RBRACK COMMA REG8 { assembler.assembleSD_PTR_NNNN((Reg)$6, $3); }
-| ST LBRACK STRING RBRACK COMMA REG8 { assembler.assembleSD_PTR_NNNN((Reg)$6, 0, $3, 0); }
-| ST LBRACK STRING U16 RBRACK COMMA REG8 { assembler.assembleSD_PTR_NNNN((Reg)$7, 0, $3, (s8)$4); }
-| ST LBRACK REG16 U16 RBRACK COMMA REG8 { assembler.assembleSD_PTR_PP((Reg)$7, (Reg)$3, (s8)$4); }
-| ST LBRACK REG16 RBRACK COMMA REG8 { assembler.assembleSD_PTR_PP((Reg)$6, (Reg)$3, 0); }
+| ST LBRACK U16 RBRACK COMMA REG8 { assembler.assembleSD_PTR_NNNN($6, $3); }
+| ST LBRACK STRING RBRACK COMMA REG8 { assembler.assembleSD_PTR_NNNN($6, 0, $3, 0); }
+| ST LBRACK STRING U16 RBRACK COMMA REG8 { assembler.assembleSD_PTR_NNNN($7, 0, $3, (s8)$4); }
+| ST LBRACK REG16 U16 RBRACK COMMA REG8 { assembler.assembleSD_PTR_PP($7, $3, (s8)$4); }
+| ST LBRACK REG16 RBRACK COMMA REG8 { assembler.assembleSD_PTR_PP($6, $3, 0); }
 
 
-| ALU REG8 COMMA REG8 COMMA REG8 { assembler.assembleALU_REG((Reg)$2, (Reg)$4, (Reg)$6, (AluOp)$1, false); }
-| ALU REG8 COMMA REG8 { assembler.assembleALU_REG((Reg)$2, (Reg)$2, (Reg)$4, (AluOp)$1, false); }
-| ALU REG8 { assembler.assembleALU_REG((Reg)$2, (Reg)$2, (Reg)$2, (AluOp)$1, false); }
+| ALU REG8 COMMA REG8 COMMA REG8 { assembler.assembleALU_REG($2, $4, $6, $1, false); }
+| ALU REG8 COMMA REG8 { assembler.assembleALU_REG($2, $2, $4, $1, false); }
+| ALU REG8 { assembler.assembleALU_REG($2, $2, $2, $1, false); }
 
-| ALU REG16 COMMA REG16 COMMA REG16 { assembler.assembleALU_REG((Reg)$2, (Reg)$4, (Reg)$6, (AluOp)$1, true); }
-| ALU REG16 COMMA REG16 { assembler.assembleALU_REG((Reg)$2, (Reg)$2, (Reg)$4, (AluOp)$1, true); }
-| ALU REG16 { assembler.assembleALU_REG((Reg)$2, (Reg)$2, (Reg)$2, (AluOp)$1, true); }
+| ALU REG16 COMMA REG16 COMMA REG16 { assembler.assembleALU_REG($2, $4, $6, $1, true); }
+| ALU REG16 COMMA REG16 { assembler.assembleALU_REG($2, $2, $4, $1, true); }
+| ALU REG16 { assembler.assembleALU_REG($2, $2, $2, $1, true); }
 
-| ALU REG8 COMMA U16 { assembler.assembleALU_NN((Reg)$2, (Reg)$2, (AluOp)$1, (u8)$4); }
-| ALU REG16 COMMA U16 { assembler.assembleALU_NNNN((Reg)$2, (Reg)$2, (AluOp)$1, $4); }
-| ALU REG8 COMMA REG8 COMMA U16 { assembler.assembleALU_NN((Reg)$2, (Reg)$4, (AluOp)$1, (u8)$6); }
-| ALU REG16 COMMA REG16 COMMA U16 { assembler.assembleALU_NNNN((Reg)$2, (Reg)$4, (AluOp)$1, $6); }
+| ALU REG8 COMMA U16 { assembler.assembleALU_NN($2, $2, $1, (u8)$4); }
+| ALU REG16 COMMA U16 { assembler.assembleALU_NNNN($2, $2, $1, $4); }
+| ALU REG8 COMMA REG8 COMMA U16 { assembler.assembleALU_NN($2, $4, $1, $6); }
+| ALU REG16 COMMA REG16 COMMA U16 { assembler.assembleALU_NNNN($2, $4, $1, $6); }
 
-| LSH REG8 COMMA REG8 { assembler.assembleLD_RSH_LSH((Reg)$2, (Reg)$4, ALU_LSH8, false); }
-| RSH REG8 COMMA REG8 { assembler.assembleLD_RSH_LSH((Reg)$2, (Reg)$4, ALU_RSH8, false); }
-| LSH REG8 { assembler.assembleLD_RSH_LSH((Reg)$2, (Reg)$2, ALU_LSH8, false); }
-| RSH REG8 { assembler.assembleLD_RSH_LSH((Reg)$2, (Reg)$2, ALU_RSH8, false); }
-| LSH REG16 COMMA REG16 { assembler.assembleLD_RSH_LSH((Reg)$2, (Reg)$4, ALU_LSH16, false); }
-| RSH REG16 COMMA REG16 { assembler.assembleLD_RSH_LSH((Reg)$2, (Reg)$4, ALU_RSH16, false); }
-| LSH REG16 { assembler.assembleLD_RSH_LSH((Reg)$2, (Reg)$2, ALU_LSH16, false); }
-| RSH REG16 { assembler.assembleLD_RSH_LSH((Reg)$2, (Reg)$2, ALU_RSH16, false); }
+| LSH REG8 COMMA REG8 { assembler.assembleLD_RSH_LSH($2, $4, ALU_LSH8, false); }
+| RSH REG8 COMMA REG8 { assembler.assembleLD_RSH_LSH((Reg)$2, $4, ALU_RSH8, false); }
+| LSH REG8 { assembler.assembleLD_RSH_LSH((Reg)$2, $2, ALU_LSH8, false); }
+| RSH REG8 { assembler.assembleLD_RSH_LSH((Reg)$2, $2, ALU_RSH8, false); }
+| LSH REG16 COMMA REG16 { assembler.assembleLD_RSH_LSH($2, (Reg)$4, ALU_LSH16, false); }
+| RSH REG16 COMMA REG16 { assembler.assembleLD_RSH_LSH($2, (Reg)$4, ALU_RSH16, false); }
+| LSH REG16 { assembler.assembleLD_RSH_LSH($2, $2, ALU_LSH16, false); }
+| RSH REG16 { assembler.assembleLD_RSH_LSH($2, $2, ALU_RSH16, false); }
 
-| JMP STRING { assembler.assembleJMP_NNNN((JumpCondition)$1, $2); }
-| JMP REG16 { assembler.assembleJMP_PP((JumpCondition)$1, (Reg)$2); }
-| CALL STRING { assembler.assembleCALL_NNNN((JumpCondition)$1, $2); }
-| RET { assembler.assembleRET((JumpCondition)$1); }
+| JMP STRING { assembler.assembleJMP_NNNN($1, $2); }
+| JMP U16 { assembler.assembleJMP_NNNN($1, $2); }
+| JMP REG16 { assembler.assembleJMP_PP($1, (Reg)$2); }
+| CALL STRING { assembler.assembleCALL_NNNN($1, $2); }
+| CALL U16 { assembler.assembleCALL_NNNN($1, $2); }
+| RET { assembler.assembleRET($1); }
 
-| PUSH REG8 { assembler.assembleShortWithReg(OPCODE_PUSH, (Reg)$2); }
-| POP REG8 { assembler.assembleShortWithReg(OPCODE_POP, (Reg)$2); }
+| PUSH REG8 { assembler.assembleShortWithReg(OPCODE_PUSH, $2); }
+| POP REG8 { assembler.assembleShortWithReg(OPCODE_POP, $2); }
 
 | PUSH REG16 {
   // otherwise should be an error!
   if ((((Reg)$2) & 0b100) == 0)
   {
-    assembler.assembleShortWithReg(OPCODE_PUSH, (Reg)$2);
+    assembler.assembleShortWithReg(OPCODE_PUSH, $2);
     assembler.assembleShortWithReg(OPCODE_PUSH, (Reg)($2 | 0b100));
   }
 }
@@ -186,24 +188,24 @@ instruction:
   if ((((Reg)$2) & 0b100) == 0)
   {
     assembler.assembleShortWithReg(OPCODE_POP, (Reg)($2 | 0b100));
-    assembler.assembleShortWithReg(OPCODE_POP, (Reg)$2);
+    assembler.assembleShortWithReg(OPCODE_POP, $2);
   }
 }
 
-| LF REG8 { assembler.assembleShortWithReg(OPCODE_LF, (Reg)$2); }
-| SF REG8 { assembler.assembleShortWithReg(OPCODE_SF, (Reg)$2); }
+| LF REG8 { assembler.assembleShortWithReg(OPCODE_LF, $2); }
+| SF REG8 { assembler.assembleShortWithReg(OPCODE_SF, $2); }
 
 | EI { assembler.assembleShort(OPCODE_EI); }
 | DI { assembler.assembleShort(OPCODE_DI); }
 | INT { assembler.assembleShort(OPCODE_INT); }
 | NOP { assembler.assembleShort(OPCODE_NOP); }
 
-| CMP REG8 COMMA REG8 { assembler.assembleCMP_REG((Reg)$2, (Reg)$4, false); }
-| CMP REG16 COMMA REG16 { assembler.assembleCMP_REG((Reg)$2, (Reg)$4, true); }
-| CMP REG8 COMMA U16 { assembler.assembleCMP_NN((Reg)$2, (u8)$4); }
-| CMP REG16 COMMA U16 { assembler.assembleCMP_NNNN((Reg)$2, $4); }
-| CMP REG8 { assembler.assembleCMP_NN((Reg)$2, 0); }
-| CMP REG16 { assembler.assembleCMP_NNNN((Reg)$2, 0); }
+| CMP REG8 COMMA REG8 { assembler.assembleCMP_REG($2, $4, false); }
+| CMP REG16 COMMA REG16 { assembler.assembleCMP_REG($2, $4, true); }
+| CMP REG8 COMMA U16 { assembler.assembleCMP_NN($2, (u8)$4); }
+| CMP REG16 COMMA U16 { assembler.assembleCMP_NNNN($2, $4); }
+| CMP REG8 { assembler.assembleCMP_NN($2, 0); }
+| CMP REG16 { assembler.assembleCMP_NNNN($2, 0); }
 
 | DATA_ASCII STRING LITERAL { assembler.addAsciiData($2,$3); }
 | DATA_RESERVE STRING U16 { assembler.addEmptyData($2,$3); }

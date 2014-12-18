@@ -70,6 +70,10 @@
 "word" { return Parser::make_TYPE(Type::WORD, loc); }
 "word"[\t ]*"*" { return Parser::make_TYPE(Type::WORD_PTR, loc); }
 
+"while" { return Parser::make_WHILE(loc); }
+"if" { return Parser::make_IF(loc); }
+"else" { return Parser::make_ELSE(loc); }
+
 
 "0x"[a-fA-F0-9]+ { return Parser::make_U16(strtol( &yytext[2], NULL, 16), loc); }
 [a-fA-F0-9]+"H" { return Parser::make_U16(strtol( yytext, NULL, 16), loc); }

@@ -86,7 +86,7 @@ int Opcodes::printInstruction(u8 *data, char buffer[64])
   Reg reg3 = static_cast<Reg>(d[2] >> 5);
   u8 unsigned8 = (u8)d[2];
   s8 signed8 = (s8)d[2];
-  u16 short1 = d[1] | (d[2]<<8);
+  u16 short1 = d[2] | (d[1]<<8);
   u16 short2 = d[2] | (d[3]<<8);
   AluOp alu = static_cast<AluOp>(d[1] & 0b11111);
   JumpCondition cond = static_cast<JumpCondition>(d[0] & 0b1111);

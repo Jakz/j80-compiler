@@ -60,8 +60,8 @@ bool J80Assembler::solveJumps()
       u16 realAddress = codeSegment.offset + it->second;
 
       printf("Jump to %s at address %04X - %p\n", jump.second.c_str(), it->second, &jump.first);
-      codeSegment.data[jump.first+1] = realAddress & 0xFF;
-      codeSegment.data[jump.first+2] = (realAddress >> 8) & 0xFF;
+      codeSegment.data[jump.first+2] = realAddress & 0xFF;
+      codeSegment.data[jump.first+1] = (realAddress >> 8) & 0xFF;
     }
     else
     {
@@ -96,6 +96,8 @@ void J80Assembler::printProgram() const
 {
   u16 pos = 0;
   char buffer[64];
+  
+  bool keepLabels = true;
 
   while (pos < codeSegment.length)
   {
@@ -114,9 +116,30 @@ void J80Assembler::printProgram() const
     if (length == 3) printf("  ");
     printf("  ");
     
-    pos += length;
+    printf("%s", buffer);
     
-    printf("%s\n", buffer);
+    if (keepLabels)
+    {
+      for (int x = 0; x < 20 - strlen(buffer); ++x)
+        printf(" ");
+      
+      auto it2 = std::find_if(labels.begin(), labels.end(), [&](const pair<std::string, u16>& label){ return label.second == pos; });
+      
+      if (it2 != labels.end())
+        printf("<%s>  ", it2->first.c_str());
+      
+      auto it = std::find_if(jumps.begin(), jumps.end(), [&](const pair<u16, std::string>& jump){ return jump.first == pos; });
+      
+      if (it != jumps.end())
+        printf("%s   ", it->second.c_str());
+      
+
+    }
+    
+    printf("\n");
+    
+    pos += length;
+
   }
   
   u16 dataLen = dataSegment.length;
