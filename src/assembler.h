@@ -100,6 +100,22 @@ struct DataReference
 BinaryCode assemble(const char*);
 BinaryCode assembleLine(const char *);
 
+
+template<typename T>
+struct Optional
+{
+private:
+  T value;
+  bool hasBeenSet;
+  
+public:
+  Optional() : hasBeenSet(false) { }
+  Optional(T value) : value(value), hasBeenSet(true) { }
+  void set(T value) { this->value = value; hasBeenSet = true; }
+  bool isSet() const { return hasBeenSet; }
+  T get() const { return value; }
+};
+
 class J80Assembler
 {
   private:
@@ -114,6 +130,8 @@ class J80Assembler
   
     s8 currentIrq;
     std::list<Instruction> irqs[4];
+    
+    Optional<u16> entryPoint;
   
     //static Instruction *build(InstructionLength len) { return new Instruction(len, position); }
     //static void insert(Instruction *i) { position += i->length; instructions.push_back(i); }
@@ -134,6 +152,17 @@ class J80Assembler
     void assemble(int opcode, int opcode2 = -1, int opcode3 = -1);
     //static u16 size();
     BinaryCode consolidate();
+    
+    bool setEntryPoint(u16 address)
+    {
+      if (!entryPoint.isSet())
+      {
+        entryPoint.set(address);
+        return true;
+      }
+      else
+        return false;
+    }
 
     Instruction preamble(InstructionLength len)
     {

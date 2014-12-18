@@ -56,7 +56,6 @@
   QUOTE "\""
   RBRACK "["
   LBRACK "]"
-  DATA_LENGTH "LENGTH"
 ;
 
 %token <std::string>
@@ -97,6 +96,8 @@
   DATA_ASCII
   DATA_RESERVE
   DATA_RAW
+  DATA_LENGTH "LENGTH"
+  ENTRY ".entry"
   INTEND
   INT
 ;
@@ -210,6 +211,7 @@ instruction:
 | DATA_ASCII STRING LITERAL { assembler.addAsciiData($2,$3); }
 | DATA_RESERVE STRING U16 { assembler.addEmptyData($2,$3); }
 
+| ENTRY U16 { if (!assembler.setEntryPoint($2)) { error(@1, "entry point specified more than once"); YYERROR; } }
 
 | INTSTART COLON { assembler.interruptStart($1); }
 | STRING COLON { assembler.placeLabel($1); }

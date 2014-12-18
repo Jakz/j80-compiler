@@ -132,7 +132,7 @@
 ".ASCII"|".ascii" { return Parser::make_DATA_ASCII(loc); }
 ".RESERVE"|".reserve" { return Parser::make_DATA_RESERVE(loc); }
 ".RAW"|".raw" { return Parser::make_DATA_RAW(loc); }
-
+".ENTRY"|".entry" { return Parser::make_ENTRY(loc); }
 
 "0x"[a-fA-F0-9]+ { return Parser::make_U16(strtol( &yytext[2], NULL, 16), loc); }
 [a-fA-F0-9]+"H" { return Parser::make_U16(strtol( yytext, NULL, 16), loc); }

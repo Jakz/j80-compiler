@@ -15,6 +15,8 @@ J80Assembler::J80Assembler() : currentIrq(-1), dataSegment(DataSegment()), codeS
 
 bool J80Assembler::parse(const std::string &filename)
 {
+  entryPoint = Optional<u16>();
+  
   instructions.clear();
   labels.clear();
   jumps.clear();
