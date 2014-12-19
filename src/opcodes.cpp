@@ -76,7 +76,9 @@ const char* Opcodes::condName(JumpCondition cond)
   printInstruction(instruction.data);
 }*/
 
-int Opcodes::printInstruction(u8 *data, char buffer[64])
+static char buffer[64];
+
+int Opcodes::printInstruction(u8 *data)
 {
   u8 *d = data;
   
@@ -96,97 +98,97 @@ int Opcodes::printInstruction(u8 *data, char buffer[64])
     case OPCODE_LD_RSH_LSH:
     {
       if (alu == ALU_TRANSFER_A8)
-        sprintf(buffer, "LD %s, %s", reg8(reg1), reg8(reg2) );
+        printf("LD %s, %s", reg8(reg1), reg8(reg2) );
       else if (alu == ALU_TRANSFER_A16)
-        sprintf(buffer, "LD %s, %s", reg16(reg1), reg16(reg2) );
+        printf("LD %s, %s", reg16(reg1), reg16(reg2) );
       else if (alu == ALU_LSH8)
-        sprintf(buffer, "LSH %s", reg8(reg1));
+        printf("LSH %s", reg8(reg1));
       else if (alu == ALU_RSH8)
-        sprintf(buffer, "RSH %s", reg8(reg1));
+        printf("RSH %s", reg8(reg1));
       else if (alu == ALU_LSH16)
-        sprintf(buffer, "LSH %s", reg16(reg1));
+        printf("LSH %s", reg16(reg1));
       else if (alu == ALU_RSH16)
-        sprintf(buffer, "RSH %s", reg16(reg1));
+        printf("RSH %s", reg16(reg1));
       return 2;
     }
       
-    case OPCODE_LD_NN: { sprintf(buffer, "LD %s, %.2Xh", reg8(reg1), unsigned8); return 3; }
-    case OPCODE_LD_NNNN: { sprintf(buffer, "LD %s, %.4Xh", reg16(reg1), short1); return 3; }
-    case OPCODE_LD_PTR_NNNN: { sprintf(buffer, "LD %s, [%.4Xh]", reg8(reg1), short1); return 3; }
-    case OPCODE_LD_PTR_PP: { sprintf(buffer, "LD %s, [%s%+d]", reg8(reg1), reg16(reg2), signed8); return 3; }
+    case OPCODE_LD_NN: { printf("LD %s, %.2Xh", reg8(reg1), unsigned8); return 3; }
+    case OPCODE_LD_NNNN: { printf("LD %s, %.4Xh", reg16(reg1), short1); return 3; }
+    case OPCODE_LD_PTR_NNNN: { printf("LD %s, [%.4Xh]", reg8(reg1), short1); return 3; }
+    case OPCODE_LD_PTR_PP: { printf("LD %s, [%s%+d]", reg8(reg1), reg16(reg2), signed8); return 3; }
       
-    case OPCODE_SD_PTR_NNNN: { sprintf(buffer, "ST %s, [%.4Xh]", reg8(reg1), short1); return 3; }
-    case OPCODE_SD_PTR_PP: { sprintf(buffer, "ST %s, [%s%+d]", reg8(reg1), reg16(reg2), signed8); return 3; }
+    case OPCODE_SD_PTR_NNNN: { printf("ST %s, [%.4Xh]", reg8(reg1), short1); return 3; }
+    case OPCODE_SD_PTR_PP: { printf("ST %s, [%s%+d]", reg8(reg1), reg16(reg2), signed8); return 3; }
 
     case OPCODE_ALU_REG:
     {
       bool extended = (alu & 0b1) != 0;
       
       if (extended)
-        sprintf(buffer, "%s %s, %s, %s", aluName((AluOp)(alu & 0b11110)), reg16(reg1), reg16(reg2), reg16(reg3));
+        printf("%s %s, %s, %s", aluName((AluOp)(alu & 0b11110)), reg16(reg1), reg16(reg2), reg16(reg3));
       else
-        sprintf(buffer, "%s %s, %s, %s", aluName(alu), reg8(reg1), reg8(reg2), reg8(reg3));
+        printf("%s %s, %s, %s", aluName(alu), reg8(reg1), reg8(reg2), reg8(reg3));
       
       return 3;
     }
       
-    case OPCODE_ALU_NN: { sprintf(buffer, "%s %s, %s, %.2Xh", aluName(alu), reg8(reg1), reg8(reg2), unsigned8); return 3; }
-    case OPCODE_ALU_NNNN: { sprintf(buffer, "%s %s, %s, %.4Xh", aluName((AluOp)(alu & 0b11110)), reg16(reg1), reg16(reg2), short2); return 4; }
+    case OPCODE_ALU_NN: { printf("%s %s, %s, %.2Xh", aluName(alu), reg8(reg1), reg8(reg2), unsigned8); return 3; }
+    case OPCODE_ALU_NNNN: { printf("%s %s, %s, %.4Xh", aluName((AluOp)(alu & 0b11110)), reg16(reg1), reg16(reg2), short2); return 4; }
 
     case OPCODE_JMP_NNNN:
     case OPCODE_JMPC_NNNN:
     {
-      sprintf(buffer, "JMP%s %.4Xh", condName(cond), short1);
+      printf("JMP%s %.4Xh", condName(cond), short1);
       return 3;
     }
       
     case OPCODE_JMP_PP:
     case OPCODE_JMPC_PP:
     {
-      sprintf(buffer, "JMP%s %s", condName(cond), reg16(reg2));
+      printf("JMP%s %s", condName(cond), reg16(reg2));
       return 2;
     }
       
-    case OPCODE_NOP: { sprintf(buffer, "NOP"); return 1; }
+    case OPCODE_NOP: { printf("NOP"); return 1; }
     
-    case OPCODE_PUSH: { sprintf(buffer, "PUSH %s", reg8(reg1)); return 1; }
-    case OPCODE_POP: { sprintf(buffer, "POP %s", reg8(reg1)); return 1; }
+    case OPCODE_PUSH: { printf("PUSH %s", reg8(reg1)); return 1; }
+    case OPCODE_POP: { printf("POP %s", reg8(reg1)); return 1; }
       
     case OPCODE_RET:
     case OPCODE_RETC:
     {
-      sprintf(buffer, "RET%s", condName(cond));
+      printf("RET%s", condName(cond));
       return 1;
     }
       
     case OPCODE_CALL:
     case OPCODE_CALLC:
     {
-      sprintf(buffer, "CALL%s %.4Xh", condName(cond), short1);
+      printf("CALL%s %.4Xh", condName(cond), short1);
       return 3;
     }
       
-    case OPCODE_LF: { sprintf(buffer, "LF %s", reg8(reg1)); return 1; }
-    case OPCODE_SF: { sprintf(buffer, "SF %s", reg8(reg1)); return 1; }
+    case OPCODE_LF: { printf("LF %s", reg8(reg1)); return 1; }
+    case OPCODE_SF: { printf("SF %s", reg8(reg1)); return 1; }
       
-    case OPCODE_EI: { sprintf(buffer, "EI"); return 1; }
-    case OPCODE_DI: { sprintf(buffer, "DI"); return 1; }
-    case OPCODE_INT: { sprintf(buffer, "INT"); return 1; }
+    case OPCODE_EI: { printf("EI"); return 1; }
+    case OPCODE_DI: { printf("DI"); return 1; }
+    case OPCODE_INT: { printf("INT"); return 1; }
       
     case OPCODE_CMP_REG:
     {
       bool extended = (alu & 0b1) != 0;
       
       if (extended)
-        sprintf(buffer, "CMP %s, %s", reg16(reg1), reg16(reg2));
+        printf("CMP %s, %s", reg16(reg1), reg16(reg2));
       else
-        sprintf(buffer, "CMP %s, %s", reg8(reg1), reg8(reg2));
+        printf("CMP %s, %s", reg8(reg1), reg8(reg2));
       
       return 2;
     }
       
-    case OPCODE_CMP_NN: { sprintf(buffer, "CMP %s, %.2Xh", reg8(reg1), unsigned8); return 3; }
-    case OPCODE_CMP_NNNN: { sprintf(buffer, "CMP %s, %.4Xh", reg16(reg1), short2); return 4; }
+    case OPCODE_CMP_NN: { printf("CMP %s, %.2Xh", reg8(reg1), unsigned8); return 3; }
+    case OPCODE_CMP_NNNN: { printf("CMP %s, %.4Xh", reg16(reg1), short2); return 4; }
 
       
     default:

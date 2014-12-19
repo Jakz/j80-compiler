@@ -17,7 +17,6 @@ bool J80Assembler::parse(const std::string &filename)
   
   instructions.clear();
   labels.clear();
-  jumps.clear();
   dataReferences.clear();
   data.clear();
   
@@ -56,58 +55,51 @@ void J80Assembler::error (const std::string& m)
 
 void J80Assembler::printProgram() const
 {
-  u16 pos = 0;
-  char buffer[64];
-  
   bool keepLabels = true;
 
-  while (pos < codeSegment.length)
+  u16 address = 0;
+  u8 opcode[4];
+  for (const auto& i : instructions)
   {
-    printf("%04X: ", pos);
+    printf("%04X: ", address);
     
-    u8 length = Opcodes::printInstruction(codeSegment.data+pos, buffer);
+    const InstructionLength length = i->getLength();
+    i->assemble(opcode);
     
-    for (int w = 0; w < length; ++w)
-    {
-      printf("%02X", codeSegment.data[pos+w]);
-    }
-    //fprintf(bin,"\n");
+    for (int i = 0; i < length; ++i)
+      printf("%02X", opcode[i]);
+    for (int i = length; i < LENGTH_4_BYTES+1; ++i)
+      printf("  ");
     
-    if (length == 1) printf("      ");
-    if (length == 2) printf("    ");
-    if (length == 3) printf("  ");
-    printf("  ");
+    const std::string mnemonic = i->mnemonic();
     
-    printf("%s", buffer);
+    if (mnemonic.empty())
+      Opcodes::printInstruction(opcode);
+    
+    printf("%s", mnemonic.c_str());
     
     if (keepLabels)
     {
-      for (int x = 0; x < 20 - strlen(buffer); ++x)
+      for (int x = 0; x < 50 - mnemonic.length(); ++x)
         printf(" ");
       
-      auto it2 = std::find_if(labels.begin(), labels.end(), [&](const pair<std::string, u16>& label){ return label.second + codeSegment.offset == pos; });
+      auto it2 = std::find_if(labels.begin(), labels.end(), [&](const pair<std::string, u16>& label){ return label.second + codeSegment.offset == address; });
       
       if (it2 != labels.end())
         printf("<%s>  ", it2->first.c_str());
       
-      auto it = std::find_if(jumps.begin(), jumps.end(), [&](const pair<u16, std::string>& jump){ return jump.first + codeSegment.offset == pos; });
-      
-      if (it != jumps.end())
-        printf("%s   ", it->second.c_str());
-      
-
     }
-        
-    printf("\n");
-    
-    pos += length;
 
+    
+    printf("\n");
+
+    address += length;
   }
   
   u16 dataLen = dataSegment.length;
   for (int i = 0; i < dataLen / 8 + (dataLen % 8 != 0 ? 1 : 0); ++i)
   {
-    printf("%04X: ", pos + i*8);
+    printf("%04X: ", address + i*8);
     
     for (int j = 0; j < 8; ++j)
     {
@@ -161,14 +153,15 @@ void J80Assembler::buildCodeSegment()
   
   u16 totalSize = 0;
   
-  std::list<Instruction>::iterator it = iterator();
+  std::list<std::unique_ptr<Instruction>>::const_iterator it = iterator();
+
   while (hasNext(it))
   {
-    totalSize += it->getLength();
+    totalSize += (*it)->getLength();
     ++it;
   }
   
-  printf("  Code segment total size: %u bytes.\n", totalSize);
+  printf("  Code segment total size: %u bytes (%lu entries).\n", totalSize, instructions.size());
   
   if (entryPoint.isSet())
     printf("  Entry point specified at %.4Xh.\n", entryPoint.get());
@@ -179,8 +172,8 @@ void J80Assembler::buildCodeSegment()
   it = iterator();
   while (hasNext(it))
   {
-    it->assemble(&codeSegment.data[totalSize+codeSegment.offset]);
-    totalSize += it->getLength();
+    (*it)->assemble(&codeSegment.data[totalSize+codeSegment.offset]);
+    totalSize += (*it)->getLength();
     ++it;
   }
 }
@@ -189,23 +182,29 @@ bool J80Assembler::solveJumps()
 {
   printf("Computing jump addresses.\n");
   
-  for (auto &jump : jumps)
+  for (const auto &i : instructions)
   {
-    unordered_map<std::string, u16>::iterator it = labels.find(jump.second);
+    InstructionAddressable* ai = dynamic_cast<InstructionAddressable*>(i.get());
+
     
-    if (it != labels.end())
+    if (ai && ai->mustBeSolved())
     {
-      u16 realAddress = codeSegment.offset + it->second;
-      
-      printf("  > Jump to %s at address %04Xh\n", jump.second.c_str(), it->second);
-      codeSegment.data[jump.first+codeSegment.offset+2] = realAddress & 0xFF;
-      codeSegment.data[jump.first+codeSegment.offset+1] = (realAddress >> 8) & 0xFF;
+      unordered_map<std::string, u16>::iterator it = labels.find(ai->getLabel());
+
+      if (it != labels.end())
+      {
+        printf("  > Jump to %s at address %04Xh\n", ai->getLabel().c_str(), it->second);
+        u16 realAddress = codeSegment.offset + it->second;
+        ai->solve(realAddress);
+      }
+      else
+      {
+        printf("  Label %s unresolved!\n", ai->getLabel().c_str());
+        return false;
+      }
+
     }
-    else
-    {
-      printf("  Label %s unresolved!\n", jump.second.c_str());
-      return false;
-    }
+    
   }
   
   return true;

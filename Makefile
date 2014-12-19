@@ -12,7 +12,7 @@ FLEX := /usr/local/opt/flex/bin/flex
 # added to use newest flex/bison
 INCLUDE = -I/usr/local/opt/flex/include
 
-CFLAGS = $(INCLUDE) -std=c++11 -stdlib=libc++ -Wno-deprecated-register
+CFLAGS = $(INCLUDE) -g -std=c++11 -stdlib=libc++ -Wno-deprecated-register
 #opt: CFLAGS = $(INCLUDE) -O3 -ffast-math -pipe -std=c++11 -stdlib=libc++
 
 CXXFLAGS = $(CFLAGS)

@@ -128,14 +128,15 @@ struct Instruction;
 class Opcodes
 {
   private:
-    static const char* reg8(u8 reg);
-    static const char* reg16(u8 reg);
-    static const char* aluName(AluOp alu);
-    static const char* condName(JumpCondition cond);
 
   public:
-    static int printInstruction(u8 *data, char buffer[64]);
+    static int printInstruction(u8 *data);
     //static void printInstruction(Instruction &i);
+  
+  static const char* reg8(u8 reg);
+  static const char* reg16(u8 reg);
+  static const char* aluName(AluOp alu);
+  static const char* condName(JumpCondition cond);
 };
 
-#endif 
+#endif

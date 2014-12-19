@@ -120,7 +120,7 @@ instructions:
 instruction:
   
   LD REG8 COMMA REG8 { assembler.assembleLD_RSH_LSH($2, $4, ALU_TRANSFER_A8, false); }
-| LD REG8 COMMA U16 { assembler.assembleLD_NN($2, (u8)$4); }
+| LD REG8 COMMA U16 { assembler.add(new InstructionLD_NN($2, (u8)$4)); }
 | LD REG8 COMMA DATA_LENGTH LPAREN STRING RPAREN { assembler.assembleLD_NN($2, 0, $6); }
 
 | LD REG16 COMMA REG16 { assembler.assembleLD_RSH_LSH($2, $4, ALU_TRANSFER_A16, true); }
@@ -165,11 +165,11 @@ instruction:
 | LSH REG16 { assembler.assembleLD_RSH_LSH($2, $2, ALU_LSH16, false); }
 | RSH REG16 { assembler.assembleLD_RSH_LSH($2, $2, ALU_RSH16, false); }
 
-| JMP STRING { assembler.assembleJMP_NNNN($1, $2); }
-| JMP U16 { assembler.assembleJMP_NNNN($1, $2); }
+| JMP STRING { assembler.add(new InstructionJMP_NNNN($1, $2)); }
+| JMP U16 { assembler.add(new InstructionJMP_NNNN($1, $2)); }
 | JMP REG16 { assembler.assembleJMP_PP($1, (Reg)$2); }
-| CALL STRING { assembler.assembleCALL_NNNN($1, $2); }
-| CALL U16 { assembler.assembleCALL_NNNN($1, $2); }
+| CALL STRING { assembler.add(new InstructionCALL_NNNN($1, $2)); }
+| CALL U16 { assembler.add(new InstructionCALL_NNNN($1, $2)); }
 | RET { assembler.assembleRET($1); }
 
 | PUSH REG8 { assembler.assembleShortWithReg(OPCODE_PUSH, $2); }
@@ -199,7 +199,7 @@ instruction:
 | EI { assembler.assembleShort(OPCODE_EI); }
 | DI { assembler.assembleShort(OPCODE_DI); }
 | INT { assembler.assembleShort(OPCODE_INT); }
-| NOP { assembler.assembleShort(OPCODE_NOP); }
+| NOP { assembler.add(new InstructionNOP()); }
 
 | CMP REG8 COMMA REG8 { assembler.assembleCMP_REG($2, $4, false); }
 | CMP REG16 COMMA REG16 { assembler.assembleCMP_REG($2, $4, true); }
