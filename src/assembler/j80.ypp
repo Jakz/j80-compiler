@@ -170,7 +170,7 @@ instruction:
 | JMP REG16 { assembler.assembleJMP_PP($1, (Reg)$2); }
 | CALL STRING { assembler.add(new InstructionCALL_NNNN($1, $2)); }
 | CALL U16 { assembler.add(new InstructionCALL_NNNN($1, $2)); }
-| RET { assembler.assembleRET($1); }
+| RET { assembler.add(new InstructionRET($1)); }
 
 | PUSH REG8 { assembler.assembleShortWithReg(OPCODE_PUSH, $2); }
 | POP REG8 { assembler.assembleShortWithReg(OPCODE_POP, $2); }

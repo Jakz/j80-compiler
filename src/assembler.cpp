@@ -186,9 +186,10 @@ bool J80Assembler::solveJumps()
   {
     InstructionAddressable* ai = dynamic_cast<InstructionAddressable*>(i.get());
 
-    
+    // if instruction has an address that could be a label and it must be solved
     if (ai && ai->mustBeSolved())
     {
+      // find address for label
       unordered_map<std::string, u16>::iterator it = labels.find(ai->getLabel());
 
       if (it != labels.end())
