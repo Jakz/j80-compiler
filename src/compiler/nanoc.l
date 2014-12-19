@@ -2,6 +2,7 @@
 	#include "nanocparser.hpp"
   #include "nanoclexer.h"
   #include "opcodes.h"
+  #include "compiler.h"
   #include <string>
   
   typedef nanoc::Parser::token token;
@@ -99,7 +100,7 @@
 
 \n|"\r\n" { Parser::make_EOL(loc); loc.lines(yyleng); loc.step();  }
 [ \t] { loc.step(); /* ignore whitespace */ }
-. { printf("Mystery character %c\n", *yytext); }
+. { compiler.error(loc, "Unrecognized character."); }
 
 <<EOF>> { return yyterminate(); }
 

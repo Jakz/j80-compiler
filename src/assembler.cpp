@@ -46,6 +46,8 @@ void J80Assembler::placeLabel(const std::string& label)
 
 bool J80Assembler::solveJumps()
 {
+  printf("Computing jump addresses.\n");
+  
   for (auto &jump : jumps)
   {
     unordered_map<std::string, u16>::iterator it = labels.find(jump.second);
@@ -54,13 +56,13 @@ bool J80Assembler::solveJumps()
     {
       u16 realAddress = codeSegment.offset + it->second;
 
-      printf("Jump to %s at address %04X - %p\n", jump.second.c_str(), it->second, &jump.first);
+      printf("  > Jump to %s at address %04Xh\n", jump.second.c_str(), it->second);
       codeSegment.data[jump.first+codeSegment.offset+2] = realAddress & 0xFF;
       codeSegment.data[jump.first+codeSegment.offset+1] = (realAddress >> 8) & 0xFF;
     }
     else
     {
-      printf("Label %s unresolved!\n", jump.second.c_str());
+      printf("  Label %s unresolved!\n", jump.second.c_str());
       return false;
     }
   }
@@ -162,7 +164,7 @@ void J80Assembler::buildDataSegment()
   for (auto &entry : data)
     totalSize += entry.second.length;
   
-  printf("Data segment size: %u\n", totalSize);
+  printf("  Data segment size: %u bytes.\n", totalSize);
   
   dataSegment.alloc(totalSize);
   
@@ -173,7 +175,7 @@ void J80Assembler::buildDataSegment()
     memcpy(&dataSegment.data[totalSize], entry.second.data, entry.second.length);
     entry.second.offset = totalSize;
     
-    printf("Data named %s at offset %.4X\n",entry.first.c_str(),entry.second.offset);
+    printf("  > Data %s at offset %.4Xh\n",entry.first.c_str(),entry.second.offset);
     
     totalSize += entry.second.length;
   }
@@ -188,14 +190,14 @@ void J80Assembler::buildCodeSegment()
   std::list<Instruction>::iterator it = iterator();
   while (hasNext(it))
   {
-    totalSize += it->length;
+    totalSize += it->getLength();
     ++it;
   }
   
-  printf("Code segment total size: %u.\n", totalSize);
+  printf("  Code segment total size: %u bytes.\n", totalSize);
   
   if (entryPoint.isSet())
-    printf("Entry point specified at %.4Xh.\n", entryPoint.get());
+    printf("  Entry point specified at %.4Xh.\n", entryPoint.get());
   
   codeSegment.alloc(totalSize+codeSegment.offset);
   totalSize = 0;
@@ -203,8 +205,8 @@ void J80Assembler::buildCodeSegment()
   it = iterator();
   while (hasNext(it))
   {
-    memcpy(&codeSegment.data[totalSize+codeSegment.offset], it->data, it->length);
-    totalSize += it->length;
+    it->assemble(&codeSegment.data[totalSize+codeSegment.offset]);
+    totalSize += it->getLength();
     ++it;
   }
 }
@@ -218,13 +220,13 @@ void J80Assembler::solveDataReferences()
     std::unordered_map<std::string, DataSegmentEntry>::iterator it = data.find(pair.second.label);
     
     if (it == data.end())
-      printf("Unresolved data label '%s'!", pair.second.label.c_str());
+      printf("  Unresolved data label '%s'!", pair.second.label.c_str());
     else
     {
       if (pair.second.type == DataReference::Type::POINTER)
       {
         u16 address = it->second.offset + dataSegment.offset + pair.second.offset;
-        printf("Solving data label '%s' at address %.4X\n", pair.second.label.c_str(), address);
+        printf("  > Data '%s' at address %.4Xh\n", pair.second.label.c_str(), address);
         
         codeSegment.data[pair.first+2] = address & 0xFF;
         codeSegment.data[pair.first+1] = (address >> 8) & 0xFF;

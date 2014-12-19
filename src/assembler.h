@@ -31,10 +31,17 @@ struct Instruction
 {
   u8 data[4];
   InstructionLength length;
-  u16 position;
   
-  Instruction() : data{0}, length(LENGTH_2_BYTES), position(0) { }
-  Instruction(InstructionLength length, u16 position) : data{0}, length(length), position(position) { }
+public:
+  Instruction() : data{0}, length(LENGTH_2_BYTES)/*, position(0)*/ { }
+  Instruction(InstructionLength length, u16 position) : data{0}, length(length)/*, position(position)*/ { }
+  
+  const InstructionLength getLength() const { return length; }
+  
+  void assemble(u8* dest)
+  {
+    memcpy(dest, &data, sizeof(u8)*length);
+  }
 };
   
 struct DataSegmentEntry
@@ -160,7 +167,7 @@ class J80Assembler
   
     void postamble(Instruction &i)
     {
-      position += i.length;
+      position += i.getLength();
       instructions.push_back(i);
     }
   
@@ -192,7 +199,6 @@ class J80Assembler
         dataReferences.push_back(std::make_pair(position, DataReference(label,offset)));
       
       Instruction i = preamble(LENGTH_3_BYTES);
-      printf("value: %.4X\n",value);
       i.data[0] = (OPCODE_LD_NNNN << 3) | dst;
       i.data[2] = value & 0xFF;
       i.data[1] = (value >> 8) & 0xFF;

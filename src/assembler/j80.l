@@ -158,7 +158,7 @@
 
 \n|"\r\n" { Parser::make_EOL(loc); loc.lines(yyleng); }
 [ \t] { loc.step(); /* ignore whitespace */ }
-. { printf("Mystery character %c\n", *yytext); }
+. { assembler.error(loc, "Unrecognized character."); }
 
 <<EOF>> { return yyterminate(); }
 
