@@ -7,6 +7,7 @@ namespace Assembler
   
   enum InstructionLength : u8
   {
+    LENGTH_0_BYTES = 0,
     LENGTH_1_BYTES = 1,
     LENGTH_2_BYTES = 2,
     LENGTH_3_BYTES = 3,
@@ -25,12 +26,31 @@ namespace Assembler
     
     virtual const InstructionLength getLength() const { return length; }
     
+    virtual bool isReal() const { return true; }
     virtual std::string mnemonic() const { return std::string(); }
     
     virtual void assemble(u8* dest) const
     {
       memcpy(dest, &data, sizeof(u8)*length);
     }
+  };
+  
+  class Label : public Instruction
+  {
+  private:
+    std::string label;
+    u16 address;
+    bool solved;
+    
+  public:
+    Label(const std::string& label) : Instruction(LENGTH_0_BYTES), label(label), address(0), solved(false) { }
+    
+    const std::string& getLabel() const { return label; }
+    
+    bool isReal() const override { return false; }
+    
+    bool mustBeSolved() { return !solved; }
+    void solve(u16 address) { this->address = address; }
   };
   
   struct Address
@@ -48,23 +68,44 @@ namespace Assembler
     Address(const std::string& label) : type(LABEL), label(label) { }
   };
   
+  struct Value8
+  {
+    enum Type
+    {
+      VALUE,
+      DATA_LENGTH
+    } type;
+    
+    u8 value;
+    std::string label;
+    
+    Value8(u8 value) : type(VALUE), value(value) { }
+    Value8(const std::string& label) : type(DATA_LENGTH), label(label) { }
+  };
+  
   class InstructionLD_NN : public Instruction
   {
   private:
     Reg dst;
-    u8 value;
+    Value8 value;
     
   public:
-    InstructionLD_NN(Reg dst, u8 value) : dst(dst), value(value) { }
+    InstructionLD_NN(Reg dst, u8 value) : dst(dst), value(Value8(value)) { }
+    InstructionLD_NN(Reg dst, const std::string& label) : dst(dst), value(Value8(label)) { }
+
     
-    std::string mnemonic() const { return fmt::sprintf("LD %s, %.2Xh", Opcodes::reg8(dst), value); }
+    std::string mnemonic() const { return fmt::sprintf("LD %s, %.2Xh", Opcodes::reg8(dst), value.value); }
     
     void assemble(u8* dest) const override
     {
       dest[0] = (OPCODE_LD_NN << 3) | dst;
       dest[1] = ALU_TRANSFER_B8;
-      dest[2] = value;
+      dest[2] = value.value;
     }
+    
+    const std::string& getLabel() { return value.label; }
+    bool mustBeSolved() { return value.type != Value8::Type::VALUE; }
+    void solve(u8 value) { this->value.value = value; this->value.type = Value8::Type::VALUE; }
   };
   
   class InstructionAddressable : public Instruction

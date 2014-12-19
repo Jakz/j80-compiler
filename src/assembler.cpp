@@ -16,7 +16,6 @@ bool J80Assembler::parse(const std::string &filename)
   entryPoint = Optional<u16>();
   
   instructions.clear();
-  labels.clear();
   dataReferences.clear();
   data.clear();
   
@@ -38,11 +37,6 @@ bool J80Assembler::parse(const std::string &filename)
   return res == 0;
 }
 
-void J80Assembler::placeLabel(const std::string& label)
-{
-  labels[label] = position;
-}
-
 void J80Assembler::error (const Assembler::location& l, const std::string& m)
 {
   cerr << "Assembler error at " << file << ":" << l.begin.line << "," << l.begin.column << " : " << m << endl;
@@ -59,8 +53,17 @@ void J80Assembler::printProgram() const
 
   u16 address = 0;
   u8 opcode[4];
+
+  const Label* label = nullptr;
+  
   for (const auto& i : instructions)
   {
+    if (!i->isReal())
+    {
+      label = dynamic_cast<Label*>(i.get());
+      continue;
+    }
+    
     printf("%04X: ", address);
     
     const InstructionLength length = i->getLength();
@@ -80,20 +83,19 @@ void J80Assembler::printProgram() const
     
     if (keepLabels)
     {
-      for (int x = 0; x < 50 - mnemonic.length(); ++x)
+      for (int x = 0; x < 40 - mnemonic.length(); ++x)
         printf(" ");
       
-      auto it2 = std::find_if(labels.begin(), labels.end(), [&](const pair<std::string, u16>& label){ return label.second + codeSegment.offset == address; });
-      
-      if (it2 != labels.end())
-        printf("<%s>  ", it2->first.c_str());
+      if (label)
+        printf("<%s>", label->getLabel().c_str());
       
     }
-
     
     printf("\n");
 
     address += length;
+    
+    label = nullptr;
   }
   
   u16 dataLen = dataSegment.length;
@@ -180,7 +182,27 @@ void J80Assembler::buildCodeSegment()
 
 bool J80Assembler::solveJumps()
 {
-  printf("Computing jump addresses.\n");
+  
+  printf("Computing label addresses.\n");
+  
+  unordered_map<std::string, u16> labels;
+  
+  u16 address = 0;
+  for (const auto &i : instructions)
+  {
+    Label* label = dynamic_cast<Label*>(i.get());
+
+    if (label && label->mustBeSolved())
+    {
+      label->solve(address);
+      labels[label->getLabel()] = address;
+      printf("  > Label %s resolved to address %04Xh\n", label->getLabel().c_str(), address);
+    }
+    else
+      address += i->getLength();
+  }
+
+  printf("Solving jumps.\n");
   
   for (const auto &i : instructions)
   {
@@ -194,7 +216,7 @@ bool J80Assembler::solveJumps()
 
       if (it != labels.end())
       {
-        printf("  > Jump to %s at address %04Xh\n", ai->getLabel().c_str(), it->second);
+        //printf("  > Jump to %s at address %04Xh\n", ai->getLabel().c_str(), it->second);
         u16 realAddress = codeSegment.offset + it->second;
         ai->solve(realAddress);
       }
@@ -211,9 +233,31 @@ bool J80Assembler::solveJumps()
   return true;
 }
 
+void J80Assembler::solveDataReferences2()
+{
+  for (const auto& i : instructions)
+  {
+    InstructionLD_NN* vi = dynamic_cast<InstructionLD_NN*>(i.get());
+    
+    if (vi && vi->mustBeSolved())
+    {
+      std::unordered_map<std::string, DataSegmentEntry>::iterator it = data.find(vi->getLabel());
+      
+      if (it != data.end())
+      {
+        vi->solve(it->second.length);
+        printf("  > Data '%s' length\n", vi->getLabel().c_str());
+
+      }
+    }
+  }
+}
+
 void J80Assembler::solveDataReferences()
 {
   printf("Solving data references.\n");
+  
+
   
   for (auto &pair : dataReferences)
   {

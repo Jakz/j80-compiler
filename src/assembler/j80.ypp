@@ -121,7 +121,7 @@ instruction:
   
   LD REG8 COMMA REG8 { assembler.assembleLD_RSH_LSH($2, $4, ALU_TRANSFER_A8, false); }
 | LD REG8 COMMA U16 { assembler.add(new InstructionLD_NN($2, (u8)$4)); }
-| LD REG8 COMMA DATA_LENGTH LPAREN STRING RPAREN { assembler.assembleLD_NN($2, 0, $6); }
+| LD REG8 COMMA DATA_LENGTH LPAREN STRING RPAREN { assembler.add(new InstructionLD_NN($2, $6)); }
 
 | LD REG16 COMMA REG16 { assembler.assembleLD_RSH_LSH($2, $4, ALU_TRANSFER_A16, true); }
 
@@ -214,7 +214,7 @@ instruction:
 | ENTRY U16 { if (!assembler.setEntryPoint($2)) { error(@1, "entry point specified more than once"); YYERROR; } }
 
 | INTSTART COLON { assembler.interruptStart($1); }
-| STRING COLON { assembler.placeLabel($1); }
+| STRING COLON { assembler.add(new Label($1)); }
 
 /*  | JUMP STRING EOL { ASSEMBLER->asmJump($2, false); }
   | JUMPC STRING EOL { ASSEMBLER->asmJump($2, true); }*/
