@@ -83,6 +83,21 @@ namespace Assembler
     Value8(const std::string& label) : type(DATA_LENGTH), label(label) { }
   };
   
+  struct Value16
+  {
+    enum Type
+    {
+      VALUE,
+      DATA_ADDRESS
+    } type;
+    
+    u16 value;
+    std::string label;
+    
+    Value16(u16 value) : type(VALUE), value(value) { }
+    Value16(const std::string& label) : type(DATA_ADDRESS), label(label) { }
+  };
+  
   class InstructionLD_NN : public Instruction
   {
   private:
@@ -90,8 +105,8 @@ namespace Assembler
     Value8 value;
     
   public:
-    InstructionLD_NN(Reg dst, u8 value) : dst(dst), value(Value8(value)) { }
-    InstructionLD_NN(Reg dst, const std::string& label) : dst(dst), value(Value8(label)) { }
+    InstructionLD_NN(Reg dst, u8 value) : Instruction(LENGTH_3_BYTES), dst(dst), value(Value8(value)) { }
+    InstructionLD_NN(Reg dst, const std::string& label) : Instruction(LENGTH_3_BYTES), dst(dst), value(Value8(label)) { }
 
     
     std::string mnemonic() const { return fmt::sprintf("LD %s, %.2Xh", Opcodes::reg8(dst), value.value); }
@@ -106,6 +121,35 @@ namespace Assembler
     const std::string& getLabel() { return value.label; }
     bool mustBeSolved() { return value.type != Value8::Type::VALUE; }
     void solve(u8 value) { this->value.value = value; this->value.type = Value8::Type::VALUE; }
+  };
+  
+  class InstructionLD_NNNN : public Instruction
+  {
+  private:
+    Reg dst;
+    Value16 value;
+    
+  public:
+    InstructionLD_NNNN(Reg dst, u16 value) : Instruction(LENGTH_3_BYTES), dst(dst), value(Value16(value)) { }
+    InstructionLD_NNNN(Reg dst, const std::string& label) : Instruction(LENGTH_3_BYTES), dst(dst), value(Value16(label)) { }
+    
+    std::string mnemonic() const override {
+      if (value.label.empty())
+        return fmt::sprintf("LD %s, %.4Xh", Opcodes::reg16(dst), value.value);
+      else
+        return fmt::sprintf("LD %s, %.4Xh (%s)", Opcodes::reg16(dst), value.value, value.label.c_str());
+    }
+    
+    void assemble(u8* dest) const override
+    {
+      dest[0] = (OPCODE_LD_NNNN << 3) | dst;
+      dest[1] = (value.value >> 8) & 0xFF;
+      dest[2] = value.value & 0xFF;
+    }
+    
+    const std::string& getLabel() { return value.label; }
+    bool mustBeSolved() { return value.type != Value16::Type::VALUE; }
+    void solve(u16 value) { this->value.value = value; this->value.type = Value16::Type::VALUE; }
   };
   
   class InstructionAddressable : public Instruction

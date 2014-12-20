@@ -20,7 +20,7 @@
 
 namespace Assembler
 {
-  
+
 struct DataSegmentEntry
 {
   u8 *data;
@@ -162,19 +162,6 @@ class J80Assembler
       postamble(i);
     }
 
-    void assembleLD_NNNN(Reg dst, u16 value, const std::string& label = std::string(), s8 offset = 0)
-    {
-      // TODO: not working
-      if (!label.empty())
-        dataReferences.push_back(std::make_pair(position, DataReference(label,offset)));
-      
-      Instruction* i = preamble(LENGTH_3_BYTES);
-      i->data[0] = (OPCODE_LD_NNNN << 3) | dst;
-      i->data[2] = value & 0xFF;
-      i->data[1] = (value >> 8) & 0xFF;
-      postamble(i);
-    }
-  
     void assembleLD_PTR_NNNN(Reg dst, u16 address, const std::string& label = std::string(), s8 offset = 0)
     {
       if (!label.empty())
@@ -335,7 +322,16 @@ class J80Assembler
     void buildDataSegment();
     void buildCodeSegment();
     void solveDataReferences();
-    void solveDataReferences2();
+  
+    u16 computeDataSegmentOffset()
+    {
+      u16 offset = 0;
+      
+      for (const auto &i : instructions)
+        offset += i->getLength();
+      
+      return offset;
+    }
   
     void assemble()
     {
@@ -343,9 +339,9 @@ class J80Assembler
         codeSegment.offset = entryPoint.get();
       
       solveJumps();
-      solveDataReferences2();
-      buildCodeSegment();
       buildDataSegment();
+      solveDataReferences();
+      buildCodeSegment();
       dataSegment.offset = codeSegment.length + codeSegment.offset;
       solveDataReferences();
     }

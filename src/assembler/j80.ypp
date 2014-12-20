@@ -132,9 +132,9 @@ instruction:
 | LD REG8 COMMA LBRACK REG16 U16 RBRACK { assembler.assembleLD_PTR_PP($2, $5, (s8)$6); }
 | LD REG8 COMMA LBRACK REG16 RBRACK { assembler.assembleLD_PTR_PP($2, $5, 0); }
 
-| LD REG16 COMMA U16 { assembler.assembleLD_NNNN($2, $4); }
-| LD REG16 COMMA STRING { assembler.assembleLD_NNNN($2, 0, $4, 0); }
-| LD REG16 COMMA STRING U16 { assembler.assembleLD_NNNN($2, 0, $4, (s8)$5); }
+| LD REG16 COMMA U16 { assembler.add(new InstructionLD_NNNN($2, $4)); }
+| LD REG16 COMMA STRING { assembler.add(new InstructionLD_NNNN($2, $4)); }
+//| LD REG16 COMMA STRING U16 { assembler.assembleLD_NNNN($2, 0, $4, (s8)$5); }
 
 | ST LBRACK U16 RBRACK COMMA REG8 { assembler.assembleSD_PTR_NNNN($6, $3); }
 | ST LBRACK STRING RBRACK COMMA REG8 { assembler.assembleSD_PTR_NNNN($6, 0, $3, 0); }

@@ -233,15 +233,20 @@ bool J80Assembler::solveJumps()
   return true;
 }
 
-void J80Assembler::solveDataReferences2()
-{
+void J80Assembler::solveDataReferences()
+{  
+  u16 base = computeDataSegmentOffset();
+
+  printf("Solving data references. Base data segment offset: %d.\n", base);
+  
   for (const auto& i : instructions)
   {
     InstructionLD_NN* vi = dynamic_cast<InstructionLD_NN*>(i.get());
+    InstructionLD_NNNN* vi16 = dynamic_cast<InstructionLD_NNNN*>(i.get());
     
     if (vi && vi->mustBeSolved())
     {
-      std::unordered_map<std::string, DataSegmentEntry>::iterator it = data.find(vi->getLabel());
+      std::unordered_map<std::string, DataSegmentEntry>::const_iterator it = data.find(vi->getLabel());
       
       if (it != data.end())
       {
@@ -250,45 +255,14 @@ void J80Assembler::solveDataReferences2()
 
       }
     }
-  }
-}
-
-void J80Assembler::solveDataReferences()
-{
-  printf("Solving data references.\n");
-  
-
-  
-  for (auto &pair : dataReferences)
-  {
-    std::unordered_map<std::string, DataSegmentEntry>::iterator it = data.find(pair.second.label);
-    
-    if (it == data.end())
-      printf("  Unresolved data label '%s'!", pair.second.label.c_str());
-    else
+    else if (vi16 && vi16->mustBeSolved())
     {
-      if (pair.second.type == DataReference::Type::POINTER)
+      std::unordered_map<std::string, DataSegmentEntry>::const_iterator it = data.find(vi16->getLabel());
+
+      if (it != data.end())
       {
-        u16 address = it->second.offset + dataSegment.offset + pair.second.offset;
-        printf("  > Data '%s' at address %.4Xh\n", pair.second.label.c_str(), address);
-        
-        codeSegment.data[pair.first+2] = address & 0xFF;
-        codeSegment.data[pair.first+1] = (address >> 8) & 0xFF;
-      }
-      else if (pair.second.type == DataReference::Type::LENGTH8)
-      {
-        const DataSegmentEntry& entry = it->second;
-        if (entry.length > 256)
-          printf("Error! Length of '%s' is over 256 bytes", pair.second.label.c_str());
-        else
-          codeSegment.data[pair.first+2] = static_cast<u8>(entry.length);
-      }
-      else if (pair.second.type == DataReference::Type::LENGTH16)
-      {
-        u16 length = it->second.length;
-        
-        codeSegment.data[pair.first+2] = length & 0xFF;
-        codeSegment.data[pair.first+1] = (length >> 8) & 0xFF;
+        vi16->solve(base + it->second.offset);
+        printf("  > Data '%s' at %.4Xh\n", vi16->getLabel().c_str(), base + it->second.offset);
       }
     }
   }
