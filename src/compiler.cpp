@@ -23,7 +23,7 @@ bool Compiler::parse(const std::string &filename)
 {
   file = filename;
   
-  bool shouldGenerateTrace = false;
+  bool shouldGenerateTrace = true;
   
   ifstream is;
   is.open(filename);

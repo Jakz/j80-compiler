@@ -75,9 +75,11 @@
   IF "if"
   ELSE "else"
   WHILE "while"
+  RETURN "return"
 ;
 
-%token <Type> TYPE "type";
+%token <Type> TYPE "real type";
+%token <Type> VOID_TYPE "void type";
 
 %token <std::string>
   IDENTIFIER "identifier"
@@ -102,10 +104,14 @@
 
 %type<ASTLeftHand*> left_hand;
 
-%type<std::list<Argument>> type_list;
+%type<Type> real_type type;
+%type<std::list<ASTExpression*>> expression_list optional_expression_list;
+%type<std::list<Argument>> type_list optional_type_list;
 
 %printer { for (const auto& x : $$) yyoutput << x.name; } <std::list<Argument>>
 %printer { yyoutput << ""; } <std::list<ASTStatement*>>
+%printer { yyoutput << ""; } <std::list<ASTExpression*>>
+
 
 %printer { yyoutput << $$; } <*>
 
@@ -135,16 +141,31 @@ declaration:
 ;
 
 variable_declaration:
-  TYPE IDENTIFIER SEMICOL { $$ = compiler.createDeclaration($2, $1, 0); };
+  type IDENTIFIER SEMICOL { $$ = compiler.createDeclaration($2, $1, 0); };
 ;
 
 function_declaration:
-  TYPE IDENTIFIER LPAREN type_list RPAREN LBRACE statements RBRACE { $$ = new ASTFuncDeclaration($2, $1, $4, $7); }
+  type IDENTIFIER LPAREN optional_type_list RPAREN LBRACE statements RBRACE { $$ = new ASTFuncDeclaration($2, $1, $4, $7); }
+;
+
+real_type:
+  TYPE { $$ = $1; }
+;
+
+type:
+  real_type { $$ = $1; }
+  | VOID_TYPE { $$ = $1; }
+;
+
+optional_type_list:
+  /* empty */ { $$ = std::list<Argument>(); }
+  | VOID_TYPE { $$ = std::list<Argument>(); }
+  | type_list { $$ = $1; }
 ;
 
 type_list:
-  TYPE IDENTIFIER { $$ = std::list<Argument>(); $$.push_front(Argument($2, $1)); }
-  | type_list COMMA TYPE IDENTIFIER { $1.push_back(Argument($4, $3)); $$ = $1; }
+  real_type IDENTIFIER { $$ = std::list<Argument>(); $$.push_front(Argument($2, $1)); }
+  | type_list COMMA real_type IDENTIFIER { $1.push_back(Argument($4, $3)); $$ = $1; }
 ;
 
 statements:
@@ -155,6 +176,11 @@ statements:
 statement:
   left_hand EQUAL expression SEMICOL { $$ = new ASTAssign($1,$3); }
   | WHILE LPAREN expression RPAREN body { $$ = new ASTWhile($3, $5); }
+  | IF LPAREN expression RPAREN body { $$ = new ASTIf($3, $5); }
+  | IF LPAREN expression RPAREN body ELSE body { $$ = new ASTIf($3, $5, $7); }
+  | RETURN expression SEMICOL { $$ = new ASTReturn($2); }
+  | RETURN SEMICOL { $$ = new ASTReturn(); }
+  | IDENTIFIER LPAREN optional_expression_list RPAREN SEMICOL { $$ = new ASTCall($1, $3); }
 ;
 
 left_hand:
@@ -169,6 +195,7 @@ body:
 expression:
   U16 { $$ = new ASTNumber($1); }
   | IDENTIFIER { $$ = new ASTReference($1); }
+  | IDENTIFIER LPAREN optional_expression_list RPAREN { $$ = new ASTCall($1, $3); }
   | LPAREN expression RPAREN { $$ = $2; }
   | expression PLUS expression { $$ = new ASTBinaryExpression(Binary::ADDITION, $1, $3); }
   | expression MINUS expression { $$ = new ASTBinaryExpression(Binary::SUBTRACTION, $1, $3); }
@@ -181,6 +208,14 @@ expression:
   | BANG expression { $$ = new ASTUnaryExpression(Unary::NOT, $2); }
 
 ;
+
+optional_expression_list:
+  /* empty */ { $$ = std::list<ASTExpression*>(); }
+  | expression_list { $$ = $1; }
+
+expression_list:
+  expression { $$ = std::list<ASTExpression*>(); $$.push_back($1); }
+  | expression_list COMMA expression { $1.push_back($3); }
 
 %%
 

@@ -65,7 +65,7 @@
 ">" { return Parser::make_COMP(Binary::GREATER, loc); }
 "<" { return Parser::make_COMP(Binary::LESS, loc); }
 
-"void" { return Parser::make_TYPE(Type::VOID, loc);}
+"void" { return Parser::make_VOID_TYPE(Type::VOID, loc);}
 "byte" { return Parser::make_TYPE(Type::BYTE, loc); }
 "byte"[\t ]*"*" { return Parser::make_TYPE(Type::BYTE_PTR, loc); }
 "word" { return Parser::make_TYPE(Type::WORD, loc); }
@@ -74,6 +74,7 @@
 "while" { return Parser::make_WHILE(loc); }
 "if" { return Parser::make_IF(loc); }
 "else" { return Parser::make_ELSE(loc); }
+"return" { return Parser::make_RETURN(loc); }
 
 
 "0x"[a-fA-F0-9]+ { return Parser::make_U16(strtol( &yytext[2], NULL, 16), loc); }

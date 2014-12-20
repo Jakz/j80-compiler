@@ -66,6 +66,7 @@ namespace nanoc
     
   public:
     virtual void recursivePrint(u16 pad) const;
+    void printPad(u16 pad) const;
   };
   
   
@@ -99,6 +100,35 @@ namespace nanoc
   public:
     ASTReference(const std::string& name) : name(name) { }
     void print() const override { printf("Reference(%s)", name.c_str()); }
+  };
+  
+  class ASTCall : public ASTExpression
+  {
+  private:
+    std::string name;
+    std::list<UniqueExpression> arguments;
+    
+    void print() const override { printf("Call(%s)", name.c_str()); }
+    
+  public:
+    ASTCall(const std::string& name) : name(name) { }
+    ASTCall(const std::string& name, std::list<ASTExpression*> arguments) : name(name)
+    {
+      for (auto* argument : arguments)
+        this->arguments.push_back(std::unique_ptr<ASTExpression>(argument));
+    }
+    
+    void recursivePrint(u16 pad) const override
+    {
+      ASTExpression::recursivePrint(pad);
+      
+      if (!arguments.empty())
+      {
+        for (const auto& arg : arguments)
+          arg->recursivePrint(pad+1);
+      }
+      
+    }
   };
   
   
@@ -368,6 +398,94 @@ public:
     condition->recursivePrint(pad+1);
     for (const auto& statement : statements)
       statement->recursivePrint(pad+1);
+  }
+};
+
+
+struct IfBlock
+{
+  UniqueExpression condition;
+  std::list<std::unique_ptr<ASTStatement>> body;
+  
+  IfBlock() { }
+  
+  IfBlock(std::list<ASTStatement*> body)
+  {
+    for (auto* s : body)
+      this->body.push_back(std::unique_ptr<ASTStatement>(s));
+  }
+  
+  IfBlock(ASTExpression* condition, std::list<ASTStatement*> body)
+  {
+    this->condition = UniqueExpression(condition);
+    for (auto* s : body)
+      this->body.push_back(std::unique_ptr<ASTStatement>(s));
+  }
+};
+
+class ASTIf : public ASTStatement
+{
+private:
+  std::list<IfBlock> blocks;
+  IfBlock elseBody;
+  
+  void print() const override { printf("If"); }
+  
+public:
+  ASTIf(ASTExpression *condition, std::list<ASTStatement*> body)
+  {
+    blocks.push_back(IfBlock(condition, body));
+  }
+  
+  ASTIf(ASTExpression *condition, std::list<ASTStatement*> body, std::list<ASTStatement*> fbody)
+  {
+    blocks.push_back(IfBlock(condition, body));
+    elseBody = IfBlock(fbody);
+  }
+    
+  void recursivePrint(u16 pad) const override
+  {
+    ASTStatement::recursivePrint(pad);
+    printPad(pad+1);
+    printf("Condition\n");
+    const IfBlock& trueBlock = blocks.front();
+    
+    trueBlock.condition->recursivePrint(pad+2);
+    
+    printPad(pad+1);
+    printf("Body\n");
+    for (const auto& s : trueBlock.body)
+      s->recursivePrint(pad+2);
+    
+    if (!elseBody.body.empty())
+    {
+      printPad(pad+1);
+      printf("Else Body\n");
+      
+      for (const auto& s : elseBody.body)
+        s->recursivePrint(pad+2);
+    }
+  }
+
+};
+
+
+class ASTReturn : public ASTStatement
+{
+private:
+  UniqueExpression value;
+  
+  void print() const override { printf("Return"); }
+  
+public:
+  ASTReturn(ASTExpression *value) : value(UniqueExpression(value)) { }
+  ASTReturn() { }
+  
+  void recursivePrint(u16 pad) const override
+  {
+    ASTStatement::recursivePrint(pad);
+    if (value)
+      value->recursivePrint(pad+1);
   }
 };
 

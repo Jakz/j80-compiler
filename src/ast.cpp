@@ -5,10 +5,15 @@ using namespace nanoc;
 void ASTNode::recursivePrint(u16 pad) const
 {
   // TODO: use single printf
-  for (u16 i = 0; i < pad*2; ++i)
-    printf(" ");
+  printPad(pad);
   print();
   printf("\n");
+}
+
+void ASTNode::printPad(u16 pad) const
+{
+  for (u16 i = 0; i < pad*2; ++i)
+    printf(" ");
 }
 
 void ASTListRecur::recursivePrint(u16 pad) const
