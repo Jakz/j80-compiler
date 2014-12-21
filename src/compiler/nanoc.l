@@ -77,14 +77,14 @@
 "return" { return Parser::make_RETURN(loc); }
 
 
-"0x"[a-fA-F0-9]+ { return Parser::make_U16(strtol( &yytext[2], NULL, 16), loc); }
-[a-fA-F0-9]+"H" { return Parser::make_U16(strtol( yytext, NULL, 16), loc); }
-[a-fA-F0-9]+"h" { return Parser::make_U16(strtol( yytext, NULL, 16), loc); }
-"0b"[0-1]+ { return Parser::make_U16(strtol( &yytext[2], NULL, 2), loc); }
-[0-1]+"B" { return Parser::make_U16(strtol( yytext, NULL, 2), loc); }
-[0-1]+"b" { return Parser::make_U16(strtol( yytext, NULL, 2), loc); }
-[+\-]?[0-9]+ { return Parser::make_U16(atoi(yytext), loc);}
-"'"[ -~]"'" { return Parser::make_U16(yytext[1], loc); }
+"0x"[a-fA-F0-9]+ { return Parser::make_NUMBER(strtol( &yytext[2], NULL, 16), loc); }
+[a-fA-F0-9]+"H" { return Parser::make_NUMBER(strtol( yytext, NULL, 16), loc); }
+[a-fA-F0-9]+"h" { return Parser::make_NUMBER(strtol( yytext, NULL, 16), loc); }
+"0b"[0-1]+ { return Parser::make_NUMBER(strtol( &yytext[2], NULL, 2), loc); }
+[0-1]+"B" { return Parser::make_NUMBER(strtol( yytext, NULL, 2), loc); }
+[0-1]+"b" { return Parser::make_NUMBER(strtol( yytext, NULL, 2), loc); }
+[+\-]?[0-9]+ { return Parser::make_NUMBER(atoi(yytext), loc);}
+"'"[ -~]"'" { return Parser::make_NUMBER(yytext[1], loc); }
 
 \" { buffer.clear(); BEGIN(sstring); }
 
