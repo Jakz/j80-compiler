@@ -100,12 +100,6 @@
 "RETN"|"jmpn" { return Parser::make_RET(COND_SIGN, loc); }
 "RETNN"|"jmpnn" { return Parser::make_RET(COND_NSIGN, loc); }
 
-"IRQ0"|"irq0" { return Parser::make_INTSTART(0, loc); }
-"IRQ1"|"irq1" { return Parser::make_INTSTART(1, loc); }
-"IRQ2"|"irq2" { return Parser::make_INTSTART(2, loc); }
-"IRQ3"|"irq3" { return Parser::make_INTSTART(3, loc); }
-"IRQEND"|"irqend" { return Parser::make_INTEND(loc); }
-
 "LD"|"ld" { return Parser::make_LD(loc); }
 "MOV"|"mov" { return Parser::make_LD(loc); }
 "ST"|"st" { return Parser::make_ST(loc); }
@@ -125,7 +119,6 @@
 "POP"|"pop" { return Parser::make_POP(loc); }
 "EI"|"ei" { return Parser::make_EI(loc); }
 "DI"|"di" { return Parser::make_DI(loc); }
-"INT"|"int" { return Parser::make_INT(loc); }
 "NOP"|"nop" { return Parser::make_NOP(loc); }
 
 "LENGTH"|"length" { return Parser::make_DATA_LENGTH(loc); }
@@ -133,6 +126,8 @@
 ".RESERVE"|".reserve" { return Parser::make_DATA_RESERVE(loc); }
 ".RAW"|".raw" { return Parser::make_DATA_RAW(loc); }
 ".ENTRY"|".entry" { return Parser::make_ENTRY(loc); }
+".INTERRUPT"|".interrupt" { return Parser::make_INTERRUPT(loc); }
+".STACKBASE"|".stackbase" { return Parser::make_STACK_BASE(loc); }
 
 "0x"[a-fA-F0-9]+ { return Parser::make_U16(strtol( &yytext[2], NULL, 16), loc); }
 [a-fA-F0-9]+"H" { return Parser::make_U16(strtol( yytext, NULL, 16), loc); }

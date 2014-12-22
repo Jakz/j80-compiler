@@ -6,7 +6,7 @@
 using namespace std;
 using namespace Assembler;
 
-J80Assembler::J80Assembler() : currentIrq(-1), dataSegment(DataSegment()), codeSegment(CodeSegment()), position(0)
+J80Assembler::J80Assembler() : dataSegment(DataSegment()), codeSegment(CodeSegment()), position(0)
 {
   
 }
@@ -66,7 +66,7 @@ void J80Assembler::printProgram() const
     
     printf("%04X: ", address);
     
-    const InstructionLength length = i->getLength();
+    const u16 length = i->getLength();
     i->assemble(opcode);
     
     for (int i = 0; i < length; ++i)
@@ -180,10 +180,69 @@ void J80Assembler::buildCodeSegment()
   }
 }
 
+void J80Assembler::prepareSource()
+{
+  bool hasAtLeastOneInterrupt = false;
+  for (int i = 0; i < maxNumberOfInterrupts(); ++i)
+    hasAtLeastOneInterrupt |= irqs[i];
+  
+  /* search for a label called "main" as the entry point of the program */
+  bool hasMainLabel = false;
+  auto iteratorToMainLabel = instructions.begin();
+  for ( ; iteratorToMainLabel != instructions.end(); ++iteratorToMainLabel)
+  {
+    const Label* label = dynamic_cast<Label*>((*iteratorToMainLabel).get());
+    
+    if (label && label->getLabel() == "main")
+    {
+      hasMainLabel = true;
+      break;
+    }
+  }
+  
+  /* if program doesn't have explicit entry point then add one at the beginning */
+  if (!hasMainLabel)
+  {
+    instructions.push_front(unique_ptr<Instruction>(new Label("main")));
+    iteratorToMainLabel = instructions.begin();
+  }
+  
+  /* if program specifies a stack base then add a LD SP, NNNN instruction */
+  /* TODO: this is not language agnostic */
+  if (stackBase.isSet())
+    instructions.insert(++iteratorToMainLabel, unique_ptr<Instruction>(new InstructionLD_NNNN(REG_SP, stackBase.get())));
+  
+  /* if program has at least one interrupt we need to place a jump at the beginning to entry point
+     and setup interrupt vector table */
+  if (hasAtLeastOneInterrupt)
+  {
+    for (int i = maxNumberOfInterrupts() - 1; i >= 0; --i)
+    {
+      if (irqs[i])
+      {
+        instructions.push_front(unique_ptr<Instruction>(new InstructionNOP()));
+        instructions.push_front(unique_ptr<Instruction>(new InstructionJMP_NNNN(COND_UNCOND, (InterruptIndex)i)));
+      }
+      else
+        instructions.push_front(unique_ptr<Instruction>(new Padding(4)));
+    }
+    
+    const u16 INTERRUPT_VECTOR_BASE = 0b10000;
+    
+    for (int i = 0; i < INTERRUPT_VECTOR_BASE - 3; ++i)
+      instructions.push_front(unique_ptr<Instruction>(new InstructionNOP()));
+    
+    instructions.push_front(unique_ptr<Instruction>(new InstructionJMP_NNNN(COND_UNCOND, "main")));
+  }
+}
+
+
 bool J80Assembler::solveJumps()
 {
   
   printf("Computing label addresses.\n");
+  
+  std::vector<Optional<u16>> interrupts(maxNumberOfInterrupts());
   
   unordered_map<std::string, u16> labels;
   
@@ -191,12 +250,19 @@ bool J80Assembler::solveJumps()
   for (const auto &i : instructions)
   {
     Label* label = dynamic_cast<Label*>(i.get());
+    InterruptEntryPoint* intEntryPoint = dynamic_cast<InterruptEntryPoint*>(i.get());
 
     if (label && label->mustBeSolved())
     {
       label->solve(address);
       labels[label->getLabel()] = address;
       printf("  > Label %s resolved to address %04Xh\n", label->getLabel().c_str(), address);
+    }
+    else if (intEntryPoint && intEntryPoint->mustBeSolved())
+    {
+      intEntryPoint->solve(address);
+      interrupts[intEntryPoint->getIndex()].set(address);
+      printf("  > Interrupt %d resolved to address %04Xh\n", intEntryPoint->getIndex(), address);
     }
     else
       address += i->getLength();
@@ -208,26 +274,40 @@ bool J80Assembler::solveJumps()
   {
     InstructionAddressable* ai = dynamic_cast<InstructionAddressable*>(i.get());
 
-    // if instruction has an address that could be a label and it must be solved
+    /* if instruction has an address that could be a label and it must be solved */
     if (ai && ai->mustBeSolved())
     {
-      // find address for label
-      unordered_map<std::string, u16>::iterator it = labels.find(ai->getLabel());
-
-      if (it != labels.end())
+      if (ai->getType() == Address::Type::LABEL)
       {
-        //printf("  > Jump to %s at address %04Xh\n", ai->getLabel().c_str(), it->second);
-        u16 realAddress = codeSegment.offset + it->second;
-        ai->solve(realAddress);
-      }
-      else
-      {
-        printf("  Label %s unresolved!\n", ai->getLabel().c_str());
-        return false;
-      }
+        // find address for label
+        unordered_map<std::string, u16>::iterator it = labels.find(ai->getLabel());
 
+        if (it != labels.end())
+        {
+          //printf("  > Jump to %s at address %04Xh\n", ai->getLabel().c_str(), it->second);
+          u16 realAddress = codeSegment.offset + it->second;
+          ai->solve(realAddress);
+        }
+        else
+        {
+          printf("  Label %s unresolved.\n", ai->getLabel().c_str());
+          return false;
+        }
+      }
+      else if (ai->getType() == Address::Type::INTERRUPT)
+      {
+        const Optional<u16>& address = interrupts[ai->getIntIndex()];
+        if (address.isSet())
+        {
+          u16 realAddress = codeSegment.offset + address.get();
+          ai->solve(realAddress);
+        }
+        else
+        {
+          printf ("  Interrupt entry for %d unresolved.\n", ai->getIntIndex());
+        }
+      }
     }
-    
   }
   
   return true;

@@ -84,7 +84,13 @@ private:
 public:
   Optional() : hasBeenSet(false) { }
   Optional(T value) : value(value), hasBeenSet(true) { }
-  void set(T value) { this->value = value; hasBeenSet = true; }
+  bool set(T value) {
+    if (hasBeenSet) return false;
+    
+    this->value = value;
+    hasBeenSet = true;
+    return true;
+  }
   bool isSet() const { return hasBeenSet; }
   T get() const { return value; }
 };
@@ -99,9 +105,9 @@ class J80Assembler
   
     std::unordered_map<std::string, DataSegmentEntry> data;
   
-    s8 currentIrq;
-    std::list<Instruction> irqs[4];
-    
+    bool irqs[4] = {false,false,false,false};
+  
+    Optional<u16> stackBase;
     Optional<u16> entryPoint;
   
     DataSegment dataSegment;
@@ -123,17 +129,13 @@ class J80Assembler
     bool parse(const std::string& filename);
   
     //static u16 size();
-    
-    bool setEntryPoint(u16 address)
-    {
-      if (!entryPoint.isSet())
-      {
-        entryPoint.set(address);
-        return true;
-      }
-      else
-        return false;
-    }
+  
+    const u16 maxNumberOfInterrupts() const { return 4; }
+    bool isInterruptAvailable(u8 index) const { return !irqs[index]; }
+    void markInterrupt(u8 index) { irqs[index] = true; }
+  
+    bool setStackBase(u16 address) { return stackBase.set(address); }
+    bool setEntryPoint(u16 address) { return entryPoint.set(address); }
 
     Instruction* preamble(InstructionLength len)
     {
@@ -319,6 +321,8 @@ class J80Assembler
       data[label] = DataSegmentEntry(size);
     }
   
+    void prepareSource();
+  
     void buildDataSegment();
     void buildCodeSegment();
     void solveDataReferences();
@@ -338,6 +342,8 @@ class J80Assembler
       if (entryPoint.isSet())
         codeSegment.offset = entryPoint.get();
       
+      prepareSource();
+      
       solveJumps();
       buildDataSegment();
       solveDataReferences();
@@ -345,9 +351,6 @@ class J80Assembler
       dataSegment.offset = codeSegment.length + codeSegment.offset;
       solveDataReferences();
     }
-  
-    void interruptStart(u8 index) { currentIrq = index; }
-    void interruptEnd() { currentIrq = -1; }
     
     std::list<std::unique_ptr<Instruction>>::const_iterator iterator() { return instructions.begin(); }
     bool hasNext(std::list<std::unique_ptr<Instruction>>::const_iterator it) { return it  != instructions.end(); }

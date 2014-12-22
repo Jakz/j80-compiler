@@ -98,8 +98,8 @@
   DATA_RAW
   DATA_LENGTH "LENGTH"
   ENTRY ".entry"
-  INTEND
-  INT
+  INTERRUPT ".interrupt"
+  STACK_BASE ".stackbase"
 ;
 
 
@@ -198,7 +198,6 @@ instruction:
 
 | EI { assembler.assembleShort(OPCODE_EI); }
 | DI { assembler.assembleShort(OPCODE_DI); }
-| INT { assembler.assembleShort(OPCODE_INT); }
 | NOP { assembler.add(new InstructionNOP()); }
 
 | CMP REG8 COMMA REG8 { assembler.assembleCMP_REG($2, $4, false); }
@@ -213,7 +212,29 @@ instruction:
 
 | ENTRY U16 { if (!assembler.setEntryPoint($2)) { error(@1, "entry point specified more than once"); YYERROR; } }
 
-| INTSTART COLON { assembler.interruptStart($1); }
+| INTERRUPT U16 {
+  if ($2 >= assembler.maxNumberOfInterrupts())
+  {
+    error(@1, "interrupt index specified over maximum allowed index"); YYERROR;
+  }
+  else if (!assembler.isInterruptAvailable($2))
+  {
+    error(@1, "interrupt already specified for the index"); YYERROR;
+  }
+  else
+  {
+    assembler.markInterrupt($2);
+    assembler.add(new InterruptEntryPoint($2));
+  }
+}
+
+| STACK_BASE U16 {
+  if (!assembler.setStackBase($2)) {
+    error(@1, "stack base specified more than once"); YYERROR;
+  }
+  
+}
+
 | STRING COLON { assembler.add(new Label($1)); }
 
 /*  | JUMP STRING EOL { ASSEMBLER->asmJump($2, false); }

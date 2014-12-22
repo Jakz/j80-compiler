@@ -14,6 +14,8 @@ namespace Assembler
     LENGTH_4_BYTES = 4
   };
   
+  typedef u8 InterruptIndex;
+  
   class Instruction
   {
   public:
@@ -24,7 +26,7 @@ namespace Assembler
     Instruction() : data{0}, length(LENGTH_2_BYTES) { }
     Instruction(InstructionLength length) : data{0}, length(length) { }
     
-    virtual const InstructionLength getLength() const { return length; }
+    virtual const u16 getLength() const { return length; }
     
     virtual bool isReal() const { return true; }
     virtual std::string mnemonic() const { return std::string(); }
@@ -32,6 +34,25 @@ namespace Assembler
     virtual void assemble(u8* dest) const
     {
       memcpy(dest, &data, sizeof(u8)*length);
+    }
+  };
+  
+  class Padding : public Instruction
+  {
+  private:
+    u16 ilength;
+    
+  public:
+    Padding(u16 ilength) : Instruction(LENGTH_0_BYTES), ilength(ilength) { }
+    
+    const u16 getLength() const { return ilength; }
+    
+    virtual std::string mnemonic() const { return fmt::sprintf("NOPx%d", ilength); }
+    
+    virtual void assemble(u8* dest) const
+    {
+      for (int i = 0; i < ilength; ++i)
+        dest[i] = OPCODE_NOP;
     }
   };
   
@@ -53,19 +74,39 @@ namespace Assembler
     void solve(u16 address) { this->address = address; }
   };
   
+  class InterruptEntryPoint : public Instruction
+  {
+  private:
+    u8 index;
+    u16 address;
+    bool solved;
+    
+  public:
+    InterruptEntryPoint(u8 index) : Instruction(LENGTH_0_BYTES), index(index), address(0), solved(false) { }
+    
+    const u8 getIndex() const { return index; }
+    
+    bool isReal() const override { return false; }
+    bool mustBeSolved() { return !solved; }
+    void solve(u16 address) { this->address = address; }
+  };
+  
   struct Address
   {
     enum Type
     {
       ABSOLUTE,
-      LABEL
+      LABEL,
+      INTERRUPT
     } type;
     
     u16 address;
     std::string label;
+    InterruptIndex interrupt;
     
     Address(u16 address) : type(ABSOLUTE), address(address) { }
     Address(const std::string& label) : type(LABEL), label(label) { }
+    Address(InterruptIndex interrupt) : type(INTERRUPT), interrupt(interrupt) { }
   };
   
   struct Value8
@@ -160,8 +201,10 @@ namespace Assembler
   public:
     InstructionAddressable(InstructionLength length, Address address) : Instruction(length), address(address) { }
     
-    const std::string& getLabel() { return address.label; }
-    bool mustBeSolved() { return address.type == Address::Type::LABEL; }
+    const InterruptIndex getIntIndex() const { return address.interrupt; }
+    const std::string& getLabel() const { return address.label; }
+    bool mustBeSolved() const { return address.type != Address::Type::ABSOLUTE; }
+    Address::Type getType() const { return address.type; }
     void solve(u16 address) { this->address.address = address; this->address.type = Address::Type::ABSOLUTE; }
   };
   
@@ -173,6 +216,8 @@ namespace Assembler
   public:
     InstructionJMP_NNNN(JumpCondition condition, u16 address) : InstructionAddressable(LENGTH_3_BYTES, Address(address)), condition(condition) { }
     InstructionJMP_NNNN(JumpCondition condition, const std::string& label) : InstructionAddressable(LENGTH_3_BYTES, Address(label)), condition(condition) { }
+    InstructionJMP_NNNN(JumpCondition condition, InterruptIndex interrupt) : InstructionAddressable(LENGTH_3_BYTES, Address(interrupt)), condition(condition) { }
+
     
     std::string mnemonic() const override {
       if (address.label.empty())

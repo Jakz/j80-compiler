@@ -20,7 +20,12 @@ using UniqueNode = std::unique_ptr<nanoc::ASTNode>;
 
 namespace nanoc
 {
-
+  class SymbolTable
+  {
+    std::unordered_map<std::string, Type> variables;
+  };
+  
+  
   class Compiler
   {
     private:
