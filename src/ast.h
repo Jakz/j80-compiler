@@ -70,11 +70,14 @@ namespace nanoc
     Argument(std::string name, Type type) : name(name), type(type) { }
   };
 
-    class ASTNode;
-    using UniqueNode = std::unique_ptr<ASTNode>;
-    class ASTExpression;
-    using UniqueExpression = std::unique_ptr<ASTExpression>;
-
+  class ASTNode;
+  using UniqueNode = std::unique_ptr<ASTNode>;
+  class ASTExpression;
+  using UniqueExpression = std::unique_ptr<ASTExpression>;
+  template<typename T>
+  class ASTList;
+  template<typename T>
+  using UniqueList = std::unique_ptr<ASTList<T>>;
 
   class ASTNode
   {
@@ -94,9 +97,35 @@ namespace nanoc
     virtual void recursivePrint(u16 pad) const { }
   };
   
-  
+  template<typename T>
+  class ASTList : public ASTNode
+  {
+  private:
+    std::list<std::unique_ptr<T>> statements;
+    
+    std::string mnemonic() const override {
+      std::string unmangledName = Utils::execute(std::string("c++filt ")+typeid(T).name());
+      unmangledName.erase(unmangledName.end()-1);
+      size_t namespaceIndex = unmangledName.find("::");
+      unmangledName = unmangledName.substr(namespaceIndex+2);
+      return fmt::sprintf("List<%s>", unmangledName.c_str());
+    }
+    
+  public:
+    ASTList() { }
+    ASTList(std::list<T*>& statements)
+    {
+      for (auto* s : statements)
+        this->statements.push_back(std::unique_ptr<T>(s));
+    }
+    
+    void ivisit(Visitor* v) { for (const auto& c : statements) c->visit(v); }
+    
+  };
+
   class ASTStatement : public ASTNode { };
   class ASTDeclaration : public ASTNode { };
+  
   
   
   class ASTExpression : public ASTStatement
@@ -140,19 +169,16 @@ namespace nanoc
   {
   private:
     std::string name;
-    std::list<UniqueExpression> arguments;
+    UniqueList<ASTExpression> arguments;
     
     std::string mnemonic() const override { return fmt::sprintf("Call(%s)", name.c_str()); }
     
   public:
     ASTCall(const std::string& name) : name(name) { }
-    ASTCall(const std::string& name, std::list<ASTExpression*> arguments) : name(name)
-    {
-      for (auto* argument : arguments)
-        this->arguments.push_back(std::unique_ptr<ASTExpression>(argument));
-    }
+    ASTCall(const std::string& name, std::list<ASTExpression*>& arguments) : name(name),
+      arguments(UniqueList<ASTExpression>(new ASTList<ASTExpression>(arguments))) { }
     
-    void ivisit(Visitor* visitor) override { for (const auto& a : arguments) a->visit(visitor); }
+    void ivisit(Visitor* visitor) override { arguments->visit(visitor); }
   };
   
   
@@ -189,31 +215,6 @@ namespace nanoc
     }
     
     void ivisit(Visitor* visitor) override { operand->visit(visitor); }
-  };
-
-  template<typename T>
-  class ASTList : public ASTNode
-  {
-  private:
-    std::list<std::unique_ptr<T>> statements;
-
-    std::string mnemonic() const override {
-      std::string unmangledName = Utils::execute(std::string("c++filt ")+typeid(T).name());
-      unmangledName.erase(unmangledName.end()-1);
-      size_t namespaceIndex = unmangledName.find("::");
-      unmangledName = unmangledName.substr(namespaceIndex+2);
-      return fmt::sprintf("List<%s>", unmangledName.c_str());
-    }
-    
-  public:
-    ASTList(std::list<T*> statements)
-    {
-      for (auto* s : statements)
-        this->statements.push_back(std::unique_ptr<T>(s));
-    }
-
-    void ivisit(Visitor* v) { for (const auto& c : statements) c->visit(v); }
-
   };
 
   class ASTLeftHand : public ASTNode
@@ -313,7 +314,7 @@ namespace nanoc
     std::string name;
     Type returnType;
     std::list<Argument> arguments;
-    std::list<std::unique_ptr<ASTStatement>> statements;
+    UniqueList<ASTStatement> statements;
     
     std::string mnemonic() const override
     {
@@ -337,20 +338,10 @@ namespace nanoc
     }
     
   public:
-    ASTFuncDeclaration(std::string name, Type returnType, std::list<Argument>& arguments, std::list<ASTStatement*>& statements) : name(name), returnType(returnType), arguments(arguments)
-    {
-      for (auto* statement : statements)
-        this->statements.push_back(std::unique_ptr<ASTStatement>(statement));
-    }
-    
-    void recursivePrint(u16 pad) const override
-    {
-      ASTNode::recursivePrint(pad);
-      for (const auto& statement : statements)
-        statement->recursivePrint(pad+1);
-    }
-    
-    void ivisit(Visitor* visitor) override { for (const auto& s : statements) s->visit(visitor); }
+    ASTFuncDeclaration(std::string name, Type returnType, std::list<Argument>& arguments, std::list<ASTStatement*>& statements) : name(name), returnType(returnType),
+    arguments(arguments), statements(UniqueList<ASTStatement>(new ASTList<ASTStatement>(statements))) { }
+
+    void ivisit(Visitor* visitor) override { statements->visit(visitor); }
 
   };
 
@@ -359,18 +350,15 @@ class ASTWhile : public ASTStatement
 {
 private:
   UniqueExpression condition;
-  std::list<std::unique_ptr<ASTStatement>> statements;
+  UniqueList<ASTStatement> statements;
   
   std::string mnemonic() const override { return "While"; }
   
 public:
-  ASTWhile(ASTExpression* condition, std::list<ASTStatement*> statements) : condition(UniqueExpression(condition))
-  {
-    for (auto* statement : statements)
-      this->statements.push_back(std::unique_ptr<ASTStatement>(statement));
-  }
+  ASTWhile(ASTExpression* condition, std::list<ASTStatement*> statements) : condition(UniqueExpression(condition)),
+    statements(UniqueList<ASTStatement>(new ASTList<ASTStatement>(statements))) { }
   
-  void ivisit(Visitor* visitor) override { condition->visit(visitor); for (const auto& s : statements) s->visit(visitor); }
+  void ivisit(Visitor* visitor) override { condition->visit(visitor); statements->visit(visitor); }
 };
 
 
