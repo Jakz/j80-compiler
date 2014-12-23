@@ -93,8 +93,6 @@ namespace nanoc
     }
     
     virtual std::string mnemonic() const = 0;
-    
-    virtual void recursivePrint(u16 pad) const { }
   };
   
   template<typename T>
@@ -208,12 +206,6 @@ namespace nanoc
   public:
     ASTUnaryExpression(Unary op, ASTExpression* operand) : op(op), operand(UniqueExpression(operand)) { }
     
-    void recursivePrint(u16 pad) const override
-    {
-      ASTNode::recursivePrint(pad);
-      operand->recursivePrint(pad+1);
-    }
-    
     void ivisit(Visitor* visitor) override { operand->visit(visitor); }
   };
 
@@ -242,8 +234,6 @@ namespace nanoc
     
     std::string mnemonic() const override { return fmt::sprintf("Assign(%s)", leftHand->mnemonic().c_str()); }
     void ivisit(Visitor* visitor) override { expression->visit(visitor); }
-
-    void recursivePrint(u16 pad) const override { ASTStatement::recursivePrint(pad); expression->recursivePrint(pad+1); }
   };
 
 
@@ -273,15 +263,6 @@ namespace nanoc
     std::string getTypeName() const override  { return Mnemonics::mnemonicForType(T); }
     
     void ivisit(Visitor* visitor) override { value->visit(visitor); }
-
-    
-    void recursivePrint(u16 pad) const override
-    {
-      ASTDeclaration::recursivePrint(pad);
-      if (value)
-        value->recursivePrint(pad+1);
-    }
-
   };
 
   class ASTDeclarationPtr : public ASTVariableDeclaration
@@ -402,31 +383,6 @@ public:
     blocks.push_back(IfBlock(condition, body));
     elseBody = IfBlock(fbody);
   }
-    
-  void recursivePrint(u16 pad) const override
-  {
-    ASTStatement::recursivePrint(pad);
-    //printPad(pad+1);
-    printf("Condition\n");
-    const IfBlock& trueBlock = blocks.front();
-    
-    trueBlock.condition->recursivePrint(pad+2);
-    
-    //printPad(pad+1);
-    printf("Body\n");
-    for (const auto& s : trueBlock.body)
-      s->recursivePrint(pad+2);
-    
-    if (!elseBody.body.empty())
-    {
-      //printPad(pad+1);
-      printf("Else Body\n");
-      
-      for (const auto& s : elseBody.body)
-        s->recursivePrint(pad+2);
-    }
-  }
-
 };
 
 
@@ -441,12 +397,7 @@ public:
   ASTReturn(ASTExpression *value) : value(UniqueExpression(value)) { }
   ASTReturn() { }
   
-  void recursivePrint(u16 pad) const override
-  {
-    ASTStatement::recursivePrint(pad);
-    if (value)
-      value->recursivePrint(pad+1);
-  }
+  void ivisit(Visitor* visitor) override { value->visit(visitor); }
 };
 
 
