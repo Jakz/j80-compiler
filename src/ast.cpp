@@ -6,7 +6,7 @@ void ASTNode::recursivePrint(u16 pad) const
 {
   // TODO: use single printf
   printPad(pad);
-  print();
+  //print();
   printf("\n");
 }
 

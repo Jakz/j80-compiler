@@ -8,6 +8,7 @@
 
 #include "format.h"
 #include "utils.h"
+#include "ast_visitor.h"
 
 namespace nanoc
 {
@@ -66,9 +67,19 @@ namespace nanoc
 
   class ASTNode
   {
-    virtual void print() const = 0;
+    virtual void ivisit(Visitor* visitor) { }
     
   public:
+    void visit(Visitor* visitor)
+    {
+      visitor->enteringNode(this);
+      visitor->visit(this);
+      ivisit(visitor);
+      visitor->exitingNode(this);
+    }
+    
+    virtual std::string mnemonic() const = 0;
+    
     virtual void recursivePrint(u16 pad) const;
     void printPad(u16 pad) const;
   };
@@ -93,7 +104,7 @@ namespace nanoc
   public:
     ASTNumber(Value value) : value(value) { }
     
-    void print() const override {printf("Number(%d)", value); }
+    std::string mnemonic() const override { return fmt::sprintf("Number(%d)", value); }
   };
   
   class ASTReference : public ASTExpression
@@ -103,7 +114,7 @@ namespace nanoc
     
   public:
     ASTReference(const std::string& name) : name(name) { }
-    void print() const override { printf("Reference(%s)", name.c_str()); }
+    std::string mnemonic() const override { return fmt::sprintf("Reference(%s)", name.c_str()); }
   };
   
   class ASTCall : public ASTExpression
@@ -112,7 +123,7 @@ namespace nanoc
     std::string name;
     std::list<UniqueExpression> arguments;
     
-    void print() const override { printf("Call(%s)", name.c_str()); }
+    std::string mnemonic() const override { return fmt::sprintf("Call(%s)", name.c_str()); }
     
   public:
     ASTCall(const std::string& name) : name(name) { }
@@ -121,6 +132,9 @@ namespace nanoc
       for (auto* argument : arguments)
         this->arguments.push_back(std::unique_ptr<ASTExpression>(argument));
     }
+    
+    void ivisit(Visitor* visitor) override { for (const auto& a : arguments) a->visit(visitor); }
+
     
     void recursivePrint(u16 pad) const override
     {
@@ -142,11 +156,13 @@ namespace nanoc
     Binary op;
     UniqueExpression operand1, operand2;
     
-    void print() const override { printf("BinaryExpression(%s)", nameForType(op)); }
+    std::string mnemonic() const override { return fmt::sprintf("BinaryExpression(%s)", nameForType(op)); }
     
   public:
     ASTBinaryExpression(Binary op, ASTExpression* operand1, ASTExpression* operand2) : op(op), operand1(UniqueExpression(operand1)), operand2(UniqueExpression(operand2)) { }
     
+    void ivisit(Visitor* visitor) override { operand1->visit(visitor); operand2->visit(visitor); }
+
     
     void recursivePrint(u16 pad) const override
     {
@@ -182,7 +198,7 @@ namespace nanoc
     Unary op;
     UniqueExpression operand;
     
-    virtual void print() const override { printf("UnaryExpression(%s)", nameForType(op)); }
+    std::string mnemonic() const override { return fmt::sprintf("UnaryExpression(%s)", nameForType(op)); }
     
   public:
     ASTUnaryExpression(Unary op, ASTExpression* operand) : op(op), operand(UniqueExpression(operand)) { }
@@ -192,6 +208,8 @@ namespace nanoc
       ASTNode::recursivePrint(pad);
       operand->recursivePrint(pad+1);
     }
+    
+    void ivisit(Visitor* visitor) override { operand->visit(visitor); }
     
     static const char* nameForType(Unary op)
     {
@@ -220,7 +238,8 @@ namespace nanoc
     ASTListRecur* getNext() { return next.get(); }
     std::unique_ptr<ASTNode> stealItem() { return std::move(item); }
     
-    void print() const override { printf("List"); }
+    std::string mnemonic() const override { return "List"; }
+    void ivisit(Visitor* v) { item->visit(v); next->visit(v); }
 
     void recursivePrint(u16 pad) const override;
     
@@ -231,13 +250,16 @@ namespace nanoc
   private:
     std::list<std::unique_ptr<ASTNode>> children;
 
-    void print() const override { printf("List"); }
+    std::string mnemonic() const override { return "List"; }
     
   public:
     void recursivePrint(u16 pad) const override;
     
     void prepend(UniqueNode item) { children.push_front(std::move(item)); }
     void append(UniqueNode item) { children.push_back(std::move(item)); }
+
+    void ivisit(Visitor* v) { for (const auto& c : children) c->visit(v); }
+
   };
 
   class ASTLeftHand : public ASTNode
@@ -248,7 +270,7 @@ namespace nanoc
   public:
     ASTLeftHand(const std::string& name) : name(name) { }
     
-    void print() const override { printf("%s", name.c_str()); }
+    std::string mnemonic() const override { return fmt::sprintf("%s", name.c_str()); }
   };
 
   class ASTAssign : public ASTStatement
@@ -263,7 +285,9 @@ namespace nanoc
       
     }
     
-    void print() const override { printf("Assign("); leftHand->print(); printf(")"); }
+    std::string mnemonic() const override { return fmt::sprintf("Assign(%s)", leftHand->mnemonic().c_str()); }
+    void ivisit(Visitor* visitor) override { expression->visit(visitor); }
+
     void recursivePrint(u16 pad) const override { ASTStatement::recursivePrint(pad); expression->recursivePrint(pad+1); }
   };
 
@@ -276,7 +300,7 @@ namespace nanoc
   protected:
     ASTDeclaration(const std::string& name) : name(name) { }
     
-    void print() const override { printf("Declaration(%s, %s)", name.c_str(), getTypeName().c_str()); }
+    std::string mnemonic() const override { return fmt::sprintf("Declaration(%s, %s)", name.c_str(), getTypeName().c_str()); }
     
   public:
     virtual Type getType() const = 0;
@@ -305,6 +329,9 @@ namespace nanoc
     Type getType() const override { return Type::BYTE; }
     std::string getTypeName() const override  { return "byte"; }
     
+    void ivisit(Visitor* visitor) override { value->visit(visitor); }
+
+    
     void recursivePrint(u16 pad) const override
     {
       ASTDeclaration::recursivePrint(pad);
@@ -322,6 +349,8 @@ namespace nanoc
     ASTDeclarationWord(const std::string& name, ASTExpression* value = nullptr) : ASTDeclaration(name), value(UniqueExpression(value)) { }
     Type getType() const override { return Type::WORD; }
     std::string getTypeName() const override  { return "word"; }
+    
+    void ivisit(Visitor* visitor) override { value->visit(visitor); }
 
     void recursivePrint(u16 pad) const override
     {
@@ -363,22 +392,25 @@ namespace nanoc
     std::list<Argument> arguments;
     std::list<std::unique_ptr<ASTStatement>> statements;
     
-    void print() const override
+    std::string mnemonic() const override
     {
-      printf("FunctionDeclaration(%s, %s", name.c_str(), ASTDeclaration::nameForType(returnType));
+      std::string mnemonic = fmt::sprintf("FunctionDeclaration(%s, %s", name.c_str(), ASTDeclaration::nameForType(returnType));
+
       if (!arguments.empty())
       {
-        printf(", [");
+        mnemonic += ", [";
         bool first = true;
         for (const auto& arg : arguments)
         {
-          if (!first) printf(", ");
-          printf("%s %s", ASTDeclaration::nameForType(arg.type), arg.name.c_str());
+          if (!first) mnemonic += ", ";
+          mnemonic += fmt::sprintf("%s %s", ASTDeclaration::nameForType(arg.type), arg.name.c_str());
           first = false;
         }
-        printf("]");
+        mnemonic += "]";
       }
-      printf(")");
+      mnemonic += ")";
+      
+      return mnemonic;
     }
     
   public:
@@ -394,6 +426,9 @@ namespace nanoc
       for (const auto& statement : statements)
         statement->recursivePrint(pad+1);
     }
+    
+    void ivisit(Visitor* visitor) override { for (const auto& s : statements) s->visit(visitor); }
+
   };
 
 
@@ -403,7 +438,7 @@ private:
   UniqueExpression condition;
   std::list<std::unique_ptr<ASTStatement>> statements;
   
-  void print() const override { printf("While"); }
+  std::string mnemonic() const override { return "While"; }
   
 public:
   ASTWhile(ASTExpression* condition, std::list<ASTStatement*> statements) : condition(UniqueExpression(condition))
@@ -449,7 +484,7 @@ private:
   std::list<IfBlock> blocks;
   IfBlock elseBody;
   
-  void print() const override { printf("If"); }
+  std::string mnemonic() const override { return "If"; }
   
 public:
   ASTIf(ASTExpression *condition, std::list<ASTStatement*> body)
@@ -495,7 +530,7 @@ class ASTReturn : public ASTStatement
 private:
   UniqueExpression value;
   
-  void print() const override { printf("Return"); }
+  std::string mnemonic() const override { return "Return"; }
   
 public:
   ASTReturn(ASTExpression *value) : value(UniqueExpression(value)) { }

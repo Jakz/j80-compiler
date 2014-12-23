@@ -4,6 +4,8 @@
 #include <fstream>
 #include <sstream>
 
+#include "ast_visitor.h"
+
 using namespace std;
 using namespace nanoc;
 
@@ -23,7 +25,7 @@ bool Compiler::parse(const std::string &filename)
 {
   file = filename;
   
-  bool shouldGenerateTrace = true;
+  bool shouldGenerateTrace = false;
   
   ifstream is;
   is.open(filename);
@@ -73,5 +75,9 @@ void Compiler::pruneAST()
 void Compiler::printAST()
 {
   if (ast.get())
-    ast->recursivePrint(0);
+  {
+    unique_ptr<PrinterVisitor> visitor = unique_ptr<PrinterVisitor>(new PrinterVisitor());
+    ast->visit(visitor.get());
+  }
+    //ast->recursivePrint(0);
 }
