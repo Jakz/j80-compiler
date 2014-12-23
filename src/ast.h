@@ -276,12 +276,11 @@ namespace nanoc
   protected:
     ASTDeclaration(const std::string& name) : name(name) { }
     
-    void print() const override { printf("Declaration(%s, %s, %s)", name.c_str(), getTypeName().c_str(), getValueName().c_str()); }
+    void print() const override { printf("Declaration(%s, %s)", name.c_str(), getTypeName().c_str()); }
     
   public:
     virtual Type getType() const = 0;
     virtual std::string getTypeName() const = 0;
-    virtual std::string getValueName() const = 0;
     
     static const char* nameForType(Type t)
     {
@@ -300,24 +299,36 @@ namespace nanoc
   class ASTDeclarationByte : public ASTDeclaration
   {
   private:
-    Value value; // TODO: if a signed value is stored here print will be incorrect
+    UniqueExpression value; // TODO: if a signed value is stored here print will be incorrect
   public:
-    ASTDeclarationByte(const std::string& name, Value value = 0) : ASTDeclaration(name), value(value) { }
+    ASTDeclarationByte(const std::string& name, ASTExpression* value = nullptr) : ASTDeclaration(name), value(UniqueExpression(value)) { }
     Type getType() const override { return Type::BYTE; }
     std::string getTypeName() const override  { return "byte"; }
-    std::string getValueName() const override { return fmt::sprintf("%d", value); }
+    
+    void recursivePrint(u16 pad) const override
+    {
+      ASTDeclaration::recursivePrint(pad);
+      if (value)
+        value->recursivePrint(pad+1);
+    }
 
   };
 
   class ASTDeclarationWord : public ASTDeclaration
   {
   private:
-    Value value;
+    UniqueExpression value;
   public:
-    ASTDeclarationWord(const std::string& name, Value value = 0) : ASTDeclaration(name), value(value) { }
+    ASTDeclarationWord(const std::string& name, ASTExpression* value = nullptr) : ASTDeclaration(name), value(UniqueExpression(value)) { }
     Type getType() const override { return Type::WORD; }
     std::string getTypeName() const override  { return "word"; }
-    std::string getValueName() const override { return fmt::sprintf("%d", value); }
+
+    void recursivePrint(u16 pad) const override
+    {
+      ASTDeclaration::recursivePrint(pad);
+      if (value)
+        value->recursivePrint(pad+1);
+    }
   };
 
   class ASTDeclarationPtr : public ASTDeclaration
@@ -330,7 +341,6 @@ namespace nanoc
     Type getType() const override { return type; }
     Type getItemType() const { return type == Type::WORD_PTR ? Type::WORD : Type::BYTE; }
     std::string getTypeName() const override  { return type == Type::WORD_PTR ? "word*" : "byte*"; }
-    std::string getValueName() const override { return fmt::sprintf("%.4Xh", address); }
 
   };
 
@@ -344,7 +354,6 @@ namespace nanoc
     Type getType() const override { return type; }
     Type getItemType() const { return type == Type::WORD_PTR ? Type::WORD : Type::BYTE; }
     std::string getTypeName() const override  { return  std::string(type == Type::WORD_PTR ? "word[" : "byte[")+std::to_string(length)+"]"; }
-    std::string getValueName() const override { return fmt::sprintf("MISSING"); }
   };
 
   class ASTFuncDeclaration : public ASTNode

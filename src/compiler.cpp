@@ -45,27 +45,6 @@ void Compiler::error (const std::string& m)
   cerr << "Compiler error: " << m << endl;
 }
 
-ASTDeclaration* Compiler::createDeclaration(const std::string& name, Type type, u16 data)
-{
-  switch (type)
-  {
-    //TODO: if data is outside bounds should throw an error
-    case Type::BYTE:
-      return new ASTDeclarationByte(name, data);
-    case Type::WORD:
-      return new ASTDeclarationWord(name, data);
-    case Type::BYTE_PTR:
-    case Type::WORD_PTR:
-      return new ASTDeclarationPtr(name, type, data);
-    case Type::BYTE_ARRAY:
-    case Type::WORD_ARRAY:
-      return new ASTDeclarationArray(name, type, data);
-    
-    default:
-      return nullptr;
-  }
-}
-
 void Compiler::pruneAST()
 {
   const UniqueNode& node = ast;

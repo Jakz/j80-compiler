@@ -150,7 +150,7 @@ variable_declaration:
     }
   };
 
-  | type IDENTIFIER EQUAL NUMBER SEMICOL
+  | type IDENTIFIER EQUAL expression SEMICOL
   {
     switch ($1)
     {

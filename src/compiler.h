@@ -49,9 +49,6 @@ namespace nanoc
       void pruneAST();
     
       void printAST();
-    
-      ASTDeclaration* createDeclaration(const std::string& name, Type type, u16 param);
-    
   };
   
 }
