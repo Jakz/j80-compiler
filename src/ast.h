@@ -14,13 +14,16 @@ namespace nanoc
 {
   enum Type
   {
+    VOID,
+    BOOL,
     BYTE,
     WORD,
+    BOOL_PTR,
     BYTE_PTR,
     WORD_PTR,
+    BOOL_ARRAY,
     BYTE_ARRAY,
     WORD_ARRAY,
-    VOID
   };
 
   enum Unary
@@ -50,6 +53,14 @@ namespace nanoc
   
   typedef signed int Value;
   
+  class Mnemonics
+  {
+  public:
+    static std::string mnemonicForUnary(Unary op);
+    static std::string mnemonicForBinary(Binary op);
+    static std::string mnemonicForType(Type type, u16 param = 0);
+  };
+  
   
   struct Argument
   {
@@ -72,27 +83,26 @@ namespace nanoc
   public:
     void visit(Visitor* visitor)
     {
-      visitor->enteringNode(this);
       visitor->visit(this);
+      visitor->enteringNode(this);
       ivisit(visitor);
       visitor->exitingNode(this);
     }
     
     virtual std::string mnemonic() const = 0;
     
-    virtual void recursivePrint(u16 pad) const;
-    void printPad(u16 pad) const;
+    virtual void recursivePrint(u16 pad) const { }
   };
   
   
   class ASTStatement : public ASTNode { };
-  
+  class ASTDeclaration : public ASTNode { };
   
   
   class ASTExpression : public ASTStatement
   {
   public:
-    // TODO: make pure and implement in subtypes
+    // TODO: make pure virtual and implement in subtypes
     virtual Type getType() const { return Type::WORD; }
   };
   
@@ -103,8 +113,17 @@ namespace nanoc
     
   public:
     ASTNumber(Value value) : value(value) { }
-    
     std::string mnemonic() const override { return fmt::sprintf("Number(%d)", value); }
+  };
+  
+  class ASTBool : public ASTExpression
+  {
+  private:
+    bool value;
+    
+  public:
+    ASTBool(bool value) : value(value) { }
+    std::string mnemonic() const override { return value ? "true" : "false"; }
   };
   
   class ASTReference : public ASTExpression
@@ -134,19 +153,6 @@ namespace nanoc
     }
     
     void ivisit(Visitor* visitor) override { for (const auto& a : arguments) a->visit(visitor); }
-
-    
-    void recursivePrint(u16 pad) const override
-    {
-      ASTExpression::recursivePrint(pad);
-      
-      if (!arguments.empty())
-      {
-        for (const auto& arg : arguments)
-          arg->recursivePrint(pad+1);
-      }
-      
-    }
   };
   
   
@@ -156,39 +162,12 @@ namespace nanoc
     Binary op;
     UniqueExpression operand1, operand2;
     
-    std::string mnemonic() const override { return fmt::sprintf("BinaryExpression(%s)", nameForType(op)); }
+    std::string mnemonic() const override { return fmt::sprintf("BinaryExpression(%s)", Mnemonics::mnemonicForBinary(op)); }
     
   public:
     ASTBinaryExpression(Binary op, ASTExpression* operand1, ASTExpression* operand2) : op(op), operand1(UniqueExpression(operand1)), operand2(UniqueExpression(operand2)) { }
     
     void ivisit(Visitor* visitor) override { operand1->visit(visitor); operand2->visit(visitor); }
-
-    
-    void recursivePrint(u16 pad) const override
-    {
-      ASTNode::recursivePrint(pad);
-      operand1->recursivePrint(pad+1);
-      operand2->recursivePrint(pad+1);
-    }
-    
-    static const char* nameForType(Binary op)
-    {
-      switch (op) {
-        case Binary::ADDITION: return "+";
-        case Binary::SUBTRACTION: return "-";
-        case Binary::AND: return "&";
-        case Binary::OR: return "|";
-        case Binary::XOR: return "^";
-        case Binary::EQ: return "==";
-        case Binary::NEQ: return "!=";
-        case Binary::GREATEREQ: return ">=";
-        case Binary::LESSEQ: return "<=";
-        case Binary::GREATER: return ">";
-        case Binary::LESS: return "<";
-        default: return "";
-      }
-    }
-    
   };
   
   
@@ -198,7 +177,7 @@ namespace nanoc
     Unary op;
     UniqueExpression operand;
     
-    std::string mnemonic() const override { return fmt::sprintf("UnaryExpression(%s)", nameForType(op)); }
+    std::string mnemonic() const override { return fmt::sprintf("UnaryExpression(%s)", Mnemonics::mnemonicForUnary(op)); }
     
   public:
     ASTUnaryExpression(Unary op, ASTExpression* operand) : op(op), operand(UniqueExpression(operand)) { }
@@ -210,55 +189,30 @@ namespace nanoc
     }
     
     void ivisit(Visitor* visitor) override { operand->visit(visitor); }
-    
-    static const char* nameForType(Unary op)
-    {
-      switch (op) {
-        case Unary::NOT: return "!";
-        case Unary::INCR: return "++";
-        case Unary::DECR: return "--";
-        case Unary::NEG: return "-";
-        default: return "";
-      }
+  };
+
+  template<typename T>
+  class ASTList : public ASTNode
+  {
+  private:
+    std::list<std::unique_ptr<T>> statements;
+
+    std::string mnemonic() const override {
+      std::string unmangledName = Utils::execute(std::string("c++filt ")+typeid(T).name());
+      unmangledName.erase(unmangledName.end()-1);
+      size_t namespaceIndex = unmangledName.find("::");
+      unmangledName = unmangledName.substr(namespaceIndex+2);
+      return fmt::sprintf("List<%s>", unmangledName.c_str());
     }
-  };
-    
-  class ASTList { };
-
-  class ASTListRecur : public ASTNode, public ASTList
-  {
-  private:
-    std::unique_ptr<ASTListRecur> next;
-    std::unique_ptr<ASTNode> item;
     
   public:
-    ASTListRecur(ASTNode* item, ASTListRecur* next = nullptr) :
-      next(std::unique_ptr<ASTListRecur>(next)), item(std::unique_ptr<ASTNode>(item)) { }
-    
-    ASTListRecur* getNext() { return next.get(); }
-    std::unique_ptr<ASTNode> stealItem() { return std::move(item); }
-    
-    std::string mnemonic() const override { return "List"; }
-    void ivisit(Visitor* v) { item->visit(v); next->visit(v); }
+    ASTList(std::list<T*> statements)
+    {
+      for (auto* s : statements)
+        this->statements.push_back(std::unique_ptr<T>(s));
+    }
 
-    void recursivePrint(u16 pad) const override;
-    
-  };
-
-  class ASTListSeq : public ASTNode, public ASTList
-  {
-  private:
-    std::list<std::unique_ptr<ASTNode>> children;
-
-    std::string mnemonic() const override { return "List"; }
-    
-  public:
-    void recursivePrint(u16 pad) const override;
-    
-    void prepend(UniqueNode item) { children.push_front(std::move(item)); }
-    void append(UniqueNode item) { children.push_back(std::move(item)); }
-
-    void ivisit(Visitor* v) { for (const auto& c : children) c->visit(v); }
+    void ivisit(Visitor* v) { for (const auto& c : statements) c->visit(v); }
 
   };
 
@@ -292,42 +246,30 @@ namespace nanoc
   };
 
 
-  class ASTDeclaration : public ASTNode
+  class ASTVariableDeclaration : public ASTDeclaration
   {
   private:
     std::string name;
     
   protected:
-    ASTDeclaration(const std::string& name) : name(name) { }
+    ASTVariableDeclaration(const std::string& name) : name(name) { }
     
     std::string mnemonic() const override { return fmt::sprintf("Declaration(%s, %s)", name.c_str(), getTypeName().c_str()); }
     
   public:
     virtual Type getType() const = 0;
     virtual std::string getTypeName() const = 0;
-    
-    static const char* nameForType(Type t)
-    {
-      switch (t) {
-        case Type::BYTE: return "byte";
-        case Type::WORD: return "word";
-        case Type::BYTE_PTR: return "byte*";
-        case Type::WORD_PTR: return "word*";
-        case Type::BYTE_ARRAY: return "byte[]";
-        case Type::WORD_ARRAY: return "word[]";
-        case Type::VOID: return "void";
-      }
-    }
   };
-    
-  class ASTDeclarationByte : public ASTDeclaration
+  
+  template<Type T>
+  class ASTDeclarationValue : public ASTVariableDeclaration
   {
   private:
     UniqueExpression value; // TODO: if a signed value is stored here print will be incorrect
   public:
-    ASTDeclarationByte(const std::string& name, ASTExpression* value = nullptr) : ASTDeclaration(name), value(UniqueExpression(value)) { }
-    Type getType() const override { return Type::BYTE; }
-    std::string getTypeName() const override  { return "byte"; }
+    ASTDeclarationValue(const std::string& name, ASTExpression* value = nullptr) : ASTVariableDeclaration(name), value(UniqueExpression(value)) { }
+    Type getType() const override { return T; }
+    std::string getTypeName() const override  { return Mnemonics::mnemonicForType(T); }
     
     void ivisit(Visitor* visitor) override { value->visit(visitor); }
 
@@ -341,51 +283,32 @@ namespace nanoc
 
   };
 
-  class ASTDeclarationWord : public ASTDeclaration
-  {
-  private:
-    UniqueExpression value;
-  public:
-    ASTDeclarationWord(const std::string& name, ASTExpression* value = nullptr) : ASTDeclaration(name), value(UniqueExpression(value)) { }
-    Type getType() const override { return Type::WORD; }
-    std::string getTypeName() const override  { return "word"; }
-    
-    void ivisit(Visitor* visitor) override { value->visit(visitor); }
-
-    void recursivePrint(u16 pad) const override
-    {
-      ASTDeclaration::recursivePrint(pad);
-      if (value)
-        value->recursivePrint(pad+1);
-    }
-  };
-
-  class ASTDeclarationPtr : public ASTDeclaration
+  class ASTDeclarationPtr : public ASTVariableDeclaration
   {
   private:
     u16 address;
     Type type;
   public:
-    ASTDeclarationPtr(const std::string& name, Type type, u16 address = 0) : ASTDeclaration(name), type(type), address(address) { }
+    ASTDeclarationPtr(const std::string& name, Type type, u16 address = 0) : ASTVariableDeclaration(name), type(type), address(address) { }
     Type getType() const override { return type; }
     Type getItemType() const { return type == Type::WORD_PTR ? Type::WORD : Type::BYTE; }
     std::string getTypeName() const override  { return type == Type::WORD_PTR ? "word*" : "byte*"; }
 
   };
 
-  class ASTDeclarationArray : public ASTDeclaration
+  class ASTDeclarationArray : public ASTVariableDeclaration
   {
   private:
     u16 length;
     Type type;
   public:
-    ASTDeclarationArray(const std::string& name, Type type, u16 length = 0) : ASTDeclaration(name), type(type), length(length) { }
+    ASTDeclarationArray(const std::string& name, Type type, u16 length = 0) : ASTVariableDeclaration(name), type(type), length(length) { }
     Type getType() const override { return type; }
     Type getItemType() const { return type == Type::WORD_PTR ? Type::WORD : Type::BYTE; }
     std::string getTypeName() const override  { return  std::string(type == Type::WORD_PTR ? "word[" : "byte[")+std::to_string(length)+"]"; }
   };
 
-  class ASTFuncDeclaration : public ASTNode
+  class ASTFuncDeclaration : public ASTDeclaration
   {
     std::string name;
     Type returnType;
@@ -394,7 +317,7 @@ namespace nanoc
     
     std::string mnemonic() const override
     {
-      std::string mnemonic = fmt::sprintf("FunctionDeclaration(%s, %s", name.c_str(), ASTDeclaration::nameForType(returnType));
+      std::string mnemonic = fmt::sprintf("FunctionDeclaration(%s, %s", name.c_str(), Mnemonics::mnemonicForType(returnType));
 
       if (!arguments.empty())
       {
@@ -403,7 +326,7 @@ namespace nanoc
         for (const auto& arg : arguments)
         {
           if (!first) mnemonic += ", ";
-          mnemonic += fmt::sprintf("%s %s", ASTDeclaration::nameForType(arg.type), arg.name.c_str());
+          mnemonic += fmt::sprintf("%s %s", Mnemonics::mnemonicForType(arg.type), arg.name.c_str());
           first = false;
         }
         mnemonic += "]";
@@ -447,13 +370,7 @@ public:
       this->statements.push_back(std::unique_ptr<ASTStatement>(statement));
   }
   
-  void recursivePrint(u16 pad) const override
-  {
-    ASTNode::recursivePrint(pad);
-    condition->recursivePrint(pad+1);
-    for (const auto& statement : statements)
-      statement->recursivePrint(pad+1);
-  }
+  void ivisit(Visitor* visitor) override { condition->visit(visitor); for (const auto& s : statements) s->visit(visitor); }
 };
 
 
@@ -501,20 +418,20 @@ public:
   void recursivePrint(u16 pad) const override
   {
     ASTStatement::recursivePrint(pad);
-    printPad(pad+1);
+    //printPad(pad+1);
     printf("Condition\n");
     const IfBlock& trueBlock = blocks.front();
     
     trueBlock.condition->recursivePrint(pad+2);
     
-    printPad(pad+1);
+    //printPad(pad+1);
     printf("Body\n");
     for (const auto& s : trueBlock.body)
       s->recursivePrint(pad+2);
     
     if (!elseBody.body.empty())
     {
-      printPad(pad+1);
+      //printPad(pad+1);
       printf("Else Body\n");
       
       for (const auto& s : elseBody.body)

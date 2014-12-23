@@ -1,6 +1,7 @@
 #ifndef _UTILS_H_
 #define _UTILS_H_
 
+#include <string>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -82,6 +83,8 @@ class Utils
       
       return length;
     }
+  
+    static std::string execute(std::string command);
   
     static inline bool bit(u8 value, u8 bit)
     {

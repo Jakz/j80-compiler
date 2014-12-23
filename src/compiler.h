@@ -45,9 +45,7 @@ namespace nanoc
       bool parse(const std::string& filename);
     
       void setAST(ASTNode* node) { ast = std::unique_ptr<ASTNode>(node); }
-    
-      void pruneAST();
-    
+        
       void printAST();
   };
   

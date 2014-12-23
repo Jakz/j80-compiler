@@ -2,37 +2,48 @@
 
 using namespace nanoc;
 
-void ASTNode::recursivePrint(u16 pad) const
-{
-  // TODO: use single printf
-  printPad(pad);
-  //print();
-  printf("\n");
-}
 
-void ASTNode::printPad(u16 pad) const
+std::string Mnemonics::mnemonicForBinary(Binary op)
 {
-  for (u16 i = 0; i < pad*2; ++i)
-    printf(" ");
-}
-
-void ASTListRecur::recursivePrint(u16 pad) const
-{
-  ASTNode::recursivePrint(pad);
-  
-  const ASTListRecur* next = this;
-  
-  while (next)
-  {
-    if (next->item)
-      next->item->recursivePrint(pad+1);
-    next = next->next.get();
+  switch (op) {
+    case Binary::ADDITION: return "+";
+    case Binary::SUBTRACTION: return "-";
+    case Binary::AND: return "&";
+    case Binary::OR: return "|";
+    case Binary::XOR: return "^";
+    case Binary::EQ: return "==";
+    case Binary::NEQ: return "!=";
+    case Binary::GREATEREQ: return ">=";
+    case Binary::LESSEQ: return "<=";
+    case Binary::GREATER: return ">";
+    case Binary::LESS: return "<";
+    default: return "";
   }
 }
 
-void ASTListSeq::recursivePrint(u16 pad) const
+std::string Mnemonics::mnemonicForUnary(Unary op)
 {
-  ASTNode::recursivePrint(pad);
-  for (const auto& child : children)
-    child->recursivePrint(pad+1);
+  switch (op) {
+    case Unary::NOT: return "!";
+    case Unary::INCR: return "++";
+    case Unary::DECR: return "--";
+    case Unary::NEG: return "-";
+    default: return "";
+  }
+}
+
+std::string Mnemonics::mnemonicForType(Type type, u16 param)
+{
+  switch (type) {
+    case Type::BOOL: return "bool";
+    case Type::BYTE: return "byte";
+    case Type::WORD: return "word";
+    case Type::BOOL_PTR: return "bool*";
+    case Type::BYTE_PTR: return "byte*";
+    case Type::WORD_PTR: return "word*";
+    case Type::BYTE_ARRAY: return "byte[]";
+    case Type::WORD_ARRAY: return "word[]";
+    case Type::VOID: return "void";
+    default: return "invalid";
+  }
 }

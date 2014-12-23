@@ -78,6 +78,11 @@
   RETURN "return"
 ;
 
+%token <bool> BOOL
+  TRUE "true"
+  FALSE "false"
+;
+
 %token <Type> TYPE "real type";
 %token <Type> VOID_TYPE "void type";
 
@@ -92,11 +97,11 @@
 
 
 
-%type<ASTNode*> start declaration;
+%type<ASTNode*> declaration;
+%type<std::list<ASTNode*>> declarations;
 
 %type<ASTFuncDeclaration*> function_declaration;
 %type<ASTDeclaration*> variable_declaration;
-%type<ASTListRecur*> declarations;
 %type<ASTExpression*> expression;
 
 %type<ASTStatement*> statement
@@ -111,6 +116,7 @@
 %printer { for (const auto& x : $$) yyoutput << x.name; } <std::list<Argument>>
 %printer { yyoutput << ""; } <std::list<ASTStatement*>>
 %printer { yyoutput << ""; } <std::list<ASTExpression*>>
+%printer { yyoutput << ""; } <std::list<ASTNode*>>
 
 
 %printer { yyoutput << $$; } <*>
@@ -124,15 +130,14 @@
 
 start:
   declarations {
-    compiler.setAST($1);
-    compiler.pruneAST();
+    compiler.setAST(new ASTList<ASTNode>($1));
     compiler.printAST();
   }
 ;
 
 declarations:
-  /* empty */ { $$ = nullptr; }
-  | declarations declaration { $$ = !$1 ? new ASTListRecur($2) : new ASTListRecur($2, $1); }
+  /* empty */ { $$ = std::list<ASTNode*>(); }
+| declarations declaration { $1.push_back($2); $$ = $1; }
 ;
 
 declaration:
@@ -145,8 +150,9 @@ variable_declaration:
   {
     switch ($1)
     {
-      case Type::BYTE: $$ = new ASTDeclarationByte($2); break;
-      case Type::WORD: $$ = new ASTDeclarationWord($2); break;
+      case Type::BYTE: $$ = new ASTDeclarationValue<Type::BYTE>($2); break;
+      case Type::WORD: $$ = new ASTDeclarationValue<Type::WORD>($2); break;
+      case Type::BOOL: $$ = new ASTDeclarationValue<Type::BOOL>($2); break;
     }
   };
 
@@ -154,8 +160,9 @@ variable_declaration:
   {
     switch ($1)
     {
-      case Type::BYTE: $$ = new ASTDeclarationByte($2, $4); break;
-      case Type::WORD: $$ = new ASTDeclarationWord($2, $4); break;
+      case Type::BYTE: $$ = new ASTDeclarationValue<Type::BYTE>($2, $4); break;
+      case Type::WORD: $$ = new ASTDeclarationValue<Type::WORD>($2, $4); break;
+      case Type::BOOL: $$ = new ASTDeclarationValue<Type::BOOL>($2, $4); break;
     }
   }
 ;
@@ -210,6 +217,7 @@ body:
 
 expression:
   NUMBER { $$ = new ASTNumber($1); }
+  | BOOL { $$ = new ASTBool($1); }
   | IDENTIFIER { $$ = new ASTReference($1); }
   | IDENTIFIER LPAREN optional_expression_list RPAREN { $$ = new ASTCall($1, $3); }
   | LPAREN expression RPAREN { $$ = $2; }
