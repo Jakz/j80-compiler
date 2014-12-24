@@ -31,6 +31,7 @@ void Visitor::visit(ASTNode* node)
   DISPATCH(ASTWhile)
   DISPATCH(ASTNumber)
   DISPATCH(ASTBool)
+  DISPATCH(ASTArrayReference)
   DISPATCH(ASTReference)
   DISPATCH(ASTConditional)
   DISPATCH(ASTElseBlock)
@@ -62,6 +63,16 @@ void Visitor::visit(ASTBool* node)
 void Visitor::visit(ASTReference* node)
 {
   leafVisit(node);
+}
+
+void Visitor::visit(ASTArrayReference* node)
+{
+  commonVisit(node);
+  enteringNode(node);
+  
+  node->getIndex()->accept(this);
+  
+  exitingNode(node);
 }
 
 void Visitor::visit(ASTList<ASTDeclaration>* node)

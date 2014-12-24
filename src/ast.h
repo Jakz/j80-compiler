@@ -75,7 +75,7 @@ namespace nanoc
   };
 
   class ASTStatement : public ASTNode { };
-  class ASTDeclaration : public ASTNode { };
+  class ASTDeclaration : public ASTNode, public ASTStatement { };
   
   
   
@@ -114,6 +114,19 @@ namespace nanoc
   public:
     ASTReference(const std::string& name) : name(name) { }
     std::string mnemonic() const override { return fmt::sprintf("Reference(%s)", name.c_str()); }
+  };
+  
+  class ASTArrayReference : public ASTExpression
+  {
+  private:
+    std::string name;
+    UniqueExpression index;
+    
+  public:
+    ASTArrayReference(const std::string& name, ASTExpression* index) : name(name), index(UniqueExpression(index)) { }
+    std::string mnemonic() const override { return fmt::sprintf("ArrayReference(%s)", name.c_str()); }
+    
+    ASTExpression* getIndex() { return index.get(); }
   };
   
   class ASTCall : public ASTExpression

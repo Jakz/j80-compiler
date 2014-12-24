@@ -79,6 +79,7 @@
 "while" { return Parser::make_WHILE(loc); }
 "if" { return Parser::make_IF(loc); }
 "else" { return Parser::make_ELSE(loc); }
+"for" { return Parser::make_FOR(loc); }
 "return" { return Parser::make_RETURN(loc); }
 "then" { return Parser::make_THEN(loc); }
 "elseif" { return Parser::make_ELSEIF(loc); }
