@@ -32,6 +32,14 @@ std::string Mnemonics::mnemonicForUnary(Unary op)
   }
 }
 
+std::string Mnemonics::mnemonicForTernary(Ternary op)
+{
+  switch (op) {
+    case ELVIS: return "?:";
+    default: return "invalid";
+  }
+}
+
 std::string Mnemonics::mnemonicForType(Type type, u16 param)
 {
   switch (type) {
@@ -47,3 +55,4 @@ std::string Mnemonics::mnemonicForType(Type type, u16 param)
     default: return "invalid";
   }
 }
+

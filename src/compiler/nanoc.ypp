@@ -64,6 +64,7 @@
   LBRACE "{"
   RBRACE "}"
   BANG "!"
+  QUESTION "?"
   AND "&"
   OR "|"
   XOR "^"
@@ -237,6 +238,7 @@ expression:
   | expression OR expression { $$ = new ASTBinaryExpression(Binary::OR, $1, $3); }
   | expression XOR expression { $$ = new ASTBinaryExpression(Binary::XOR, $1, $3); }
   | expression COMP expression { $$ = new ASTBinaryExpression($2, $1, $3); }
+  | expression QUESTION expression COLON expression { $$ = new ASTTernaryExpression(Ternary::ELVIS,$1,$3,$5); }
 
   | MINUS expression { $$ = new ASTUnaryExpression(Unary::NEG, $2); }
   | BANG expression { $$ = new ASTUnaryExpression(Unary::NOT, $2); }

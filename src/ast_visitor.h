@@ -21,6 +21,7 @@ namespace nanoc
   class ASTExpression;
   class ASTUnaryExpression;
   class ASTBinaryExpression;
+  class ASTTernaryExpression;
   class ASTReference;
   class ASTCall;
   class ASTWhile;
@@ -44,6 +45,7 @@ namespace nanoc
     virtual void visit(ASTBool* node);
     virtual void visit(ASTReference* node);
     virtual void visit(ASTCall* node);
+    virtual void visit(ASTTernaryExpression* node);
     virtual void visit(ASTBinaryExpression* node);
     virtual void visit(ASTUnaryExpression* node);
     virtual void visit(ASTAssign* node);

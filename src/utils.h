@@ -67,7 +67,11 @@ namespace nanoc {
     LESSEQ,
     GREATER,
     LESS,
-    
+  };
+  
+  enum Ternary
+  {
+    ELVIS
   };
 }
 

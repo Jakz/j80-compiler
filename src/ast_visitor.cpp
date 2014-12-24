@@ -22,6 +22,7 @@ void Visitor::visit(ASTNode* node)
   DISPATCH(ASTCall)
   DISPATCH(ASTUnaryExpression)
   DISPATCH(ASTBinaryExpression)
+  DISPATCH(ASTTernaryExpression)
   DISPATCH(ASTAssign)
   DISPATCH(ASTDeclarationValue<Type::BOOL>)
   DISPATCH(ASTDeclarationValue<Type::BYTE>)
@@ -177,6 +178,18 @@ void Visitor::visit(ASTBinaryExpression* node)
   node->getOperand1()->accept(this);
   node->getOperand2()->accept(this);
 
+  exitingNode(node);
+}
+
+void Visitor::visit(ASTTernaryExpression* node)
+{
+  commonVisit(node);
+  enteringNode(node);
+  
+  node->getOperand1()->accept(this);
+  node->getOperand2()->accept(this);
+  node->getOperand3()->accept(this);
+  
   exitingNode(node);
 }
 

@@ -19,6 +19,7 @@ namespace nanoc
   public:
     static std::string mnemonicForUnary(Unary op);
     static std::string mnemonicForBinary(Binary op);
+    static std::string mnemonicForTernary(Ternary op);
     static std::string mnemonicForType(Type type, u16 param = 0);
   };
   
@@ -129,6 +130,23 @@ namespace nanoc
       arguments(UniqueList<ASTExpression>(new ASTList<ASTExpression>(arguments))) { }
     
     ASTList<ASTExpression>* getArguments() { return arguments.get(); }
+  };
+  
+  class ASTTernaryExpression : public ASTExpression
+  {
+  private:
+    Ternary op;
+    UniqueExpression operand1, operand2, operand3;
+    
+    std::string mnemonic() const override { return fmt::sprintf("TernaryExpression(%s)", Mnemonics::mnemonicForTernary(op)); }
+    
+  public:
+    ASTTernaryExpression(Ternary op, ASTExpression* operand1, ASTExpression* operand2, ASTExpression* operand3) : op(op),
+      operand1(UniqueExpression(operand1)), operand2(UniqueExpression(operand2)), operand3(UniqueExpression(operand3)) { }
+    
+    ASTExpression* getOperand1() { return operand1.get(); }
+    ASTExpression* getOperand2() { return operand2.get(); }
+    ASTExpression* getOperand3() { return operand3.get(); }
   };
   
   
