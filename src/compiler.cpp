@@ -51,8 +51,9 @@ void Compiler::printAST()
 {
   if (ast.get())
   {
-    unique_ptr<PrinterVisitor> visitor = unique_ptr<PrinterVisitor>(new PrinterVisitor());
-    ast->visit(visitor.get());
+    //unique_ptr<PrinterVisitor> visitor = unique_ptr<PrinterVisitor>(new PrinterVisitor());
+    PrinterVisitor visitor;
+    ast->accept(&visitor);
   }
     //ast->recursivePrint(0);
 }

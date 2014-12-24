@@ -12,45 +12,6 @@
 
 namespace nanoc
 {
-  enum Type
-  {
-    VOID,
-    BOOL,
-    BYTE,
-    WORD,
-    BOOL_PTR,
-    BYTE_PTR,
-    WORD_PTR,
-    BOOL_ARRAY,
-    BYTE_ARRAY,
-    WORD_ARRAY,
-  };
-
-  enum Unary
-  {
-    NOT,
-    INCR,
-    DECR,
-    NEG
-  };
-  
-  enum Binary
-  {
-    ADDITION,
-    SUBTRACTION,
-    AND,
-    OR,
-    XOR,
-    
-    EQ,
-    NEQ,
-    GREATEREQ,
-    LESSEQ,
-    GREATER,
-    LESS,
-    
-  };
-  
   typedef signed int Value;
   
   class Mnemonics
@@ -84,7 +45,7 @@ namespace nanoc
     virtual void ivisit(Visitor* visitor) { }
     
   public:
-    void visit(Visitor* visitor)
+    void accept(Visitor* visitor)
     {
       visitor->visit(this);
       visitor->enteringNode(this);
@@ -117,7 +78,9 @@ namespace nanoc
         this->statements.push_back(std::unique_ptr<T>(s));
     }
     
-    void ivisit(Visitor* v) { for (const auto& c : statements) c->visit(v); }
+    const std::list<std::unique_ptr<T>>& getStatements() { return statements; }
+    
+    void ivisit(Visitor* v) { for (const auto& c : statements) c->accept(v); }
     
   };
 
@@ -176,7 +139,9 @@ namespace nanoc
     ASTCall(const std::string& name, std::list<ASTExpression*>& arguments) : name(name),
       arguments(UniqueList<ASTExpression>(new ASTList<ASTExpression>(arguments))) { }
     
-    void ivisit(Visitor* visitor) override { arguments->visit(visitor); }
+    ASTList<ASTExpression>* getArguments() { return arguments.get(); }
+    
+    void ivisit(Visitor* visitor) override { arguments->accept(visitor); }
   };
   
   
@@ -191,7 +156,10 @@ namespace nanoc
   public:
     ASTBinaryExpression(Binary op, ASTExpression* operand1, ASTExpression* operand2) : op(op), operand1(UniqueExpression(operand1)), operand2(UniqueExpression(operand2)) { }
     
-    void ivisit(Visitor* visitor) override { operand1->visit(visitor); operand2->visit(visitor); }
+    ASTExpression* getOperand1() { return operand1.get(); }
+    ASTExpression* getOperand2() { return operand2.get(); }
+    
+    void ivisit(Visitor* visitor) override { operand1->accept(visitor); operand2->accept(visitor); }
   };
   
   
@@ -206,7 +174,9 @@ namespace nanoc
   public:
     ASTUnaryExpression(Unary op, ASTExpression* operand) : op(op), operand(UniqueExpression(operand)) { }
     
-    void ivisit(Visitor* visitor) override { operand->visit(visitor); }
+    ASTExpression* getOperand() { return operand.get(); }
+    
+    void ivisit(Visitor* visitor) override { operand->accept(visitor); }
   };
 
   class ASTLeftHand : public ASTNode
@@ -232,8 +202,10 @@ namespace nanoc
       
     }
     
+    ASTExpression* getRightHand() { return expression.get(); }
+    
     std::string mnemonic() const override { return fmt::sprintf("Assign(%s)", leftHand->mnemonic().c_str()); }
-    void ivisit(Visitor* visitor) override { expression->visit(visitor); }
+    void ivisit(Visitor* visitor) override { expression->accept(visitor); }
   };
 
 
@@ -261,8 +233,10 @@ namespace nanoc
     ASTDeclarationValue(const std::string& name, ASTExpression* value = nullptr) : ASTVariableDeclaration(name), value(UniqueExpression(value)) { }
     Type getType() const override { return T; }
     std::string getTypeName() const override  { return Mnemonics::mnemonicForType(T); }
+    ASTExpression *getInitializer() { return value.get(); }
     
-    void ivisit(Visitor* visitor) override { value->visit(visitor); }
+    
+    void ivisit(Visitor* visitor) override { value->accept(visitor); }
   };
 
   class ASTDeclarationPtr : public ASTVariableDeclaration
@@ -321,8 +295,10 @@ namespace nanoc
   public:
     ASTFuncDeclaration(std::string name, Type returnType, std::list<Argument>& arguments, std::list<ASTStatement*>& statements) : name(name), returnType(returnType),
     arguments(arguments), statements(UniqueList<ASTStatement>(new ASTList<ASTStatement>(statements))) { }
+  
+    ASTList<ASTStatement>* getBody() { return statements.get(); }
 
-    void ivisit(Visitor* visitor) override { statements->visit(visitor); }
+    void ivisit(Visitor* visitor) override { statements->accept(visitor); }
 
   };
 
@@ -339,7 +315,10 @@ public:
   ASTWhile(ASTExpression* condition, std::list<ASTStatement*> statements) : condition(UniqueExpression(condition)),
     statements(UniqueList<ASTStatement>(new ASTList<ASTStatement>(statements))) { }
   
-  void ivisit(Visitor* visitor) override { condition->visit(visitor); statements->visit(visitor); }
+  ASTExpression* getCondition() { return condition.get(); }
+  ASTList<ASTStatement>* getBody() { return statements.get(); }
+  
+  void ivisit(Visitor* visitor) override { condition->accept(visitor); statements->accept(visitor); }
 };
 
 
@@ -397,7 +376,7 @@ public:
   ASTReturn(ASTExpression *value) : value(UniqueExpression(value)) { }
   ASTReturn() { }
   
-  void ivisit(Visitor* visitor) override { value->visit(visitor); }
+  void ivisit(Visitor* visitor) override { value->accept(visitor); }
 };
 
 

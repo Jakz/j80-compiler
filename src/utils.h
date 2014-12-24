@@ -30,6 +30,47 @@ typedef signed int s32;
 
 #define MB4 (4194304)
 
+namespace nanoc {
+  enum Type
+  {
+    VOID,
+    BOOL,
+    BYTE,
+    WORD,
+    BOOL_PTR,
+    BYTE_PTR,
+    WORD_PTR,
+    BOOL_ARRAY,
+    BYTE_ARRAY,
+    WORD_ARRAY,
+  };
+  
+  enum Unary
+  {
+    NOT,
+    INCR,
+    DECR,
+    NEG
+  };
+  
+  enum Binary
+  {
+    ADDITION,
+    SUBTRACTION,
+    AND,
+    OR,
+    XOR,
+    
+    EQ,
+    NEQ,
+    GREATEREQ,
+    LESSEQ,
+    GREATER,
+    LESS,
+    
+  };
+}
+
 class Utils
 {
   private:
