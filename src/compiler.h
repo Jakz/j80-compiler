@@ -31,7 +31,7 @@ namespace nanoc
     private:
       hash_map<std::string, Type> globalVariables;
     
-      std::unique_ptr<ASTNode> ast;
+      std::unique_ptr<ASTList<ASTDeclaration>> ast;
     
     public:
       Compiler() { }
@@ -44,7 +44,7 @@ namespace nanoc
       bool parseString(const std::string& string);
       bool parse(const std::string& filename);
     
-      void setAST(ASTNode* node) { ast = std::unique_ptr<ASTNode>(node); }
+      void setAST(ASTList<ASTDeclaration>* node) { ast = std::unique_ptr<ASTList<ASTDeclaration>>(node); }
         
       void printAST();
   };

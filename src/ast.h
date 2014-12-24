@@ -42,16 +42,8 @@ namespace nanoc
 
   class ASTNode
   {
-    virtual void ivisit(Visitor* visitor) { }
-    
   public:
-    void accept(Visitor* visitor)
-    {
-      visitor->visit(this);
-      visitor->enteringNode(this);
-      ivisit(visitor);
-      visitor->exitingNode(this);
-    }
+    void accept(Visitor* visitor) { visitor->visit(this); }
     
     virtual std::string mnemonic() const = 0;
   };
@@ -60,7 +52,7 @@ namespace nanoc
   class ASTList : public ASTNode
   {
   private:
-    std::list<std::unique_ptr<T>> statements;
+    std::list<std::unique_ptr<T>> elements;
     
     std::string mnemonic() const override {
       std::string unmangledName = Utils::execute(std::string("c++filt ")+typeid(T).name());
@@ -72,16 +64,13 @@ namespace nanoc
     
   public:
     ASTList() { }
-    ASTList(std::list<T*>& statements)
+    ASTList(std::list<T*>& elements)
     {
-      for (auto* s : statements)
-        this->statements.push_back(std::unique_ptr<T>(s));
+      for (auto* s : elements)
+        this->elements.push_back(std::unique_ptr<T>(s));
     }
     
-    const std::list<std::unique_ptr<T>>& getStatements() { return statements; }
-    
-    void ivisit(Visitor* v) { for (const auto& c : statements) c->accept(v); }
-    
+    const std::list<std::unique_ptr<T>>& getElements() { return elements; }
   };
 
   class ASTStatement : public ASTNode { };
@@ -140,8 +129,6 @@ namespace nanoc
       arguments(UniqueList<ASTExpression>(new ASTList<ASTExpression>(arguments))) { }
     
     ASTList<ASTExpression>* getArguments() { return arguments.get(); }
-    
-    void ivisit(Visitor* visitor) override { arguments->accept(visitor); }
   };
   
   
@@ -158,8 +145,6 @@ namespace nanoc
     
     ASTExpression* getOperand1() { return operand1.get(); }
     ASTExpression* getOperand2() { return operand2.get(); }
-    
-    void ivisit(Visitor* visitor) override { operand1->accept(visitor); operand2->accept(visitor); }
   };
   
   
@@ -175,8 +160,6 @@ namespace nanoc
     ASTUnaryExpression(Unary op, ASTExpression* operand) : op(op), operand(UniqueExpression(operand)) { }
     
     ASTExpression* getOperand() { return operand.get(); }
-    
-    void ivisit(Visitor* visitor) override { operand->accept(visitor); }
   };
 
   class ASTLeftHand : public ASTNode
@@ -205,7 +188,6 @@ namespace nanoc
     ASTExpression* getRightHand() { return expression.get(); }
     
     std::string mnemonic() const override { return fmt::sprintf("Assign(%s)", leftHand->mnemonic().c_str()); }
-    void ivisit(Visitor* visitor) override { expression->accept(visitor); }
   };
 
 
@@ -234,9 +216,6 @@ namespace nanoc
     Type getType() const override { return T; }
     std::string getTypeName() const override  { return Mnemonics::mnemonicForType(T); }
     ASTExpression *getInitializer() { return value.get(); }
-    
-    
-    void ivisit(Visitor* visitor) override { value->accept(visitor); }
   };
 
   class ASTDeclarationPtr : public ASTVariableDeclaration
@@ -297,71 +276,71 @@ namespace nanoc
     arguments(arguments), statements(UniqueList<ASTStatement>(new ASTList<ASTStatement>(statements))) { }
   
     ASTList<ASTStatement>* getBody() { return statements.get(); }
-
-    void ivisit(Visitor* visitor) override { statements->accept(visitor); }
-
   };
 
 
-class ASTWhile : public ASTStatement
+  class ASTWhile : public ASTStatement
+  {
+  private:
+    UniqueExpression condition;
+    UniqueList<ASTStatement> statements;
+    
+    std::string mnemonic() const override { return "While"; }
+    
+  public:
+    ASTWhile(ASTExpression* condition, std::list<ASTStatement*> statements) : condition(UniqueExpression(condition)),
+      statements(UniqueList<ASTStatement>(new ASTList<ASTStatement>(statements))) { }
+    
+    ASTExpression* getCondition() { return condition.get(); }
+    ASTList<ASTStatement>* getBody() { return statements.get(); }
+  };
+
+  class ASTConditionalBlock : public ASTNode
+  {
+  private:
+    UniqueList<ASTStatement> statements;
+    
+  public:
+    ASTConditionalBlock(std::list<ASTStatement*>& statements) : statements(UniqueList<ASTStatement>(new ASTList<ASTStatement>(statements))) { }
+
+    ASTList<ASTStatement>* getBody() { return statements.get(); }
+  };
+  
+  class ASTIfBlock : public ASTConditionalBlock
+  {
+  private:
+    std::unique_ptr<ASTExpression> condition;
+    
+    std::string mnemonic() const override { return "If"; }
+
+    
+  public:
+    ASTIfBlock(ASTExpression* condition, std::list<ASTStatement*>& statements) : ASTConditionalBlock(statements), condition(std::unique_ptr<ASTExpression>(condition)) { }
+    
+    ASTExpression* getCondition() { return condition.get(); }
+  };
+  
+  class ASTElseBlock : public ASTConditionalBlock
+  {
+  private:
+    std::string mnemonic() const override { return "Else"; }
+    
+  public:
+    ASTElseBlock(std::list<ASTStatement*>& statements) : ASTConditionalBlock(statements) { }
+  };
+  
+
+class ASTConditional : public ASTStatement
 {
 private:
-  UniqueExpression condition;
-  UniqueList<ASTStatement> statements;
-  
-  std::string mnemonic() const override { return "While"; }
+  UniqueList<ASTConditionalBlock> blocks;
+
+  std::string mnemonic() const override { return "Conditional"; }
   
 public:
-  ASTWhile(ASTExpression* condition, std::list<ASTStatement*> statements) : condition(UniqueExpression(condition)),
-    statements(UniqueList<ASTStatement>(new ASTList<ASTStatement>(statements))) { }
+  ASTConditional(std::list<ASTConditionalBlock*>& blocks) : blocks(UniqueList<ASTConditionalBlock>(new ASTList<ASTConditionalBlock>(blocks))) { }
   
-  ASTExpression* getCondition() { return condition.get(); }
-  ASTList<ASTStatement>* getBody() { return statements.get(); }
-  
-  void ivisit(Visitor* visitor) override { condition->accept(visitor); statements->accept(visitor); }
-};
-
-
-struct IfBlock
-{
-  UniqueExpression condition;
-  std::list<std::unique_ptr<ASTStatement>> body;
-  
-  IfBlock() { }
-  
-  IfBlock(std::list<ASTStatement*> body)
-  {
-    for (auto* s : body)
-      this->body.push_back(std::unique_ptr<ASTStatement>(s));
-  }
-  
-  IfBlock(ASTExpression* condition, std::list<ASTStatement*> body)
-  {
-    this->condition = UniqueExpression(condition);
-    for (auto* s : body)
-      this->body.push_back(std::unique_ptr<ASTStatement>(s));
-  }
-};
-
-class ASTIf : public ASTStatement
-{
-private:
-  std::list<IfBlock> blocks;
-  IfBlock elseBody;
-  
-  std::string mnemonic() const override { return "If"; }
-  
-public:
-  ASTIf(ASTExpression *condition, std::list<ASTStatement*> body)
-  {
-    blocks.push_back(IfBlock(condition, body));
-  }
-  
-  ASTIf(ASTExpression *condition, std::list<ASTStatement*> body, std::list<ASTStatement*> fbody)
-  {
-    blocks.push_back(IfBlock(condition, body));
-    elseBody = IfBlock(fbody);
-  }
+  ASTList<ASTConditionalBlock>* getBlocks() { return blocks.get(); }
 };
 
 
@@ -373,10 +352,8 @@ private:
   std::string mnemonic() const override { return "Return"; }
   
 public:
-  ASTReturn(ASTExpression *value) : value(UniqueExpression(value)) { }
-  ASTReturn() { }
-  
-  void ivisit(Visitor* visitor) override { value->accept(visitor); }
+  ASTReturn(ASTExpression *value = nullptr) : value(UniqueExpression(value)) { }  
+  ASTExpression* getValue() { return value.get(); }
 };
 
 

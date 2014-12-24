@@ -8,9 +8,9 @@ namespace nanoc
   template<typename T>
   class ASTList;
   
+  class ASTDeclaration;
   template<Type T>
   class ASTDeclarationValue;
-  
   class ASTFuncDeclaration;
   
   class ASTNode;
@@ -24,33 +24,52 @@ namespace nanoc
   class ASTReference;
   class ASTCall;
   class ASTWhile;
+  class ASTReturn;
+  
+  class ASTConditionalBlock;
+  class ASTIfBlock;
+  class ASTElseBlock;
+  class ASTConditional;
   
   class ASTAssign;
 
   class Visitor
   {
-  public:
-    virtual void enteringNode(ASTNode* node) = 0;
-    virtual void exitingNode(ASTNode* node) = 0;
-    //virtual void visit(ASTNode* node) = 0;
-    
+  protected:
     virtual void visit(ASTList<ASTStatement>* node);
     virtual void visit(ASTList<ASTExpression>* node);
-    virtual void visit(ASTNumber* node) { }
-    virtual void visit(ASTBool* node) { }
-    virtual void visit(ASTReference* node) { }
+    virtual void visit(ASTList<ASTDeclaration>* node);
+    virtual void visit(ASTList<ASTConditionalBlock>* node);
+    virtual void visit(ASTNumber* node);
+    virtual void visit(ASTBool* node);
+    virtual void visit(ASTReference* node);
     virtual void visit(ASTCall* node);
     virtual void visit(ASTBinaryExpression* node);
     virtual void visit(ASTUnaryExpression* node);
     virtual void visit(ASTAssign* node);
+    virtual void visit(ASTReturn* node);
     
     virtual void visit(ASTDeclarationValue<Type::BOOL>* node);
     virtual void visit(ASTDeclarationValue<Type::WORD>* node);
     virtual void visit(ASTDeclarationValue<Type::BYTE>* node);
     
+    virtual void visit(ASTConditional* node);
+    virtual void visit(ASTIfBlock* node);
+    virtual void visit(ASTElseBlock* node);
+    
     virtual void visit(ASTFuncDeclaration* node);
     
     virtual void visit(ASTWhile* node);
+    
+    virtual void leafVisit(ASTNode* node);
+    
+    virtual void commonVisit(ASTNode* node) { }
+    virtual void enteringNode(ASTNode* node) { };
+    virtual void exitingNode(ASTNode* node) { };
+  
+  public:
+    virtual void visit(ASTNode* node);
+
   };
     
   
@@ -65,7 +84,7 @@ namespace nanoc
     PrinterVisitor() : indent(0) { }
     void enteringNode(ASTNode* node);
     void exitingNode(ASTNode* node);
-    void visit(ASTNode* node);
+    void commonVisit(ASTNode* node);
   };
   
 }
