@@ -16,6 +16,8 @@
 
 #include "ast.h"
 
+#include "vm/ui.h"
+
 using namespace std;
 /*
 int main(int argc, const char * argv[])
