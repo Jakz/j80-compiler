@@ -10,6 +10,8 @@
 #include <vector>
 #include <list>
 
+#include "compiler/symbol_table.h"
+
 #include "compiler/nanoclexer.h"
 #include "compiler/nanocparser.hpp"
 #include "compiler/location.hh"
