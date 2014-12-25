@@ -17,6 +17,7 @@ namespace nanoc
   
   class ASTNode;
   
+  class ASTScope;
   class ASTStatement;
   class ASTNumber;
   class ASTBool;
@@ -44,6 +45,7 @@ namespace nanoc
     virtual void visit(ASTList<ASTExpression>* node);
     virtual void visit(ASTList<ASTDeclaration>* node);
     virtual void visit(ASTList<ASTConditionalBlock>* node);
+    virtual void visit(ASTScope* node);
     virtual void visit(ASTNumber* node);
     virtual void visit(ASTBool* node);
     virtual void visit(ASTReference* node);

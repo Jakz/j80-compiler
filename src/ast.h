@@ -203,6 +203,20 @@ namespace nanoc
     
     std::string mnemonic() const override { return fmt::sprintf("%s", name.c_str()); }
   };
+  
+  class ASTScope : public ASTStatement
+  {
+  private:
+    UniqueList<ASTStatement> statements;
+    
+    std::string mnemonic() const override { return "Scope"; }
+
+    
+  public:
+    ASTScope(std::list<ASTStatement*> statements) : statements(UniqueList<ASTStatement>(new ASTList<ASTStatement>(statements))) { }
+    
+    ASTList<ASTStatement>* getStatements() { return statements.get(); }
+  };
 
   class ASTAssign : public ASTStatement
   {
@@ -283,7 +297,7 @@ namespace nanoc
     std::string name;
     Type returnType;
     std::list<Argument> arguments;
-    UniqueList<ASTStatement> statements;
+    std::unique_ptr<ASTScope> body;
     
     std::string mnemonic() const override
     {
@@ -307,10 +321,10 @@ namespace nanoc
     }
     
   public:
-    ASTFuncDeclaration(std::string name, Type returnType, std::list<Argument>& arguments, std::list<ASTStatement*>& statements) : name(name), returnType(returnType),
-    arguments(arguments), statements(UniqueList<ASTStatement>(new ASTList<ASTStatement>(statements))) { }
+    ASTFuncDeclaration(std::string name, Type returnType, std::list<Argument>& arguments, ASTScope* body) : name(name), returnType(returnType),
+    arguments(arguments), body(std::unique_ptr<ASTScope>(body)) { }
   
-    ASTList<ASTStatement>* getBody() { return statements.get(); }
+    ASTScope* getBody() { return body.get(); }
   };
 
 
@@ -318,27 +332,26 @@ namespace nanoc
   {
   private:
     UniqueExpression condition;
-    UniqueList<ASTStatement> statements;
+    std::unique_ptr<ASTStatement> body;
     
     std::string mnemonic() const override { return "While"; }
     
   public:
-    ASTWhile(ASTExpression* condition, std::list<ASTStatement*> statements) : condition(UniqueExpression(condition)),
-      statements(UniqueList<ASTStatement>(new ASTList<ASTStatement>(statements))) { }
+    ASTWhile(ASTExpression* condition, ASTStatement* body) : condition(UniqueExpression(condition)),
+      body(std::unique_ptr<ASTStatement>(body)) { }
     
     ASTExpression* getCondition() { return condition.get(); }
-    ASTList<ASTStatement>* getBody() { return statements.get(); }
+    ASTStatement* getBody() { return body.get(); }
   };
 
   class ASTConditionalBlock : public ASTNode
   {
   private:
-    UniqueList<ASTStatement> statements;
+    std::unique_ptr<ASTStatement> body;
     
   public:
-    ASTConditionalBlock(std::list<ASTStatement*>& statements) : statements(UniqueList<ASTStatement>(new ASTList<ASTStatement>(statements))) { }
-
-    ASTList<ASTStatement>* getBody() { return statements.get(); }
+    ASTConditionalBlock(ASTStatement* body) : body(std::unique_ptr<ASTStatement>(body)) { }
+    ASTStatement* getBody() { return body.get(); }
   };
   
   class ASTIfBlock : public ASTConditionalBlock
@@ -350,7 +363,7 @@ namespace nanoc
 
     
   public:
-    ASTIfBlock(ASTExpression* condition, std::list<ASTStatement*>& statements) : ASTConditionalBlock(statements), condition(std::unique_ptr<ASTExpression>(condition)) { }
+    ASTIfBlock(ASTExpression* condition, ASTStatement* body) : ASTConditionalBlock(body), condition(std::unique_ptr<ASTExpression>(condition)) { }
     
     ASTExpression* getCondition() { return condition.get(); }
   };
@@ -361,7 +374,7 @@ namespace nanoc
     std::string mnemonic() const override { return "Else"; }
     
   public:
-    ASTElseBlock(std::list<ASTStatement*>& statements) : ASTConditionalBlock(statements) { }
+    ASTElseBlock(ASTStatement* body) : ASTConditionalBlock(body) { }
   };
   
 

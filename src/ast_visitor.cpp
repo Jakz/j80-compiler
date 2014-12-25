@@ -19,6 +19,7 @@ void Visitor::visit(ASTNode* node)
   DISPATCH(ASTList<ASTStatement>)
   DISPATCH(ASTList<ASTExpression>)
   DISPATCH(ASTList<ASTConditionalBlock>)
+  DISPATCH(ASTScope)
   DISPATCH(ASTCall)
   DISPATCH(ASTUnaryExpression)
   DISPATCH(ASTBinaryExpression)
@@ -74,6 +75,16 @@ void Visitor::visit(ASTArrayReference* node)
   enteringNode(node);
   
   node->getIndex()->accept(this);
+  
+  exitingNode(node);
+}
+
+void Visitor::visit(ASTScope* node)
+{
+  commonVisit(node);
+  enteringNode(node);
+  
+  node->getStatements()->accept(this);
   
   exitingNode(node);
 }

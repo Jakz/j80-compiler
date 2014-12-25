@@ -6,6 +6,8 @@
 #include <ncurses.h>
 #include <panel.h>
 
+#include "../utils.h"
+
 namespace vm
 {
 
