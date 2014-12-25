@@ -27,6 +27,9 @@ void Visitor::visit(ASTNode* node)
   DISPATCH(ASTDeclarationValue<Type::BOOL>)
   DISPATCH(ASTDeclarationValue<Type::BYTE>)
   DISPATCH(ASTDeclarationValue<Type::WORD>)
+  DISPATCH(ASTDeclarationArray<Type::BOOL>)
+  DISPATCH(ASTDeclarationArray<Type::BYTE>)
+  DISPATCH(ASTDeclarationArray<Type::WORD>)
   DISPATCH(ASTFuncDeclaration)
   DISPATCH(ASTWhile)
   DISPATCH(ASTNumber)
@@ -239,6 +242,36 @@ void Visitor::visit(ASTDeclarationValue<Type::BYTE>* node)
   commonVisit(node);
   enteringNode(node);
 
+  OPTIONAL_DISPATCH(node->getInitializer())
+  
+  exitingNode(node);
+}
+
+void Visitor::visit(ASTDeclarationArray<Type::BOOL>* node)
+{
+  commonVisit(node);
+  enteringNode(node);
+  
+  OPTIONAL_DISPATCH(node->getInitializer())
+  
+  exitingNode(node);
+}
+
+void Visitor::visit(ASTDeclarationArray<Type::WORD>* node)
+{
+  commonVisit(node);
+  enteringNode(node);
+  
+  OPTIONAL_DISPATCH(node->getInitializer())
+  
+  exitingNode(node);
+}
+
+void Visitor::visit(ASTDeclarationArray<Type::BYTE>* node)
+{
+  commonVisit(node);
+  enteringNode(node);
+  
   OPTIONAL_DISPATCH(node->getInitializer())
   
   exitingNode(node);

@@ -75,7 +75,7 @@ namespace nanoc
   };
 
   class ASTStatement : public ASTNode { };
-  class ASTDeclaration : public ASTNode, public ASTStatement { };
+  class ASTDeclaration : public ASTStatement { };
   
   
   
@@ -224,12 +224,10 @@ namespace nanoc
 
   class ASTVariableDeclaration : public ASTDeclaration
   {
-  private:
-    std::string name;
-    
   protected:
     ASTVariableDeclaration(const std::string& name) : name(name) { }
     
+    std::string name;
     std::string mnemonic() const override { return fmt::sprintf("Declaration(%s, %s)", name.c_str(), getTypeName().c_str()); }
     
   public:
@@ -246,7 +244,25 @@ namespace nanoc
     ASTDeclarationValue(const std::string& name, ASTExpression* value = nullptr) : ASTVariableDeclaration(name), value(UniqueExpression(value)) { }
     Type getType() const override { return T; }
     std::string getTypeName() const override  { return Mnemonics::mnemonicForType(T); }
-    ASTExpression *getInitializer() { return value.get(); }
+    ASTExpression* getInitializer() { return value.get(); }
+  };
+  
+  template<Type T>
+  class ASTDeclarationArray : public ASTVariableDeclaration
+  {
+  private:
+    const u16 length;
+    UniqueList<ASTExpression> initializer;
+    
+    std::string mnemonic() const override { return fmt::sprintf("DeclarationArray(%s, %s, %u)", name.c_str(), getTypeName().c_str(), length); }
+    
+  public:
+    ASTDeclarationArray(const std::string& name, u16 length) : ASTVariableDeclaration(name), length(length) { }
+    ASTDeclarationArray(const std::string& name, u16 length, std::list<ASTExpression*>& initializer) : ASTVariableDeclaration(name), length(length), initializer(UniqueList<ASTExpression>(new ASTList<ASTExpression>(initializer))) { }
+    Type getType() const override { return T; }
+    std::string getTypeName() const override { return Mnemonics::mnemonicForType(T); }
+    
+    ASTList<ASTExpression>* getInitializer() { return initializer.get(); }
   };
 
   class ASTDeclarationPtr : public ASTVariableDeclaration
@@ -260,18 +276,6 @@ namespace nanoc
     Type getItemType() const { return type == Type::WORD_PTR ? Type::WORD : Type::BYTE; }
     std::string getTypeName() const override  { return type == Type::WORD_PTR ? "word*" : "byte*"; }
 
-  };
-
-  class ASTDeclarationArray : public ASTVariableDeclaration
-  {
-  private:
-    u16 length;
-    Type type;
-  public:
-    ASTDeclarationArray(const std::string& name, Type type, u16 length = 0) : ASTVariableDeclaration(name), type(type), length(length) { }
-    Type getType() const override { return type; }
-    Type getItemType() const { return type == Type::WORD_PTR ? Type::WORD : Type::BYTE; }
-    std::string getTypeName() const override  { return  std::string(type == Type::WORD_PTR ? "word[" : "byte[")+std::to_string(length)+"]"; }
   };
 
   class ASTFuncDeclaration : public ASTDeclaration

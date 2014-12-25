@@ -11,6 +11,8 @@ namespace nanoc
   class ASTDeclaration;
   template<Type T>
   class ASTDeclarationValue;
+  template<Type T>
+  class ASTDeclarationArray;
   class ASTFuncDeclaration;
   
   class ASTNode;
@@ -56,6 +58,10 @@ namespace nanoc
     virtual void visit(ASTDeclarationValue<Type::BOOL>* node);
     virtual void visit(ASTDeclarationValue<Type::WORD>* node);
     virtual void visit(ASTDeclarationValue<Type::BYTE>* node);
+    
+    virtual void visit(ASTDeclarationArray<Type::BOOL>* node);
+    virtual void visit(ASTDeclarationArray<Type::WORD>* node);
+    virtual void visit(ASTDeclarationArray<Type::BYTE>* node);
     
     virtual void visit(ASTConditional* node);
     virtual void visit(ASTIfBlock* node);

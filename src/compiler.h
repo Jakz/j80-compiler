@@ -38,8 +38,8 @@ namespace nanoc
     
       std::string file;
     
-      void error (const nanoc::location& l, const std::string& m);
-      void error (const std::string& m);
+      void error(const nanoc::location& l, const std::string& m);
+      void error(const std::string& m);
     
       bool parseString(const std::string& string);
       bool parse(const std::string& filename);

@@ -95,6 +95,10 @@ int main(int argc, const char * argv[])
     runWithArgs(args);
     return 0;
   }
+  else if (argc == 1)
+  {
+    runWithArgs({"j80", "test.nc"});
+  }
     
   
   nanoc::Compiler compiler;
