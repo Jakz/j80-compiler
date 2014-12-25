@@ -20,6 +20,7 @@
 %}
 
 %x sstring
+%x scomment
 
 %option nodefault
 %option noyywrap
@@ -58,6 +59,8 @@
 "&" { return Parser::make_AND(loc); }
 "|" { return Parser::make_OR(loc); }
 "^" { return Parser::make_XOR(loc); }
+"||" { return Parser::make_LOR(loc); }
+"&&" { return Parser::make_LAND(loc); }
 
 "!=" { return Parser::make_COMP(Binary::NEQ, loc); }
 "==" { return Parser::make_COMP(Binary::EQ, loc); }
@@ -97,7 +100,7 @@
 [+\-]?[0-9]+ { return Parser::make_NUMBER(atoi(yytext), loc);}
 "'"[ -~]"'" { return Parser::make_NUMBER(yytext[1], loc); }
 
-\" { buffer.clear(); BEGIN(sstring); }
+<INITIAL>\" { buffer.clear(); BEGIN(sstring); }
 
 <sstring>\" { BEGIN(INITIAL); return Parser::make_LITERAL(buffer.c_str(), loc); }
 <sstring>\\n { buffer += '\n'; }
@@ -105,9 +108,15 @@
 <sstring>\\(.|\n) { buffer += yytext[1]; }
 <sstring>[^\\\n\"]+ { char *ptr = yytext; while (*ptr) buffer += *ptr++; }
 
+<INITIAL>"/*" { BEGIN(scomment); }
+<scomment>"*/" { BEGIN(INITIAL); }
+<scomment>\n|"\r\n" { loc.lines(yyleng); loc.step();  }
+<scomment>.+ { }
+
+
 [a-zA-Z_][a-zA-Z0-9_]* { return Parser::make_IDENTIFIER(yytext,loc); }
 
-"#"[^\n]*\n { Parser::make_EOL(loc); loc.step(); }
+"//"[^\n]*\n { Parser::make_EOL(loc); loc.step(); }
 
 
 \n|"\r\n" { Parser::make_EOL(loc); loc.lines(yyleng); loc.step();  }

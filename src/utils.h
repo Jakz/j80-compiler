@@ -67,6 +67,9 @@ namespace nanoc {
     LESSEQ,
     GREATER,
     LESS,
+    
+    LOR,
+    LAND
   };
   
   enum Ternary

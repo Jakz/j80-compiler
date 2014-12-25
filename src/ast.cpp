@@ -17,6 +17,8 @@ std::string Mnemonics::mnemonicForBinary(Binary op)
     case Binary::LESSEQ: return "<=";
     case Binary::GREATER: return ">";
     case Binary::LESS: return "<";
+    case Binary::LOR: return "||";
+    case Binary::LAND: return "&&";
     default: return "";
   }
 }
