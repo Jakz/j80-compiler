@@ -13,17 +13,7 @@
 namespace nanoc
 {
   typedef signed int Value;
-  
-  class Mnemonics
-  {
-  public:
-    static std::string mnemonicForUnary(Unary op);
-    static std::string mnemonicForBinary(Binary op);
-    static std::string mnemonicForTernary(Ternary op);
-    static std::string mnemonicForType(Type type, u16 param = 0);
-  };
-  
-  
+
   struct Argument
   {
     std::string name;
@@ -32,6 +22,8 @@ namespace nanoc
     Argument(std::string name, Type type) : name(name), type(type) { }
   };
 
+  class LocalSymbolTable;
+  
   class ASTNode;
   using UniqueNode = std::unique_ptr<ASTNode>;
   class ASTExpression;
@@ -74,8 +66,8 @@ namespace nanoc
     const std::list<std::unique_ptr<T>>& getElements() { return elements; }
   };
 
-  class ASTStatement : public ASTNode { };
-  class ASTDeclaration : public ASTStatement { };
+  class ASTStatement : virtual public ASTNode { };
+  class ASTDeclaration : virtual public ASTStatement { };
   
   
   
@@ -204,18 +196,21 @@ namespace nanoc
     std::string mnemonic() const override { return fmt::sprintf("%s", name.c_str()); }
   };
   
-  class ASTScope : public ASTStatement
+  class ASTScope : virtual public ASTStatement
   {
   private:
     UniqueList<ASTStatement> statements;
+    LocalSymbolTable* symbols;
     
     std::string mnemonic() const override { return "Scope"; }
 
     
   public:
-    ASTScope(std::list<ASTStatement*> statements) : statements(UniqueList<ASTStatement>(new ASTList<ASTStatement>(statements))) { }
+    ASTScope(std::list<ASTStatement*>& statements) : statements(UniqueList<ASTStatement>(new ASTList<ASTStatement>(statements))) { }
     
     ASTList<ASTStatement>* getStatements() { return statements.get(); }
+    
+    void setSymbolTable(LocalSymbolTable *table) { symbols = table; }
   };
 
   class ASTAssign : public ASTStatement
@@ -247,6 +242,8 @@ namespace nanoc
   public:
     virtual Type getType() const = 0;
     virtual std::string getTypeName() const = 0;
+    
+    const std::string& getName() { return name; }
   };
   
   template<Type T>
@@ -292,12 +289,11 @@ namespace nanoc
 
   };
 
-  class ASTFuncDeclaration : public ASTDeclaration
+  class ASTFuncDeclaration : virtual public ASTScope, virtual public ASTDeclaration
   {
     std::string name;
     Type returnType;
     std::list<Argument> arguments;
-    std::unique_ptr<ASTScope> body;
     
     std::string mnemonic() const override
     {
@@ -321,10 +317,12 @@ namespace nanoc
     }
     
   public:
-    ASTFuncDeclaration(std::string name, Type returnType, std::list<Argument>& arguments, ASTScope* body) : name(name), returnType(returnType),
-    arguments(arguments), body(std::unique_ptr<ASTScope>(body)) { }
+    ASTFuncDeclaration(std::string name, Type returnType, std::list<Argument>& arguments, std::list<ASTStatement*>& body) : ASTScope(body), name(name), returnType(returnType),
+    arguments(arguments) { }
   
-    ASTScope* getBody() { return body.get(); }
+    const std::string& getName() { return name; }
+    const Type getReturnType() { return returnType; }
+    const std::list<Argument>& getArguments() { return arguments; }
   };
 
 

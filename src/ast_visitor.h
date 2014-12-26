@@ -3,6 +3,10 @@
 
 #include "utils.h"
 
+#define VISITOR_FUNCTIONALITY(__CLASS_NAME__) virtual void visit(__CLASS_NAME__* node);\
+virtual void enteringNode(__CLASS_NAME__* node);\
+virtual void exitingNode(__CLASS_NAME__* node);
+
 namespace nanoc
 {
   template<typename T>
@@ -41,43 +45,42 @@ namespace nanoc
   class Visitor
   {
   protected:
-    virtual void visit(ASTList<ASTStatement>* node);
-    virtual void visit(ASTList<ASTExpression>* node);
-    virtual void visit(ASTList<ASTDeclaration>* node);
-    virtual void visit(ASTList<ASTConditionalBlock>* node);
-    virtual void visit(ASTScope* node);
-    virtual void visit(ASTNumber* node);
-    virtual void visit(ASTBool* node);
-    virtual void visit(ASTReference* node);
-    virtual void visit(ASTArrayReference* node);
-    virtual void visit(ASTCall* node);
-    virtual void visit(ASTTernaryExpression* node);
-    virtual void visit(ASTBinaryExpression* node);
-    virtual void visit(ASTUnaryExpression* node);
-    virtual void visit(ASTAssign* node);
-    virtual void visit(ASTReturn* node);
+    VISITOR_FUNCTIONALITY(ASTList<ASTStatement>)
+    VISITOR_FUNCTIONALITY(ASTList<ASTExpression>)
+    VISITOR_FUNCTIONALITY(ASTList<ASTDeclaration>)
+    VISITOR_FUNCTIONALITY(ASTList<ASTConditionalBlock>)
+    VISITOR_FUNCTIONALITY(ASTFuncDeclaration)
+    VISITOR_FUNCTIONALITY(ASTScope)
+    VISITOR_FUNCTIONALITY(ASTNumber)
+    VISITOR_FUNCTIONALITY(ASTBool)
+    VISITOR_FUNCTIONALITY(ASTReference)
+    VISITOR_FUNCTIONALITY(ASTArrayReference)
+    VISITOR_FUNCTIONALITY(ASTCall)
+    VISITOR_FUNCTIONALITY(ASTTernaryExpression)
+    VISITOR_FUNCTIONALITY(ASTBinaryExpression)
+    VISITOR_FUNCTIONALITY(ASTUnaryExpression)
+    VISITOR_FUNCTIONALITY(ASTAssign)
+    VISITOR_FUNCTIONALITY(ASTReturn)
     
-    virtual void visit(ASTDeclarationValue<Type::BOOL>* node);
-    virtual void visit(ASTDeclarationValue<Type::WORD>* node);
-    virtual void visit(ASTDeclarationValue<Type::BYTE>* node);
+    VISITOR_FUNCTIONALITY(ASTDeclarationValue<Type::BOOL>)
+    VISITOR_FUNCTIONALITY(ASTDeclarationValue<Type::WORD>)
+    VISITOR_FUNCTIONALITY(ASTDeclarationValue<Type::BYTE>)
+    VISITOR_FUNCTIONALITY(ASTDeclarationArray<Type::BOOL>)
+    VISITOR_FUNCTIONALITY(ASTDeclarationArray<Type::WORD>)
+    VISITOR_FUNCTIONALITY(ASTDeclarationArray<Type::BYTE>)
     
-    virtual void visit(ASTDeclarationArray<Type::BOOL>* node);
-    virtual void visit(ASTDeclarationArray<Type::WORD>* node);
-    virtual void visit(ASTDeclarationArray<Type::BYTE>* node);
+    VISITOR_FUNCTIONALITY(ASTConditional)
+    VISITOR_FUNCTIONALITY(ASTIfBlock)
+    VISITOR_FUNCTIONALITY(ASTElseBlock)
     
-    virtual void visit(ASTConditional* node);
-    virtual void visit(ASTIfBlock* node);
-    virtual void visit(ASTElseBlock* node);
     
-    virtual void visit(ASTFuncDeclaration* node);
-    
-    virtual void visit(ASTWhile* node);
-    
+    VISITOR_FUNCTIONALITY(ASTWhile)
+
     virtual void leafVisit(ASTNode* node);
     
     virtual void commonVisit(ASTNode* node) { }
-    virtual void enteringNode(ASTNode* node) { };
-    virtual void exitingNode(ASTNode* node) { };
+    virtual void commonEnteringNode(ASTNode* node) { };
+    virtual void commonExitingNode(ASTNode* node) { };
   
   public:
     virtual void visit(ASTNode* node);
@@ -94,11 +97,10 @@ namespace nanoc
     
   public:
     PrinterVisitor() : indent(0) { }
-    void enteringNode(ASTNode* node);
-    void exitingNode(ASTNode* node);
+    void commonEnteringNode(ASTNode* node);
+    void commonExitingNode(ASTNode* node);
     void commonVisit(ASTNode* node);
-  };
-  
+  };  
 }
 
 #endif

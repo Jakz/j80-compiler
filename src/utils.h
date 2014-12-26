@@ -76,6 +76,15 @@ namespace nanoc {
   {
     ELVIS
   };
+  
+  class Mnemonics
+  {
+  public:
+    static std::string mnemonicForUnary(Unary op);
+    static std::string mnemonicForBinary(Binary op);
+    static std::string mnemonicForTernary(Ternary op);
+    static std::string mnemonicForType(Type type, u16 param = 0);
+  };
 }
 
 class Utils

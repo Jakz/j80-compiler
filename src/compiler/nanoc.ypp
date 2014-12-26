@@ -227,7 +227,7 @@ array_declaration:
 ;
 
 function_declaration:
-  type IDENTIFIER LPAREN optional_type_list RPAREN scope { $$ = new ASTFuncDeclaration($2, $1, $4, $6); }
+  type IDENTIFIER LPAREN optional_type_list RPAREN LBRACE statements RBRACE { $$ = new ASTFuncDeclaration($2, $1, $4, $7); }
 ;
 
 real_type:

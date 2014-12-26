@@ -55,5 +55,11 @@ void Compiler::printAST()
     PrinterVisitor visitor;
     ast->accept(&visitor);
   }
+  
+  SymbolsVisitor svisitor;
+  ast->accept(&svisitor);
+  
+  svisitor.getTable().print();
+  
     //ast->recursivePrint(0);
 }

@@ -12,6 +12,8 @@ using namespace std;
 
 #define DISPATCH(__CLASS_NAME__) { __CLASS_NAME__* inode = dynamic_cast<__CLASS_NAME__*>(node); if (inode) { visit(inode); return; } }
 #define OPTIONAL_DISPATCH(__METHOD__) { auto* n = __METHOD__; if (n) n->accept(this); }
+#define VISITOR_FUNCTIONALITY_IMPL(__CLASS_NAME__) void Visitor::enteringNode(__CLASS_NAME__* node) { commonEnteringNode(node); }\
+void Visitor::exitingNode(__CLASS_NAME__* node) { commonExitingNode(node); }
 
 void Visitor::visit(ASTNode* node)
 {
@@ -19,6 +21,7 @@ void Visitor::visit(ASTNode* node)
   DISPATCH(ASTList<ASTStatement>)
   DISPATCH(ASTList<ASTExpression>)
   DISPATCH(ASTList<ASTConditionalBlock>)
+  DISPATCH(ASTFuncDeclaration)
   DISPATCH(ASTScope)
   DISPATCH(ASTCall)
   DISPATCH(ASTUnaryExpression)
@@ -31,7 +34,6 @@ void Visitor::visit(ASTNode* node)
   DISPATCH(ASTDeclarationArray<Type::BOOL>)
   DISPATCH(ASTDeclarationArray<Type::BYTE>)
   DISPATCH(ASTDeclarationArray<Type::WORD>)
-  DISPATCH(ASTFuncDeclaration)
   DISPATCH(ASTWhile)
   DISPATCH(ASTNumber)
   DISPATCH(ASTBool)
@@ -47,11 +49,39 @@ void Visitor::visit(ASTNode* node)
   assert(false);
 }
 
+VISITOR_FUNCTIONALITY_IMPL(ASTList<ASTDeclaration>)
+VISITOR_FUNCTIONALITY_IMPL(ASTList<ASTStatement>)
+VISITOR_FUNCTIONALITY_IMPL(ASTList<ASTExpression>)
+VISITOR_FUNCTIONALITY_IMPL(ASTList<ASTConditionalBlock>)
+VISITOR_FUNCTIONALITY_IMPL(ASTFuncDeclaration)
+VISITOR_FUNCTIONALITY_IMPL(ASTScope)
+VISITOR_FUNCTIONALITY_IMPL(ASTCall)
+VISITOR_FUNCTIONALITY_IMPL(ASTUnaryExpression)
+VISITOR_FUNCTIONALITY_IMPL(ASTBinaryExpression)
+VISITOR_FUNCTIONALITY_IMPL(ASTTernaryExpression)
+VISITOR_FUNCTIONALITY_IMPL(ASTAssign)
+VISITOR_FUNCTIONALITY_IMPL(ASTDeclarationValue<Type::BOOL>)
+VISITOR_FUNCTIONALITY_IMPL(ASTDeclarationValue<Type::BYTE>)
+VISITOR_FUNCTIONALITY_IMPL(ASTDeclarationValue<Type::WORD>)
+VISITOR_FUNCTIONALITY_IMPL(ASTDeclarationArray<Type::BOOL>)
+VISITOR_FUNCTIONALITY_IMPL(ASTDeclarationArray<Type::BYTE>)
+VISITOR_FUNCTIONALITY_IMPL(ASTDeclarationArray<Type::WORD>)
+VISITOR_FUNCTIONALITY_IMPL(ASTWhile)
+VISITOR_FUNCTIONALITY_IMPL(ASTNumber)
+VISITOR_FUNCTIONALITY_IMPL(ASTBool)
+VISITOR_FUNCTIONALITY_IMPL(ASTArrayReference)
+VISITOR_FUNCTIONALITY_IMPL(ASTReference)
+VISITOR_FUNCTIONALITY_IMPL(ASTConditional)
+VISITOR_FUNCTIONALITY_IMPL(ASTElseBlock)
+VISITOR_FUNCTIONALITY_IMPL(ASTIfBlock)
+VISITOR_FUNCTIONALITY_IMPL(ASTReturn)
+
+
 void Visitor::leafVisit(ASTNode *node)
 {
   commonVisit(node);
-  enteringNode(node);
-  exitingNode(node);
+  commonEnteringNode(node);
+  commonExitingNode(node);
 }
 
 void Visitor::visit(ASTNumber* node)
@@ -293,7 +323,7 @@ void Visitor::visit(ASTFuncDeclaration* node)
   commonVisit(node);
   enteringNode(node);
 
-  node->getBody()->accept(this);
+  node->getStatements()->accept(this);
   
   exitingNode(node);
 }
@@ -316,13 +346,13 @@ void PrinterVisitor::pad(u16 indent)
 
 }
 
-void PrinterVisitor::enteringNode(ASTNode *node)
+void PrinterVisitor::commonEnteringNode(ASTNode *node)
 {
   //cout << "entering node" << endl;
   ++indent;
 }
 
-void PrinterVisitor::exitingNode(ASTNode *node)
+void PrinterVisitor::commonExitingNode(ASTNode *node)
 {
   //cout << "exiting node" << endl;
   --indent;
