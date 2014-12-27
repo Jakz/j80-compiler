@@ -28,12 +28,8 @@ void Visitor::visit(ASTNode* node)
   DISPATCH(ASTBinaryExpression)
   DISPATCH(ASTTernaryExpression)
   DISPATCH(ASTAssign)
-  DISPATCH(ASTDeclarationValue<Type::BOOL>)
-  DISPATCH(ASTDeclarationValue<Type::BYTE>)
-  DISPATCH(ASTDeclarationValue<Type::WORD>)
-  DISPATCH(ASTDeclarationArray<Type::BOOL>)
-  DISPATCH(ASTDeclarationArray<Type::BYTE>)
-  DISPATCH(ASTDeclarationArray<Type::WORD>)
+  DISPATCH(ASTDeclarationValue)
+  DISPATCH(ASTDeclarationArray)
   DISPATCH(ASTWhile)
   DISPATCH(ASTNumber)
   DISPATCH(ASTBool)
@@ -60,12 +56,8 @@ VISITOR_FUNCTIONALITY_IMPL(ASTUnaryExpression)
 VISITOR_FUNCTIONALITY_IMPL(ASTBinaryExpression)
 VISITOR_FUNCTIONALITY_IMPL(ASTTernaryExpression)
 VISITOR_FUNCTIONALITY_IMPL(ASTAssign)
-VISITOR_FUNCTIONALITY_IMPL(ASTDeclarationValue<Type::BOOL>)
-VISITOR_FUNCTIONALITY_IMPL(ASTDeclarationValue<Type::BYTE>)
-VISITOR_FUNCTIONALITY_IMPL(ASTDeclarationValue<Type::WORD>)
-VISITOR_FUNCTIONALITY_IMPL(ASTDeclarationArray<Type::BOOL>)
-VISITOR_FUNCTIONALITY_IMPL(ASTDeclarationArray<Type::BYTE>)
-VISITOR_FUNCTIONALITY_IMPL(ASTDeclarationArray<Type::WORD>)
+VISITOR_FUNCTIONALITY_IMPL(ASTDeclarationValue)
+VISITOR_FUNCTIONALITY_IMPL(ASTDeclarationArray)
 VISITOR_FUNCTIONALITY_IMPL(ASTWhile)
 VISITOR_FUNCTIONALITY_IMPL(ASTNumber)
 VISITOR_FUNCTIONALITY_IMPL(ASTBool)
@@ -258,7 +250,7 @@ void Visitor::visit(ASTAssign* node)
   exitingNode(node);
 }
 
-void Visitor::visit(ASTDeclarationValue<Type::BOOL>* node)
+void Visitor::visit(ASTDeclarationValue* node)
 {
   commonVisit(node);
   enteringNode(node);
@@ -268,47 +260,7 @@ void Visitor::visit(ASTDeclarationValue<Type::BOOL>* node)
   exitingNode(node);
 }
 
-void Visitor::visit(ASTDeclarationValue<Type::WORD>* node)
-{
-  commonVisit(node);
-  enteringNode(node);
-
-  OPTIONAL_DISPATCH(node->getInitializer())
-  
-  exitingNode(node);
-}
-
-void Visitor::visit(ASTDeclarationValue<Type::BYTE>* node)
-{
-  commonVisit(node);
-  enteringNode(node);
-
-  OPTIONAL_DISPATCH(node->getInitializer())
-  
-  exitingNode(node);
-}
-
-void Visitor::visit(ASTDeclarationArray<Type::BOOL>* node)
-{
-  commonVisit(node);
-  enteringNode(node);
-  
-  OPTIONAL_DISPATCH(node->getInitializer())
-  
-  exitingNode(node);
-}
-
-void Visitor::visit(ASTDeclarationArray<Type::WORD>* node)
-{
-  commonVisit(node);
-  enteringNode(node);
-  
-  OPTIONAL_DISPATCH(node->getInitializer())
-  
-  exitingNode(node);
-}
-
-void Visitor::visit(ASTDeclarationArray<Type::BYTE>* node)
+void Visitor::visit(ASTDeclarationArray* node)
 {
   commonVisit(node);
   enteringNode(node);

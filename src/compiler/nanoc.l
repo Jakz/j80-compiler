@@ -86,6 +86,7 @@
 "return" { return Parser::make_RETURN(loc); }
 "then" { return Parser::make_THEN(loc); }
 "elseif" { return Parser::make_ELSEIF(loc); }
+"function" { return Parser::make_FUNCTION(loc); }
 
 "true" { return Parser::make_BOOL(true, loc); }
 "false" { return Parser::make_BOOL(false, loc); }

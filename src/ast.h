@@ -245,33 +245,33 @@ namespace nanoc
     
     const std::string& getName() { return name; }
   };
-  
-  template<Type T>
+
   class ASTDeclarationValue : public ASTVariableDeclaration
   {
   private:
-    UniqueExpression value; // TODO: if a signed value is stored here print will be incorrect
+    Type type;
+    UniqueExpression value;
   public:
-    ASTDeclarationValue(const std::string& name, ASTExpression* value = nullptr) : ASTVariableDeclaration(name), value(UniqueExpression(value)) { }
-    Type getType() const override { return T; }
-    std::string getTypeName() const override  { return Mnemonics::mnemonicForType(T); }
+    ASTDeclarationValue(const std::string& name, Type type, ASTExpression* value = nullptr) : ASTVariableDeclaration(name), type(type), value(UniqueExpression(value)) { }
+    Type getType() const override { return type; }
+    std::string getTypeName() const override  { return Mnemonics::mnemonicForType(type); }
     ASTExpression* getInitializer() { return value.get(); }
   };
-  
-  template<Type T>
+
   class ASTDeclarationArray : public ASTVariableDeclaration
   {
   private:
     const u16 length;
+    Type type;
     UniqueList<ASTExpression> initializer;
     
     std::string mnemonic() const override { return fmt::sprintf("DeclarationArray(%s, %s, %u)", name.c_str(), getTypeName().c_str(), length); }
     
   public:
-    ASTDeclarationArray(const std::string& name, u16 length) : ASTVariableDeclaration(name), length(length) { }
-    ASTDeclarationArray(const std::string& name, u16 length, std::list<ASTExpression*>& initializer) : ASTVariableDeclaration(name), length(length), initializer(UniqueList<ASTExpression>(new ASTList<ASTExpression>(initializer))) { }
-    Type getType() const override { return T; }
-    std::string getTypeName() const override { return Mnemonics::mnemonicForType(T); }
+    ASTDeclarationArray(const std::string& name, Type type, u16 length) : ASTVariableDeclaration(name), type(type), length(length) { }
+    ASTDeclarationArray(const std::string& name, Type type, u16 length, std::list<ASTExpression*>& initializer) : ASTVariableDeclaration(name), type(type), length(length), initializer(UniqueList<ASTExpression>(new ASTList<ASTExpression>(initializer))) { }
+    Type getType() const override { return type; }
+    std::string getTypeName() const override { return Mnemonics::mnemonicForType(type); }
     
     ASTList<ASTExpression>* getInitializer() { return initializer.get(); }
   };

@@ -53,7 +53,8 @@ void SymbolsVisitor::exitingNode(ASTScope* node)
 
 void SymbolsVisitor::exitingNode(ASTFuncDeclaration* node)
 {
-  
+  node->setSymbolTable(table.getCurrentTable());
+  table.popScope();
 }
 
 void SymbolsVisitor::enteringNode(ASTFuncDeclaration *node)
@@ -68,17 +69,12 @@ void SymbolsVisitor::enteringNode(ASTFuncDeclaration *node)
   table.addFunction(node->getName(), node->getReturnType(), sarguments);
 }
 
-void SymbolsVisitor::enteringNode(ASTDeclarationValue<Type::BOOL> *node)
+void SymbolsVisitor::enteringNode(ASTDeclarationValue* node)
 {
   table.addSymbol(node->getName(), node->getType());
 }
 
-void SymbolsVisitor::enteringNode(ASTDeclarationValue<Type::BYTE> *node)
-{
-  table.addSymbol(node->getName(), node->getType());
-}
-
-void SymbolsVisitor::enteringNode(ASTDeclarationValue<Type::WORD> *node)
+void SymbolsVisitor::enteringNode(ASTDeclarationArray* node)
 {
   table.addSymbol(node->getName(), node->getType());
 }

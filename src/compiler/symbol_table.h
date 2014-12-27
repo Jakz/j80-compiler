@@ -119,9 +119,8 @@ namespace nanoc
     void exitingNode(ASTFuncDeclaration* node);
     
     void enteringNode(ASTFuncDeclaration* node);
-    void enteringNode(ASTDeclarationValue<Type::BOOL>* node);
-    void enteringNode(ASTDeclarationValue<Type::WORD>* node);
-    void enteringNode(ASTDeclarationValue<Type::BYTE>* node);
+    void enteringNode(ASTDeclarationValue* node);
+    void enteringNode(ASTDeclarationArray* node);
 
     
     void commonVisit(ASTNode* node) { }

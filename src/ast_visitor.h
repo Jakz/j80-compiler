@@ -13,9 +13,7 @@ namespace nanoc
   class ASTList;
   
   class ASTDeclaration;
-  template<Type T>
   class ASTDeclarationValue;
-  template<Type T>
   class ASTDeclarationArray;
   class ASTFuncDeclaration;
   
@@ -62,12 +60,8 @@ namespace nanoc
     VISITOR_FUNCTIONALITY(ASTAssign)
     VISITOR_FUNCTIONALITY(ASTReturn)
     
-    VISITOR_FUNCTIONALITY(ASTDeclarationValue<Type::BOOL>)
-    VISITOR_FUNCTIONALITY(ASTDeclarationValue<Type::WORD>)
-    VISITOR_FUNCTIONALITY(ASTDeclarationValue<Type::BYTE>)
-    VISITOR_FUNCTIONALITY(ASTDeclarationArray<Type::BOOL>)
-    VISITOR_FUNCTIONALITY(ASTDeclarationArray<Type::WORD>)
-    VISITOR_FUNCTIONALITY(ASTDeclarationArray<Type::BYTE>)
+    VISITOR_FUNCTIONALITY(ASTDeclarationValue)
+    VISITOR_FUNCTIONALITY(ASTDeclarationArray)
     
     VISITOR_FUNCTIONALITY(ASTConditional)
     VISITOR_FUNCTIONALITY(ASTIfBlock)
