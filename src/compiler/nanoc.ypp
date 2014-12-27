@@ -241,6 +241,7 @@ real_type:
   BYTE { $$ = new Byte(); }
   | WORD { $$ = new Word(); }
   | BOOL { $$ = new Bool(); }
+  | real_type STAR { $$ = new Pointer($1); }
 ;
 
 return_type:

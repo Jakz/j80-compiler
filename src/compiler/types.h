@@ -10,6 +10,7 @@ namespace nanoc {
   public:
     virtual std::string mnemonic() const = 0;
     virtual Type* copy() const = 0;
+    virtual ~Type() { }
   };
   
   class BaseType : public Type { };
