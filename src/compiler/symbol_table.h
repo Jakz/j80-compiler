@@ -4,46 +4,53 @@
 #include <vector>
 #include <unordered_map>
 
+#include "types.h"
+
 #include "../format.h"
 #include "../ast_visitor.h"
 #include "../utils.h"
-
 
 namespace nanoc
 {
   class LocalSymbolTable;
   using UniqueTable = std::unique_ptr<LocalSymbolTable>;
   
+  using UniqueType = std::unique_ptr<Type>;
+  
   class Symbol
   {
     std::string name;
-    Type type;
+    UniqueType type;
     
   public:
     Symbol() = default;
-    Symbol(const std::string& name, Type type) : name(name), type(type) { }
+    Symbol(const Symbol& other) : name(other.name), type(UniqueType(other.type->copy())) { }
+    Symbol& operator=(const Symbol& other) { this->name = other.name; this->type = UniqueType(other.type->copy()); return *this; }
+    Symbol(const std::string& name, Type* type) : name(name), type(UniqueType(type->copy())) { }
     
-    const std::string mnemonic() { return fmt::sprintf("Symbol(%s, %s)", name, Mnemonics::mnemonicForType(type)); }
+    const std::string mnemonic() { return fmt::sprintf("Symbol(%s, %s)", name, type->mnemonic().c_str()); }
     
     const std::string& getName() const { return name; }
-    const Type getType() const { return type; }
+    const Type* getType() const { return type.get(); }
   };
   
   class FunctionSymbol
   {
     std::string name;
-    Type returnType;
+    UniqueType returnType;
     std::vector<Symbol> arguments;
     
   public:
     FunctionSymbol() = default;
-    FunctionSymbol(const std::string& name, Type returnType, std::vector<Symbol>& arguments) : name(name), returnType(returnType), arguments(arguments) { }
+    FunctionSymbol(const FunctionSymbol& other) : name(other.name), returnType(UniqueType(other.returnType->copy())), arguments(other.arguments) { }
+    FunctionSymbol& operator=(const FunctionSymbol& other) { this->name = other.name; this->returnType = UniqueType(other.returnType->copy()); this->arguments = arguments; return *this; }
+    FunctionSymbol(const std::string& name, Type* returnType, std::vector<Symbol>& arguments) : name(name), returnType(UniqueType(returnType->copy())), arguments(arguments) { }
     
-    const std::string mnemonic() { return fmt::sprintf("Function(%s, %s)", name, Mnemonics::mnemonicForType(returnType)); }
+    const std::string mnemonic() { return fmt::sprintf("Function(%s, %s)", name, returnType->mnemonic().c_str()); }
 
     
     const std::string& getName() const { return name; }
-    const Type getReturnType() const { return returnType; }
+    const Type* getReturnType() const { return returnType.get(); }
     const std::vector<Symbol>& getArguments() const { return arguments; }
 
   };
@@ -58,8 +65,8 @@ namespace nanoc
     LocalSymbolTable(LocalSymbolTable* parent) : parent(parent) { }
     LocalSymbolTable() = default;
     
-    bool hasSymbol(const std::string& name) { return std::find_if(symbols.begin(), symbols.end(), [&](const std::pair<std::string,Symbol>& p) { return p.first == name; }) != symbols.end(); }
-    void addSymbol(const std::string& name, Type type) { symbols[name] = Symbol(name, type); }
+    bool hasSymbol(const std::string& name) { auto it = symbols.find(name); return it != symbols.end(); }
+    void addSymbol(const std::string& name, Type* type) { symbols[name] = Symbol(name, type); }
     
     LocalSymbolTable* pushScope()
     {
@@ -86,10 +93,10 @@ namespace nanoc
 
     }
   
-    void addFunction(const std::string& name, Type returnType, std::vector<Symbol>& arguments) { functions[name] = FunctionSymbol(name, returnType, arguments); }
-    bool hasFunction(const std::string& name) { return std::find_if(functions.begin(), functions.end(), [&](const std::pair<std::string,FunctionSymbol>& p) { return p.first == name; }) != functions.end(); }
+    void addFunction(const std::string& name, Type* returnType, std::vector<Symbol>& arguments) { functions[name] = FunctionSymbol(name, returnType, arguments); }
+    bool hasFunction(const std::string& name) { auto it = functions.find(name); return it != functions.end(); }
     
-    void addSymbol(const std::string& name, Type type) { currentTable->addSymbol(name, type); }
+    void addSymbol(const std::string& name, Type* type) { currentTable->addSymbol(name, type); }
     
     void pushScope() {
       currentTable = currentTable->pushScope();

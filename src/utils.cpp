@@ -59,19 +59,3 @@ std::string nanoc::Mnemonics::mnemonicForTernary(Ternary op)
     default: return "invalid";
   }
 }
-
-std::string nanoc::Mnemonics::mnemonicForType(Type type, u16 param)
-{
-  switch (type) {
-    case Type::BOOL: return "bool";
-    case Type::BYTE: return "byte";
-    case Type::WORD: return "word";
-    case Type::BOOL_PTR: return "bool*";
-    case Type::BYTE_PTR: return "byte*";
-    case Type::WORD_PTR: return "word*";
-    case Type::BYTE_ARRAY: return "byte[]";
-    case Type::WORD_ARRAY: return "word[]";
-    case Type::VOID: return "void";
-    default: return "invalid";
-  }
-}

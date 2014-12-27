@@ -14,7 +14,7 @@ void SymbolTable::print() const
   for (const auto& f : functions)
   {
     const FunctionSymbol& function = f.second;
-    cout << "  " << function.getName() << " " << Mnemonics::mnemonicForType(function.getReturnType()) << endl;
+    cout << "  " << function.getName() << " " << function.getReturnType()->mnemonic() << endl;
   }
 
   cout << " Symbols: " << endl;
@@ -28,7 +28,7 @@ void SymbolTable::printTable(LocalSymbolTable *table, u16 scopes) const
   for (const auto& s : table->symbols)
   {
     const Symbol& symbol = s.second;
-    cout << string(scopes*2, ' ') << symbol.getName() << " " << Mnemonics::mnemonicForType(symbol.getType()) << endl;
+    cout << string(scopes*2, ' ') << symbol.getName() << " " << symbol.getType()->mnemonic() << endl;
   }
   
   for (const auto& s : table->scopes)
@@ -64,7 +64,7 @@ void SymbolsVisitor::enteringNode(ASTFuncDeclaration *node)
   list<Argument> arguments = node->getArguments();
   vector<Symbol> sarguments;
   
-  transform(arguments.begin(), arguments.end(), std::back_inserter(sarguments), [](const Argument& arg){ return Symbol(arg.name, arg.type); } );
+  transform(arguments.begin(), arguments.end(), std::back_inserter(sarguments), [](const Argument& arg){ return Symbol(arg.name, arg.type.get()); } );
   
   table.addFunction(node->getName(), node->getReturnType(), sarguments);
 }

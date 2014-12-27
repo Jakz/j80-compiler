@@ -70,14 +70,10 @@
 "<" { return Parser::make_COMP(Binary::LESS, loc); }
 
 
-"void" { return Parser::make_VOID_TYPE(Type::VOID, loc);}
-"bool" { return Parser::make_TYPE(Type::BOOL, loc); }
-"bool"[\t ]*"*" { return Parser::make_TYPE(Type::BOOL_PTR, loc); }
-
-"byte" { return Parser::make_TYPE(Type::BYTE, loc); }
-"byte"[\t ]*"*" { return Parser::make_TYPE(Type::BYTE_PTR, loc); }
-"word" { return Parser::make_TYPE(Type::WORD, loc); }
-"word"[\t ]*"*" { return Parser::make_TYPE(Type::WORD_PTR, loc); }
+"void" { return Parser::make_VOID(loc);}
+"bool" { return Parser::make_BOOL(loc); }
+"byte" { return Parser::make_BYTE(loc); }
+"word" { return Parser::make_WORD(loc); }
 
 "while" { return Parser::make_WHILE(loc); }
 "if" { return Parser::make_IF(loc); }
@@ -88,8 +84,8 @@
 "elseif" { return Parser::make_ELSEIF(loc); }
 "function" { return Parser::make_FUNCTION(loc); }
 
-"true" { return Parser::make_BOOL(true, loc); }
-"false" { return Parser::make_BOOL(false, loc); }
+"true" { return Parser::make_BOOL_VALUE(true, loc); }
+"false" { return Parser::make_BOOL_VALUE(false, loc); }
 
 
 "0x"[a-fA-F0-9]+ { return Parser::make_NUMBER(strtol( &yytext[2], NULL, 16), loc); }

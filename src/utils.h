@@ -31,19 +31,6 @@ typedef signed int s32;
 #define MB4 (4194304)
 
 namespace nanoc {
-  enum Type
-  {
-    VOID,
-    BOOL,
-    BYTE,
-    WORD,
-    BOOL_PTR,
-    BYTE_PTR,
-    WORD_PTR,
-    BOOL_ARRAY,
-    BYTE_ARRAY,
-    WORD_ARRAY,
-  };
   
   enum Unary
   {
@@ -83,7 +70,6 @@ namespace nanoc {
     static std::string mnemonicForUnary(Unary op);
     static std::string mnemonicForBinary(Binary op);
     static std::string mnemonicForTernary(Ternary op);
-    static std::string mnemonicForType(Type type, u16 param = 0);
   };
 }
 

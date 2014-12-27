@@ -24,9 +24,7 @@ namespace nanoc
 {
   class Compiler
   {
-    private:
-      hash_map<std::string, Type> globalVariables;
-    
+    private:    
       std::unique_ptr<ASTList<ASTDeclaration>> ast;
     
     public:

@@ -9,6 +9,7 @@
 #include "format.h"
 #include "utils.h"
 #include "ast_visitor.h"
+#include "compiler/types.h"
 
 namespace nanoc
 {
@@ -17,9 +18,11 @@ namespace nanoc
   struct Argument
   {
     std::string name;
-    Type type;
+    std::unique_ptr<BaseType> type;
     
-    Argument(std::string name, Type type) : name(name), type(type) { }
+    Argument(std::string name, BaseType* type) : name(name), type(std::unique_ptr<BaseType>(type)) { }
+    Argument& operator=(const Argument& other) { this->name = other.name; this->type = std::unique_ptr<BaseType>(static_cast<BaseType*>(other.type->copy())); return *this; }
+    Argument(const Argument& other) : name(other.name), type(std::unique_ptr<BaseType>(static_cast<BaseType*>(other.type->copy()))) { }
   };
 
   class LocalSymbolTable;
@@ -75,7 +78,7 @@ namespace nanoc
   {
   public:
     // TODO: make pure virtual and implement in subtypes
-    virtual Type getType() const { return Type::WORD; }
+    virtual Type* getType() const { return nullptr; }
   };
   
   class ASTNumber : public ASTExpression
@@ -240,7 +243,7 @@ namespace nanoc
     std::string mnemonic() const override { return fmt::sprintf("Declaration(%s, %s)", name.c_str(), getTypeName().c_str()); }
     
   public:
-    virtual Type getType() const = 0;
+    virtual Type* getType() const = 0;
     virtual std::string getTypeName() const = 0;
     
     const std::string& getName() { return name; }
@@ -249,12 +252,12 @@ namespace nanoc
   class ASTDeclarationValue : public ASTVariableDeclaration
   {
   private:
-    Type type;
+    std::unique_ptr<RealType> type;
     UniqueExpression value;
   public:
-    ASTDeclarationValue(const std::string& name, Type type, ASTExpression* value = nullptr) : ASTVariableDeclaration(name), type(type), value(UniqueExpression(value)) { }
-    Type getType() const override { return type; }
-    std::string getTypeName() const override  { return Mnemonics::mnemonicForType(type); }
+    ASTDeclarationValue(const std::string& name, RealType* type, ASTExpression* value = nullptr) : ASTVariableDeclaration(name), type(std::unique_ptr<RealType>(type)), value(UniqueExpression(value)) { }
+    Type* getType() const override { return type.get(); }
+    std::string getTypeName() const override  { return type->mnemonic(); }
     ASTExpression* getInitializer() { return value.get(); }
   };
 
@@ -262,16 +265,16 @@ namespace nanoc
   {
   private:
     const u16 length;
-    Type type;
+    std::unique_ptr<Array> type;
     UniqueList<ASTExpression> initializer;
     
     std::string mnemonic() const override { return fmt::sprintf("DeclarationArray(%s, %s, %u)", name.c_str(), getTypeName().c_str(), length); }
     
   public:
-    ASTDeclarationArray(const std::string& name, Type type, u16 length) : ASTVariableDeclaration(name), type(type), length(length) { }
-    ASTDeclarationArray(const std::string& name, Type type, u16 length, std::list<ASTExpression*>& initializer) : ASTVariableDeclaration(name), type(type), length(length), initializer(UniqueList<ASTExpression>(new ASTList<ASTExpression>(initializer))) { }
-    Type getType() const override { return type; }
-    std::string getTypeName() const override { return Mnemonics::mnemonicForType(type); }
+    ASTDeclarationArray(const std::string& name, Array* type, u16 length) : ASTVariableDeclaration(name), type(std::unique_ptr<Array>(type)), length(length) { }
+    ASTDeclarationArray(const std::string& name, Array* type, u16 length, std::list<ASTExpression*>& initializer) : ASTVariableDeclaration(name), type(std::unique_ptr<Array>(type)), length(length), initializer(UniqueList<ASTExpression>(new ASTList<ASTExpression>(initializer))) { }
+    Type* getType() const override { return type.get(); }
+    std::string getTypeName() const override { return type->mnemonic(); }
     
     ASTList<ASTExpression>* getInitializer() { return initializer.get(); }
   };
@@ -280,24 +283,24 @@ namespace nanoc
   {
   private:
     u16 address;
-    Type type;
+    std::unique_ptr<Pointer> type;
   public:
-    ASTDeclarationPtr(const std::string& name, Type type, u16 address = 0) : ASTVariableDeclaration(name), type(type), address(address) { }
-    Type getType() const override { return type; }
-    Type getItemType() const { return type == Type::WORD_PTR ? Type::WORD : Type::BYTE; }
-    std::string getTypeName() const override  { return type == Type::WORD_PTR ? "word*" : "byte*"; }
+    ASTDeclarationPtr(const std::string& name, Pointer* type, u16 address = 0) : ASTVariableDeclaration(name), type(std::unique_ptr<Pointer>(type)), address(address) { }
+    Type* getType() const override { return type.get(); }
+    Type* getItemType() const { return type->innerType(); }
+    std::string getTypeName() const override  { return type->mnemonic(); }
 
   };
 
   class ASTFuncDeclaration : virtual public ASTScope, virtual public ASTDeclaration
   {
     std::string name;
-    Type returnType;
+    std::unique_ptr<BaseType> returnType;
     std::list<Argument> arguments;
     
     std::string mnemonic() const override
     {
-      std::string mnemonic = fmt::sprintf("FunctionDeclaration(%s, %s", name.c_str(), Mnemonics::mnemonicForType(returnType));
+      std::string mnemonic = fmt::sprintf("FunctionDeclaration(%s, %s", name.c_str(), returnType->mnemonic().c_str());
 
       if (!arguments.empty())
       {
@@ -306,7 +309,7 @@ namespace nanoc
         for (const auto& arg : arguments)
         {
           if (!first) mnemonic += ", ";
-          mnemonic += fmt::sprintf("%s %s", Mnemonics::mnemonicForType(arg.type), arg.name.c_str());
+          mnemonic += fmt::sprintf("%s %s", arg.type->mnemonic(), arg.name.c_str());
           first = false;
         }
         mnemonic += "]";
@@ -317,11 +320,11 @@ namespace nanoc
     }
     
   public:
-    ASTFuncDeclaration(std::string name, Type returnType, std::list<Argument>& arguments, std::list<ASTStatement*>& body) : ASTScope(body), name(name), returnType(returnType),
-    arguments(arguments) { }
+    ASTFuncDeclaration(std::string name, BaseType* returnType, std::list<Argument>& arguments, std::list<ASTStatement*>& body) : ASTScope(body), name(name), returnType(std::unique_ptr<BaseType>(returnType)),
+    arguments(std::move(arguments)) { }
   
     const std::string& getName() { return name; }
-    const Type getReturnType() { return returnType; }
+    Type* getReturnType() { return returnType.get(); }
     const std::list<Argument>& getArguments() { return arguments; }
   };
 
