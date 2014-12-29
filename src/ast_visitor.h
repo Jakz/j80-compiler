@@ -16,6 +16,7 @@ namespace nanoc
   class ASTDeclarationValue;
   class ASTDeclarationArray;
   class ASTFuncDeclaration;
+  class ASTEnumDeclaration;
   
   class ASTNode;
   
@@ -39,6 +40,8 @@ namespace nanoc
   class ASTConditional;
   
   class ASTAssign;
+  
+  class ASTEnumEntry;
 
   class Visitor
   {
@@ -47,7 +50,9 @@ namespace nanoc
     VISITOR_FUNCTIONALITY(ASTList<ASTExpression>)
     VISITOR_FUNCTIONALITY(ASTList<ASTDeclaration>)
     VISITOR_FUNCTIONALITY(ASTList<ASTConditionalBlock>)
+    VISITOR_FUNCTIONALITY(ASTList<ASTEnumEntry>)
     VISITOR_FUNCTIONALITY(ASTFuncDeclaration)
+    VISITOR_FUNCTIONALITY(ASTEnumDeclaration)
     VISITOR_FUNCTIONALITY(ASTScope)
     VISITOR_FUNCTIONALITY(ASTNumber)
     VISITOR_FUNCTIONALITY(ASTBool)
@@ -67,8 +72,9 @@ namespace nanoc
     VISITOR_FUNCTIONALITY(ASTIfBlock)
     VISITOR_FUNCTIONALITY(ASTElseBlock)
     
-    
     VISITOR_FUNCTIONALITY(ASTWhile)
+    
+    VISITOR_FUNCTIONALITY(ASTEnumEntry)
 
     virtual void leafVisit(ASTNode* node);
     

@@ -328,6 +328,45 @@ namespace nanoc
     const std::list<Argument>& getArguments() { return arguments; }
   };
 
+class ASTEnumEntry : public ASTNode
+{
+private:
+  std::string name;
+  bool hasValue;
+  s32 value;
+  
+  std::string mnemonic() const override {
+    if (hasValue)
+      return fmt::sprintf("EnumEntry(%s, %d)", name.c_str(), value);
+    else
+      return fmt::sprintf("EnumEntry(%s)", name.c_str());
+  }
+  
+public:
+  ASTEnumEntry(const std::string& name, s32 value) : name(name), value(value), hasValue(true) { }
+  ASTEnumEntry(const std::string& name) : name(name), hasValue(false) { }
+  
+  const std::string& getName() { return name; }
+  bool getHasValue() { return hasValue; }
+  s32 getValue() { return value; }
+};
+
+class ASTEnumDeclaration : virtual public ASTDeclaration
+{
+private:
+  std::string name;
+  UniqueList<ASTEnumEntry> entries;
+  
+  std::string mnemonic() const override { return fmt::sprintf("EnumDeclaration(%s)", name.c_str()); }
+  
+public:
+  ASTEnumDeclaration(std::string name, std::list<ASTEnumEntry*>& entries) : name(name), entries(UniqueList<ASTEnumEntry>(new ASTList<ASTEnumEntry>(entries))) { }
+
+  ASTList<ASTEnumEntry>* getEntries() { return entries.get(); }
+};
+
+
+
 
   class ASTWhile : public ASTStatement
   {

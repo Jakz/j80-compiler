@@ -4,6 +4,7 @@
 #include <vector>
 #include <unordered_map>
 
+#include "enums.h"
 #include "types.h"
 
 #include "../format.h"
@@ -83,6 +84,7 @@ namespace nanoc
   {
   private:
     std::unordered_map<std::string, FunctionSymbol> functions;
+    std::unordered_map<std::string, Enum> enums;
 
     UniqueTable table;
     LocalSymbolTable* currentTable;

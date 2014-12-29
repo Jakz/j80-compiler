@@ -21,7 +21,9 @@ void Visitor::visit(ASTNode* node)
   DISPATCH(ASTList<ASTStatement>)
   DISPATCH(ASTList<ASTExpression>)
   DISPATCH(ASTList<ASTConditionalBlock>)
+  DISPATCH(ASTList<ASTEnumEntry>)
   DISPATCH(ASTFuncDeclaration)
+  DISPATCH(ASTEnumDeclaration)
   DISPATCH(ASTScope)
   DISPATCH(ASTCall)
   DISPATCH(ASTUnaryExpression)
@@ -39,6 +41,7 @@ void Visitor::visit(ASTNode* node)
   DISPATCH(ASTElseBlock)
   DISPATCH(ASTIfBlock)
   DISPATCH(ASTReturn)
+  DISPATCH(ASTEnumEntry)
   
   string error = fmt::sprintf("visit unhandled on %s", Utils::execute(std::string("c++filt ")+typeid(node).name()).c_str());
   cout << error;
@@ -49,7 +52,9 @@ VISITOR_FUNCTIONALITY_IMPL(ASTList<ASTDeclaration>)
 VISITOR_FUNCTIONALITY_IMPL(ASTList<ASTStatement>)
 VISITOR_FUNCTIONALITY_IMPL(ASTList<ASTExpression>)
 VISITOR_FUNCTIONALITY_IMPL(ASTList<ASTConditionalBlock>)
+VISITOR_FUNCTIONALITY_IMPL(ASTList<ASTEnumEntry>)
 VISITOR_FUNCTIONALITY_IMPL(ASTFuncDeclaration)
+VISITOR_FUNCTIONALITY_IMPL(ASTEnumDeclaration)
 VISITOR_FUNCTIONALITY_IMPL(ASTScope)
 VISITOR_FUNCTIONALITY_IMPL(ASTCall)
 VISITOR_FUNCTIONALITY_IMPL(ASTUnaryExpression)
@@ -67,6 +72,7 @@ VISITOR_FUNCTIONALITY_IMPL(ASTConditional)
 VISITOR_FUNCTIONALITY_IMPL(ASTElseBlock)
 VISITOR_FUNCTIONALITY_IMPL(ASTIfBlock)
 VISITOR_FUNCTIONALITY_IMPL(ASTReturn)
+VISITOR_FUNCTIONALITY_IMPL(ASTEnumEntry)
 
 
 void Visitor::leafVisit(ASTNode *node)
@@ -87,6 +93,11 @@ void Visitor::visit(ASTBool* node)
 }
 
 void Visitor::visit(ASTReference* node)
+{
+  leafVisit(node);
+}
+
+void Visitor::visit(ASTEnumEntry* node)
 {
   leafVisit(node);
 }
@@ -149,6 +160,17 @@ void Visitor::visit(ASTList<ASTConditionalBlock>* node)
   commonVisit(node);
   enteringNode(node);
 
+  for (const auto& s : node->getElements())
+    s->accept(this);
+  
+  exitingNode(node);
+}
+
+void Visitor::visit(ASTList<ASTEnumEntry>* node)
+{
+  commonVisit(node);
+  enteringNode(node);
+    
   for (const auto& s : node->getElements())
     s->accept(this);
   
@@ -279,6 +301,17 @@ void Visitor::visit(ASTFuncDeclaration* node)
   
   exitingNode(node);
 }
+
+void Visitor::visit(ASTEnumDeclaration* node)
+{
+  commonVisit(node);
+  enteringNode(node);
+  
+  node->getEntries()->accept(this);
+  
+  exitingNode(node);
+}
+
 
 void Visitor::visit(ASTWhile* node)
 {
