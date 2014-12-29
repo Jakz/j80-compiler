@@ -164,6 +164,22 @@ namespace Assembler
     void solve(u8 value) { this->value.value = value; this->value.type = Value8::Type::VALUE; }
   };
   
+  class InstructionSEXT : public Instruction
+  {
+  private:
+    Reg reg;
+    
+  public:
+    InstructionSEXT(Reg reg) : Instruction(LENGTH_1_BYTES), reg(reg) { }
+    
+    std::string mnemonic() const { return fmt::sprintf("SEXT %s", Opcodes::reg8(reg)); }
+    
+    void assemble(u8* dest) const override
+    {
+      dest[0] = (OPCODE_SEXT << 3) | reg;
+    }
+  };
+  
   class InstructionLD_NNNN : public Instruction
   {
   private:

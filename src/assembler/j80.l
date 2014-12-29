@@ -115,6 +115,8 @@
 "[" { return Parser::make_LBRACK(loc); }
 "]" { return Parser::make_RBRACK(loc); }
 
+"SEXT" { return Parser::make_SEXT(loc); }
+
 "PUSH"|"push" { return Parser::make_PUSH(loc); }
 "POP"|"pop" { return Parser::make_POP(loc); }
 "EI"|"ei" { return Parser::make_EI(loc); }

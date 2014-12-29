@@ -107,6 +107,8 @@ enum Opcode : u8
   OPCODE_EI = 0b00010,
   OPCODE_DI = 0b00011,
   OPCODE_INT = 0b01011,
+  
+  OPCODE_SEXT = 0b00001
 };
 
 enum JumpCondition : u8

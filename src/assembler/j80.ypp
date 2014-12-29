@@ -92,6 +92,7 @@
   POP
   EI
   DI
+  SEXT
   NOP
   DATA_ASCII
   DATA_RESERVE
@@ -164,6 +165,15 @@ instruction:
 | RSH REG16 COMMA REG16 { assembler.assembleLD_RSH_LSH($2, (Reg)$4, ALU_RSH16, false); }
 | LSH REG16 { assembler.assembleLD_RSH_LSH($2, $2, ALU_LSH16, false); }
 | RSH REG16 { assembler.assembleLD_RSH_LSH($2, $2, ALU_RSH16, false); }
+
+| SEXT REG8 {
+  if ($2 != REG_A || $2 != REG_D || $2 != REG_F || $2 != REG_X)
+  {
+    error(@2, "SEXT instruction can be executed only on lower regs (A, D, F or X)"); YYERROR;
+  }
+
+  assembler.add(new InstructionSEXT($2));
+}
 
 | JMP STRING { assembler.add(new InstructionJMP_NNNN($1, $2)); }
 | JMP U16 { assembler.add(new InstructionJMP_NNNN($1, $2)); }
