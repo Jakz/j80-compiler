@@ -42,6 +42,16 @@ namespace nanoc {
 
   };
   
+  class Named : public RealType
+  {
+  private:
+    std::string name;
+  public:
+    Named(const std::string& name) : name(name) { }
+    std::string mnemonic() const override { return fmt::sprintf("Named(%s)", name.c_str()); }
+    Named* copy() const override { return new Named(name); }
+  };
+  
   class Bool : public RealType
   {
   public:

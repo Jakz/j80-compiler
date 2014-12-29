@@ -250,14 +250,15 @@ enum_declaration:
 enum_entry_list:
   IDENTIFIER EQUAL NUMBER { $$ = std::list<ASTEnumEntry*>(); $$.push_front(new ASTEnumEntry($1, $3)); }
   | IDENTIFIER { $$ = std::list<ASTEnumEntry*>(); $$.push_front(new ASTEnumEntry($1));  }
-  | enum_entry_list COMMA IDENTIFIER EQUAL NUMBER { $1.push_back(new ASTEnumEntry($3, $5)); }
-  | enum_entry_list COMMA IDENTIFIER { $1.push_back(new ASTEnumEntry($3)); }
+  | enum_entry_list COMMA IDENTIFIER EQUAL NUMBER { $1.push_back(new ASTEnumEntry($3, $5)); $$ = $1; }
+  | enum_entry_list COMMA IDENTIFIER { $1.push_back(new ASTEnumEntry($3)); $$ = $1; }
 ;
 
 real_type:
   BYTE { $$ = new Byte(); }
   | WORD { $$ = new Word(); }
   | BOOL { $$ = new Bool(); }
+  | IDENTIFIER { $$ = new Named($1); }
   | real_type STAR { $$ = new Pointer($1); }
 ;
 
