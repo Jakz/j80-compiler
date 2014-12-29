@@ -66,10 +66,11 @@ namespace nanoc {
   {
   private:
     std::unique_ptr<RealType> type;
+    u16 length;
   public:
-    Array(RealType* type) : type(std::unique_ptr<RealType>(type)) { }
-    Array(const Array& other) : type(std::unique_ptr<RealType>(static_cast<RealType*>(other.type->copy()))) { }
-    std::string mnemonic() const override { return type->mnemonic() + "[]"; }
+    Array(RealType* type, u16 length) : type(std::unique_ptr<RealType>(type)), length(length) { }
+    Array(const Array& other) : type(std::unique_ptr<RealType>(static_cast<RealType*>(other.type->copy()))), length(other.length) { }
+    std::string mnemonic() const override { return type->mnemonic() + "["+std::to_string(length)+"]"; }
     Array* copy() const override { return new Array(*this); }
   };
 }

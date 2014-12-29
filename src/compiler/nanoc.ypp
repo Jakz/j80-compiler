@@ -201,7 +201,7 @@ array_declaration:
   real_type LBRACK RBRACK IDENTIFIER EQUAL LBRACE expression_list RBRACE SEMICOL
   {
     if (dynamic_cast<RealType*>($1))
-      $$ = new ASTDeclarationArray($4, new Array(static_cast<RealType*>($1)), $7.size(), $7);
+      $$ = new ASTDeclarationArray($4, new Array(static_cast<RealType*>($1), $7.size()), $7.size(), $7);
     else
     {
       error(@1, "Type specified for array variable declaration can't be used."); YYERROR;
@@ -210,7 +210,7 @@ array_declaration:
   | real_type LBRACK NUMBER RBRACK IDENTIFIER SEMICOL
   {
     if (dynamic_cast<RealType*>($1))
-      $$ = new ASTDeclarationArray($5, new Array(static_cast<RealType*>($1)), $3);
+      $$ = new ASTDeclarationArray($5, new Array(static_cast<RealType*>($1), $3), $3);
     else
     {
       error(@1, "Type specified for array variable declaration can't be used."); YYERROR;
@@ -229,7 +229,7 @@ array_declaration:
     for (const auto c : literal)
       initializer.push_back(new ASTNumber(c));
 
-    $$ = new ASTDeclarationArray($4, new Array(static_cast<RealType*>($1)), literal.length(), initializer);
+    $$ = new ASTDeclarationArray($4, new Array(static_cast<RealType*>($1), literal.length()), literal.length(), initializer);
   }
 ;
 
