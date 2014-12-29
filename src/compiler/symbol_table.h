@@ -84,7 +84,7 @@ namespace nanoc
   {
   private:
     std::unordered_map<std::string, FunctionSymbol> functions;
-    std::unordered_map<std::string, Enum> enums;
+    std::unordered_map<std::string, std::unique_ptr<Enum>> enums;
 
     UniqueTable table;
     LocalSymbolTable* currentTable;
@@ -108,6 +108,14 @@ namespace nanoc
       currentTable = currentTable->getParent();
     }
     
+    Enum* addEnum(const std::string& name)
+    {
+      Enum* newEnum = new Enum(name);
+      enums[name] = std::unique_ptr<Enum>(newEnum);
+      
+      return newEnum;
+    }
+    
     void print() const;
     void printTable(LocalSymbolTable* table, u16 scopes = 0) const;
     
@@ -120,9 +128,10 @@ namespace nanoc
   {
   private:
     SymbolTable table;
+    Enum *currentEnum;
     
   public:
-    SymbolsVisitor() { }
+    SymbolsVisitor() : currentEnum(nullptr) { }
     void enteringNode(ASTScope* node);
     void exitingNode(ASTScope* node);
     void exitingNode(ASTFuncDeclaration* node);
@@ -130,6 +139,10 @@ namespace nanoc
     void enteringNode(ASTFuncDeclaration* node);
     void enteringNode(ASTDeclarationValue* node);
     void enteringNode(ASTDeclarationArray* node);
+    
+    void enteringNode(ASTEnumDeclaration* node);
+    void exitingNode(ASTEnumDeclaration* node);
+    void enteringNode(ASTEnumEntry* node);
 
     
     void commonVisit(ASTNode* node) { }

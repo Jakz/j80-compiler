@@ -16,6 +16,17 @@ void SymbolTable::print() const
     const FunctionSymbol& function = f.second;
     cout << "  " << function.getName() << " " << function.getReturnType()->mnemonic() << endl;
   }
+  
+  
+  cout << " Enums: " << endl;
+  for (const auto& e : enums)
+  {
+    cout << "  " << e.second->getName() << endl;
+    
+    for (int i = 0; i < e.second->size(); ++i)
+      cout << "   " << e.second->getEnumName(i) << " = " << e.second->getEnumValue(i) << endl;
+  }
+  
 
   cout << " Symbols: " << endl;
   LocalSymbolTable* table = this->currentTable;
@@ -30,7 +41,7 @@ void SymbolTable::printTable(LocalSymbolTable *table, u16 scopes) const
     const Symbol& symbol = s.second;
     cout << string(scopes*2, ' ') << symbol.getName() << " " << symbol.getType()->mnemonic() << endl;
   }
-  
+
   for (const auto& s : table->scopes)
   {
     printTable(s.get(), scopes+1);
@@ -79,4 +90,21 @@ void SymbolsVisitor::enteringNode(ASTDeclarationArray* node)
   table.addSymbol(node->getName(), node->getType());
 }
 
+void SymbolsVisitor::enteringNode(ASTEnumDeclaration *node)
+{
+  currentEnum = table.addEnum(node->getName());
+}
+
+void SymbolsVisitor::exitingNode(ASTEnumDeclaration* node)
+{
+  currentEnum = nullptr;
+}
+
+void SymbolsVisitor::enteringNode(ASTEnumEntry* node)
+{
+  if (node->getHasValue())
+    currentEnum->add(node->getName(), node->getValue());
+  else
+    currentEnum->add(node->getName());
+}
 

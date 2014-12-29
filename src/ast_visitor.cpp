@@ -84,23 +84,28 @@ void Visitor::leafVisit(ASTNode *node)
 
 void Visitor::visit(ASTNumber* node)
 {
-  leafVisit(node);
+  commonVisit(node);
+  enteringNode(node);
+  exitingNode(node);
 }
 
 void Visitor::visit(ASTBool* node)
 {
-  leafVisit(node);
-}
+  commonVisit(node);
+  enteringNode(node);
+  exitingNode(node);}
 
 void Visitor::visit(ASTReference* node)
 {
-  leafVisit(node);
-}
+  commonVisit(node);
+  enteringNode(node);
+  exitingNode(node);}
 
 void Visitor::visit(ASTEnumEntry* node)
 {
-  leafVisit(node);
-}
+  commonVisit(node);
+  enteringNode(node);
+  exitingNode(node);}
 
 void Visitor::visit(ASTArrayReference* node)
 {

@@ -15,6 +15,7 @@ private:
   std::unordered_map<std::string, s32> values;
   
 public:
+  Enum() = default;
   Enum(const std::string& name) : name(name)
   {
     
@@ -28,17 +29,23 @@ public:
   
   void add(const std::string& name)
   {
-    const auto& it = entries.back();
-    s32 previousValue = values[it];
+    s32 assignedValue = !entries.empty() ? values[entries.back()] + 1: 0;
     
     entries.push_back(name);
-    values[name] = previousValue + 1;
+    values[name] = assignedValue;
   }
   
   s32 retrieve(const std::string& name)
   {
     return values[name];
   }
+  
+  const std::string& getName() const { return name; }
+  const size_t size() const { return entries.size(); }
+  const std::string& getEnumName(size_t index) const { return entries[index]; }
+  s32 getEnumValue(size_t index) const { return values.find(entries.at(index))->second; }
+  
+  
 };
 
 

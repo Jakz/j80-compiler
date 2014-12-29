@@ -363,6 +363,7 @@ public:
   ASTEnumDeclaration(std::string name, std::list<ASTEnumEntry*>& entries) : name(name), entries(UniqueList<ASTEnumEntry>(new ASTList<ASTEnumEntry>(entries))) { }
 
   ASTList<ASTEnumEntry>* getEntries() { return entries.get(); }
+  const std::string& getName() { return name; }
 };
 
 
