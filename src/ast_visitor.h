@@ -3,9 +3,9 @@
 
 #include "utils.h"
 
-#define VISITOR_FUNCTIONALITY(__CLASS_NAME__) virtual void visit(__CLASS_NAME__* node);\
-virtual void enteringNode(__CLASS_NAME__* node);\
-virtual void exitingNode(__CLASS_NAME__* node);
+#define VISITOR_FUNCTIONALITY(__CLASS_NAME__) virtual void visit(std::unique_ptr<__CLASS_NAME__>& node);\
+virtual void enteringNode(std::unique_ptr<__CLASS_NAME__>& node);\
+virtual void exitingNode(std::unique_ptr<__CLASS_NAME__>& node);
 
 namespace nanoc
 {
@@ -75,15 +75,13 @@ namespace nanoc
     VISITOR_FUNCTIONALITY(ASTWhile)
     
     VISITOR_FUNCTIONALITY(ASTEnumEntry)
-
-    virtual void leafVisit(ASTNode* node);
     
-    virtual void commonVisit(ASTNode* node) { }
-    virtual void commonEnteringNode(ASTNode* node) { };
-    virtual void commonExitingNode(ASTNode* node) { };
+    virtual void commonVisit(std::unique_ptr<ASTNode>& node) { }
+    virtual void commonEnteringNode(std::unique_ptr<ASTNode>& node) { };
+    virtual void commonExitingNode(std::unique_ptr<ASTNode>& node) { };
   
   public:
-    virtual void visit(ASTNode* node);
+    virtual void dispatch(std::unique_ptr<ASTNode>& node);
 
   };
     
@@ -97,9 +95,9 @@ namespace nanoc
     
   public:
     PrinterVisitor() : indent(0) { }
-    void commonEnteringNode(ASTNode* node);
-    void commonExitingNode(ASTNode* node);
-    void commonVisit(ASTNode* node);
+    void commonEnteringNode(std::unique_ptr<ASTNode>& node);
+    void commonExitingNode(std::unique_ptr<ASTNode>& node);
+    void commonVisit(std::unique_ptr<ASTNode>& node);
   };  
 }
 

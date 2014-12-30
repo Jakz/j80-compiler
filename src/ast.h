@@ -38,9 +38,7 @@ namespace nanoc
 
   class ASTNode
   {
-  public:
-    void accept(Visitor* visitor) { visitor->visit(this); }
-    
+  public:    
     virtual std::string mnemonic() const = 0;
   };
   
@@ -121,7 +119,7 @@ namespace nanoc
     ASTArrayReference(const std::string& name, ASTExpression* index) : name(name), index(UniqueExpression(index)) { }
     std::string mnemonic() const override { return fmt::sprintf("ArrayReference(%s)", name.c_str()); }
     
-    ASTExpression* getIndex() { return index.get(); }
+    std::unique_ptr<ASTExpression>& getIndex() { return index; }
   };
   
   class ASTCall : public ASTExpression
@@ -137,7 +135,7 @@ namespace nanoc
     ASTCall(const std::string& name, std::list<ASTExpression*>& arguments) : name(name),
       arguments(UniqueList<ASTExpression>(new ASTList<ASTExpression>(arguments))) { }
     
-    ASTList<ASTExpression>* getArguments() { return arguments.get(); }
+    std::unique_ptr<ASTList<ASTExpression>>& getArguments() { return arguments; }
   };
   
   class ASTTernaryExpression : public ASTExpression
@@ -152,9 +150,9 @@ namespace nanoc
     ASTTernaryExpression(Ternary op, ASTExpression* operand1, ASTExpression* operand2, ASTExpression* operand3) : op(op),
       operand1(UniqueExpression(operand1)), operand2(UniqueExpression(operand2)), operand3(UniqueExpression(operand3)) { }
     
-    ASTExpression* getOperand1() { return operand1.get(); }
-    ASTExpression* getOperand2() { return operand2.get(); }
-    ASTExpression* getOperand3() { return operand3.get(); }
+    std::unique_ptr<ASTExpression>& getOperand1() { return operand1; }
+    std::unique_ptr<ASTExpression>& getOperand2() { return operand2; }
+    std::unique_ptr<ASTExpression>& getOperand3() { return operand3; }
   };
   
   
@@ -169,8 +167,8 @@ namespace nanoc
   public:
     ASTBinaryExpression(Binary op, ASTExpression* operand1, ASTExpression* operand2) : op(op), operand1(UniqueExpression(operand1)), operand2(UniqueExpression(operand2)) { }
     
-    ASTExpression* getOperand1() { return operand1.get(); }
-    ASTExpression* getOperand2() { return operand2.get(); }
+    std::unique_ptr<ASTExpression>& getOperand1() { return operand1; }
+    std::unique_ptr<ASTExpression>& getOperand2() { return operand2; }
   };
   
   
@@ -185,7 +183,7 @@ namespace nanoc
   public:
     ASTUnaryExpression(Unary op, ASTExpression* operand) : op(op), operand(UniqueExpression(operand)) { }
     
-    ASTExpression* getOperand() { return operand.get(); }
+    std::unique_ptr<ASTExpression>& getOperand() { return operand; }
   };
 
   class ASTLeftHand : public ASTNode
@@ -211,7 +209,7 @@ namespace nanoc
   public:
     ASTScope(std::list<ASTStatement*>& statements) : statements(UniqueList<ASTStatement>(new ASTList<ASTStatement>(statements))) { }
     
-    ASTList<ASTStatement>* getStatements() { return statements.get(); }
+    std::unique_ptr<ASTList<ASTStatement>>& getStatements() { return statements; }
     
     void setSymbolTable(LocalSymbolTable *table) { symbols = table; }
   };
@@ -228,7 +226,7 @@ namespace nanoc
       
     }
     
-    ASTExpression* getRightHand() { return expression.get(); }
+    std::unique_ptr<ASTExpression>& getRightHand() { return expression; }
     
     std::string mnemonic() const override { return fmt::sprintf("Assign(%s)", leftHand->mnemonic().c_str()); }
   };
@@ -258,7 +256,7 @@ namespace nanoc
     ASTDeclarationValue(const std::string& name, RealType* type, ASTExpression* value = nullptr) : ASTVariableDeclaration(name), type(std::unique_ptr<RealType>(type)), value(UniqueExpression(value)) { }
     Type* getType() const override { return type.get(); }
     std::string getTypeName() const override  { return type->mnemonic(); }
-    ASTExpression* getInitializer() { return value.get(); }
+    std::unique_ptr<ASTExpression>& getInitializer() { return value; }
   };
 
   class ASTDeclarationArray : public ASTVariableDeclaration
@@ -276,7 +274,7 @@ namespace nanoc
     Type* getType() const override { return type.get(); }
     std::string getTypeName() const override { return type->mnemonic(); }
     
-    ASTList<ASTExpression>* getInitializer() { return initializer.get(); }
+    std::unique_ptr<ASTList<ASTExpression>>& getInitializer() { return initializer; }
   };
 
   class ASTDeclarationPtr : public ASTVariableDeclaration
@@ -362,7 +360,7 @@ private:
 public:
   ASTEnumDeclaration(std::string name, std::list<ASTEnumEntry*>& entries) : name(name), entries(UniqueList<ASTEnumEntry>(new ASTList<ASTEnumEntry>(entries))) { }
 
-  ASTList<ASTEnumEntry>* getEntries() { return entries.get(); }
+  std::unique_ptr<ASTList<ASTEnumEntry>>& getEntries() { return entries; }
   const std::string& getName() { return name; }
 };
 
@@ -381,8 +379,8 @@ public:
     ASTWhile(ASTExpression* condition, ASTStatement* body) : condition(UniqueExpression(condition)),
       body(std::unique_ptr<ASTStatement>(body)) { }
     
-    ASTExpression* getCondition() { return condition.get(); }
-    ASTStatement* getBody() { return body.get(); }
+    std::unique_ptr<ASTExpression>& getCondition() { return condition; }
+    std::unique_ptr<ASTStatement>& getBody() { return body; }
   };
 
   class ASTConditionalBlock : public ASTNode
@@ -392,7 +390,7 @@ public:
     
   public:
     ASTConditionalBlock(ASTStatement* body) : body(std::unique_ptr<ASTStatement>(body)) { }
-    ASTStatement* getBody() { return body.get(); }
+    std::unique_ptr<ASTStatement>& getBody() { return body; }
   };
   
   class ASTIfBlock : public ASTConditionalBlock
@@ -406,7 +404,7 @@ public:
   public:
     ASTIfBlock(ASTExpression* condition, ASTStatement* body) : ASTConditionalBlock(body), condition(std::unique_ptr<ASTExpression>(condition)) { }
     
-    ASTExpression* getCondition() { return condition.get(); }
+    std::unique_ptr<ASTExpression>& getCondition() { return condition; }
   };
   
   class ASTElseBlock : public ASTConditionalBlock
@@ -429,7 +427,7 @@ private:
 public:
   ASTConditional(std::list<ASTConditionalBlock*>& blocks) : blocks(UniqueList<ASTConditionalBlock>(new ASTList<ASTConditionalBlock>(blocks))) { }
   
-  ASTList<ASTConditionalBlock>* getBlocks() { return blocks.get(); }
+  std::unique_ptr<ASTList<ASTConditionalBlock>>& getBlocks() { return blocks; }
 };
 
 
@@ -442,7 +440,7 @@ private:
   
 public:
   ASTReturn(ASTExpression *value = nullptr) : value(UniqueExpression(value)) { }  
-  ASTExpression* getValue() { return value.get(); }
+  std::unique_ptr<ASTExpression>& getValue() { return value; }
 };
 
 
