@@ -164,20 +164,47 @@ namespace Assembler
     void solve(u8 value) { this->value.value = value; this->value.type = Value8::Type::VALUE; }
   };
   
-  class InstructionSEXT : public Instruction
+  class InstructionSingleReg : public Instruction
   {
-  private:
+  protected:
+    Opcode opcode;
     Reg reg;
+
+    InstructionSingleReg(Opcode opcode, Reg reg) : Instruction(LENGTH_1_BYTES), opcode(opcode), reg(reg) { }
     
   public:
-    InstructionSEXT(Reg reg) : Instruction(LENGTH_1_BYTES), reg(reg) { }
-    
-    std::string mnemonic() const { return fmt::sprintf("SEXT %s", Opcodes::reg8(reg)); }
-    
     void assemble(u8* dest) const override
     {
-      dest[0] = (OPCODE_SEXT << 3) | reg;
+      dest[0] = (opcode << 3) | reg;
     }
+
+  };
+  
+  class InstructionSEXT : public InstructionSingleReg
+  {
+  private:
+
+  public:
+    InstructionSEXT(Reg reg) : InstructionSingleReg(OPCODE_SEXT, reg) { }
+    std::string mnemonic() const { return fmt::sprintf("SEXT %s", Opcodes::reg8(reg)); }
+  };
+  
+  class InstructionPUSH16 : public InstructionSingleReg
+  {
+  private:
+    
+  public:
+    InstructionPUSH16(Reg reg) : InstructionSingleReg(OPCODE_PUSH16, reg) { }
+    std::string mnemonic() const { return fmt::sprintf("PUSH %s", Opcodes::reg16(reg)); }
+  };
+  
+  class InstructionPOP16 : public InstructionSingleReg
+  {
+  private:
+    
+  public:
+    InstructionPOP16(Reg reg) : InstructionSingleReg(OPCODE_POP16, reg) { }
+    std::string mnemonic() const { return fmt::sprintf("POP %s", Opcodes::reg16(reg)); }
   };
   
   class InstructionLD_NNNN : public Instruction

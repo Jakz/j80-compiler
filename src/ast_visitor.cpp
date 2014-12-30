@@ -83,8 +83,10 @@ void Visitor::dispatchAndReplace(unique_ptr<T>& ptr)
   {
     ASTNode* node = dispatch(ptr.get());
 
-    if (dynamic_cast<T*>(node))
-      ptr.reset(dynamic_cast<T*>(node));
+    T* cnode = dynamic_cast<T*>(node);
+    
+    if (cnode)
+      ptr.reset(cnode);
   }
 }
 
