@@ -56,16 +56,18 @@ void SymbolsVisitor::enteringNode(ASTScope* node)
   table.pushScope();
 }
 
-void SymbolsVisitor::exitingNode(ASTScope* node)
+ASTNode* SymbolsVisitor::exitingNode(ASTScope* node)
 {
   node->setSymbolTable(table.getCurrentTable());
   table.popScope();
+  return nullptr;
 }
 
-void SymbolsVisitor::exitingNode(ASTFuncDeclaration* node)
+ASTNode* SymbolsVisitor::exitingNode(ASTFuncDeclaration* node)
 {
   node->setSymbolTable(table.getCurrentTable());
   table.popScope();
+  return nullptr;
 }
 
 void SymbolsVisitor::enteringNode(ASTFuncDeclaration *node)
@@ -95,9 +97,10 @@ void SymbolsVisitor::enteringNode(ASTEnumDeclaration *node)
   currentEnum = table.addEnum(node->getName());
 }
 
-void SymbolsVisitor::exitingNode(ASTEnumDeclaration* node)
+ASTNode* SymbolsVisitor::exitingNode(ASTEnumDeclaration* node)
 {
   currentEnum = nullptr;
+  return nullptr;
 }
 
 void SymbolsVisitor::enteringNode(ASTEnumEntry* node)
@@ -107,4 +110,12 @@ void SymbolsVisitor::enteringNode(ASTEnumEntry* node)
   else
     currentEnum->add(node->getName());
 }
+
+
+ASTNode* EnumReplaceVisitor::exitingNode(ASTReference* node)
+{
+  const s32* const value = table.getValueForEnumEntry(node->getName());
+  return value ? new ASTNumber(*value) : nullptr;
+}
+
 

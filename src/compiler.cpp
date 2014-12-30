@@ -52,14 +52,20 @@ void Compiler::printAST()
   if (ast.get())
   {
     //unique_ptr<PrinterVisitor> visitor = unique_ptr<PrinterVisitor>(new PrinterVisitor());
-    PrinterVisitor visitor;
-    ast->accept(&visitor);
+
   }
   
   SymbolsVisitor svisitor;
-  ast->accept(&svisitor);
+  svisitor.dispatch(ast.get());
   
   svisitor.getTable().print();
+  
+  EnumReplaceVisitor evisitor = EnumReplaceVisitor(svisitor.getTable());
+  
+  evisitor.dispatch(ast.get());
+  
+  PrinterVisitor visitor;
+  visitor.dispatch(ast.get());
   
     //ast->recursivePrint(0);
 }

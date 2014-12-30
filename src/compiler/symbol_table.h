@@ -117,6 +117,19 @@ namespace nanoc
       return newEnum;
     }
     
+    const s32* const getValueForEnumEntry(const std::string& name) const
+    {
+      for (const auto& e : enums)
+      {
+        const s32* const value = e.second->retrieve(name);
+        
+        if (value)
+          return value;
+      }
+      
+      return nullptr;
+    }
+    
     void print() const;
     void printTable(LocalSymbolTable* table, u16 scopes = 0) const;
     
@@ -134,21 +147,33 @@ namespace nanoc
   public:
     SymbolsVisitor() : currentEnum(nullptr) { }
     void enteringNode(ASTScope* node);
-    void exitingNode(ASTScope* node);
-    void exitingNode(ASTFuncDeclaration* node);
+    ASTNode* exitingNode(ASTScope* node);
+    ASTNode* exitingNode(ASTFuncDeclaration* node);
     
     void enteringNode(ASTFuncDeclaration* node);
     void enteringNode(ASTDeclarationValue* node);
     void enteringNode(ASTDeclarationArray* node);
     
     void enteringNode(ASTEnumDeclaration* node);
-    void exitingNode(ASTEnumDeclaration* node);
+    ASTNode* exitingNode(ASTEnumDeclaration* node);
     void enteringNode(ASTEnumEntry* node);
 
     
     void commonVisit(ASTNode* node) { }
     
     const SymbolTable& getTable() { return table; }
+  };
+  
+  class EnumReplaceVisitor : public Visitor
+  {
+  private:
+    const SymbolTable& table;
+    
+  public:
+    EnumReplaceVisitor(const SymbolTable& table) : table(table) { }
+    
+    ASTNode* exitingNode(ASTReference* node);
+    
   };
   
 }

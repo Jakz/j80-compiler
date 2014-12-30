@@ -37,9 +37,11 @@ public:
     values[name] = assignedValue;
   }
   
-  s32 retrieve(const std::string& name)
+  const s32 * const retrieve(const std::string& name)
   {
-    return values[name];
+    auto it = values.find(name);
+    
+    return it != values.end() ? &it->second : nullptr;
   }
   
   const std::string& getName() const { return name; }

@@ -10,12 +10,12 @@ using namespace std;
 
 #pragma mark Generic Visitor
 
-#define DISPATCH(__CLASS_NAME__) { if (dynamic_cast<__CLASS_NAME__*>(node.get())) { visit(dynamic_cast<unique_ptr<__CLASS_NAME__>&>(node)); return; } }
-#define OPTIONAL_DISPATCH(__METHOD__) { auto* n = __METHOD__; if (n) dispatch(n); }
-#define VISITOR_FUNCTIONALITY_IMPL(__CLASS_NAME__) void Visitor::enteringNode(std::unique_ptr<__CLASS_NAME__>& node) { commonEnteringNode(node.get()); }\
-void Visitor::exitingNode(std::unique_ptr<__CLASS_NAME__>& node) { commonExitingNode(node.get()); }
+#define DISPATCH(__CLASS_NAME__) { if (dynamic_cast<__CLASS_NAME__*>(node)) return visit(dynamic_cast<__CLASS_NAME__*>(node)); }
+#define OPTIONAL_DISPATCH(__METHOD__) { auto* n = __METHOD__; if (n) dispatch(n.get()); }
+#define VISITOR_FUNCTIONALITY_IMPL(__CLASS_NAME__) void Visitor::enteringNode(__CLASS_NAME__* node) { commonEnteringNode(node); }\
+ASTNode* Visitor::exitingNode(__CLASS_NAME__* node) { commonExitingNode(node); return nullptr; }
 
-void Visitor::dispatch(unique_ptr<ASTNode>& node)
+ASTNode* Visitor::dispatch(ASTNode* node)
 {
   DISPATCH(ASTList<ASTDeclaration>)
   DISPATCH(ASTList<ASTStatement>)
@@ -46,6 +46,7 @@ void Visitor::dispatch(unique_ptr<ASTNode>& node)
   string error = fmt::sprintf("visit unhandled on %s", Utils::execute(std::string("c++filt ")+typeid(node).name()).c_str());
   cout << error;
   assert(false);
+  return nullptr;
 }
 
 VISITOR_FUNCTIONALITY_IMPL(ASTList<ASTDeclaration>)
@@ -74,251 +75,267 @@ VISITOR_FUNCTIONALITY_IMPL(ASTIfBlock)
 VISITOR_FUNCTIONALITY_IMPL(ASTReturn)
 VISITOR_FUNCTIONALITY_IMPL(ASTEnumEntry)
 
-void Visitor::visit(unique_ptr<ASTNumber>& node)
+
+template<typename T>
+void Visitor::dispatchAndReplace(unique_ptr<T>& ptr)
 {
-  commonVisit(node);
-  enteringNode(node);
-  exitingNode(node);
+  if (ptr)
+  {
+    ASTNode* node = dispatch(ptr.get());
+
+    if (dynamic_cast<T*>(node))
+      ptr.reset(dynamic_cast<T*>(node));
+  }
 }
 
-void Visitor::visit(unique_ptr<ASTBool>& node)
+ASTNode* Visitor::visit(ASTNumber* node)
 {
   commonVisit(node);
   enteringNode(node);
-  exitingNode(node);}
-
-void Visitor::visit(unique_ptr<ASTReference>& node)
-{
-  commonVisit(node);
-  enteringNode(node);
-  exitingNode(node);}
-
-void Visitor::visit(unique_ptr<ASTEnumEntry>& node)
-{
-  commonVisit(node);
-  enteringNode(node);
-  exitingNode(node);}
-
-void Visitor::visit(unique_ptr<ASTArrayReference>& node)
-{
-  commonVisit(node);
-  enteringNode(node);
-  
-  dispatch(node->getIndex());
-  
-  exitingNode(node);
+  return exitingNode(node);
 }
 
-void Visitor::visit(unique_ptr<ASTScope>& node)
+ASTNode* Visitor::visit(ASTBool* node)
 {
   commonVisit(node);
   enteringNode(node);
-  
-  dispatch(node->getStatements());
-  
-  exitingNode(node);
+  return exitingNode(node);
 }
 
-void Visitor::visit(unique_ptr<ASTList<ASTDeclaration>>& node)
+ASTNode* Visitor::visit(ASTReference* node)
 {
   commonVisit(node);
   enteringNode(node);
-  
-  for (const auto& s : node->getElements())
-    dispatch(s);
-  
-  exitingNode(node);
+  return exitingNode(node);
 }
 
-void Visitor::visit(unique_ptr<ASTList<ASTStatement>>& node)
+ASTNode* Visitor::visit(ASTEnumEntry* node)
 {
   commonVisit(node);
   enteringNode(node);
-  
-  for (const auto& s : node->getElements())
-    dispatch(s);
-  
-  exitingNode(node);
+  return exitingNode(node);
 }
 
-void Visitor::visit(unique_ptr<ASTList<ASTExpression>>& node)
-{
-  commonVisit(node);
-  enteringNode(node);
-  
-  for (const auto& s : node->getElements())
-    dispatch(s);
-  
-  exitingNode(node);
-}
-
-void Visitor::visit(unique_ptr<ASTList<ASTConditionalBlock>>& node)
+ASTNode* Visitor::visit(ASTArrayReference* node)
 {
   commonVisit(node);
   enteringNode(node);
 
-  for (const auto& s : node->getElements())
-    dispatch(s);
-  
-  exitingNode(node);
+  dispatchAndReplace(node->getIndex());
+
+  return exitingNode(node);
 }
 
-void Visitor::visit(unique_ptr<ASTList<ASTEnumEntry>>& node)
+ASTNode* Visitor::visit(ASTScope* node)
+{
+  commonVisit(node);
+  enteringNode(node);
+  
+  dispatchAndReplace(node->getStatements());
+
+  return exitingNode(node);
+}
+
+ASTNode* Visitor::visit(ASTList<ASTDeclaration>* node)
+{
+  commonVisit(node);
+  enteringNode(node);
+  
+  for (auto& s : node->getElements())
+    dispatchAndReplace(s);
+  
+  return exitingNode(node);
+}
+
+ASTNode* Visitor::visit(ASTList<ASTStatement>* node)
+{
+  commonVisit(node);
+  enteringNode(node);
+  
+  for (auto& s : node->getElements())
+    dispatchAndReplace(s);
+  
+  return exitingNode(node);
+}
+
+ASTNode* Visitor::visit(ASTList<ASTExpression>* node)
+{
+  commonVisit(node);
+  enteringNode(node);
+  
+  for (auto& s : node->getElements())
+    dispatchAndReplace(s);
+  
+  return exitingNode(node);
+}
+
+ASTNode* Visitor::visit(ASTList<ASTConditionalBlock>* node)
+{
+  commonVisit(node);
+  enteringNode(node);
+
+  for (auto& s : node->getElements())
+    dispatchAndReplace(s);
+  
+  return exitingNode(node);
+}
+
+ASTNode* Visitor::visit(ASTList<ASTEnumEntry>* node)
 {
   commonVisit(node);
   enteringNode(node);
     
-  for (const auto& s : node->getElements())
-    dispatch(s);
+  for (auto& s : node->getElements())
+    dispatchAndReplace(s);
     
-  exitingNode(node);
+  return exitingNode(node);
 }
 
-void Visitor::visit(unique_ptr<ASTConditional>& node)
+ASTNode* Visitor::visit(ASTConditional* node)
 {
   commonVisit(node);
   enteringNode(node);
   
-  dispatch(node->getBlocks());
+  dispatchAndReplace(node->getBlocks());
   
-  exitingNode(node);
+  return exitingNode(node);
 }
 
-void Visitor::visit(unique_ptr<ASTIfBlock>& node)
+ASTNode* Visitor::visit(ASTIfBlock* node)
 {
   commonVisit(node);
   enteringNode(node);
   
-  dispatch(node->getCondition());
-  dispatch(node->getBody());
+  dispatchAndReplace(node->getCondition());
+  dispatchAndReplace(node->getBody());
   
-  exitingNode(node);
+  return exitingNode(node);
 }
 
-void Visitor::visit(unique_ptr<ASTElseBlock>& node)
+ASTNode* Visitor::visit(ASTElseBlock*node)
 {
   commonVisit(node);
   enteringNode(node);
   
-  OPTIONAL_DISPATCH(node->getBody())
+  dispatchAndReplace(node->getBody());
   
-  exitingNode(node);
+  return exitingNode(node);
 }
 
-void Visitor::visit(unique_ptr<ASTReturn>& node)
+ASTNode* Visitor::visit(ASTReturn* node)
 {
   commonVisit(node);
   enteringNode(node);
   
-  OPTIONAL_DISPATCH(node->getValue())
+  dispatchAndReplace(node->getValue());
   
-  exitingNode(node);
+  return exitingNode(node);
 }
 
-void Visitor::visit(unique_ptr<ASTCall>& node)
+ASTNode* Visitor::visit(ASTCall* node)
 {
   commonVisit(node);
   enteringNode(node);
   
-  dispatch(node->getArguments());
+  dispatchAndReplace(node->getArguments());
   
-  exitingNode(node);
+  return exitingNode(node);
 }
 
-void Visitor::visit(unique_ptr<ASTUnaryExpression>& node)
+ASTNode* Visitor::visit(ASTUnaryExpression* node)
 {
   commonVisit(node);
   enteringNode(node);
   
-  dispatch(node->getOperand();
+  dispatchAndReplace(node->getOperand());
   
-  exitingNode(node);
+  return exitingNode(node);
 }
 
-void Visitor::visit(unique_ptr<ASTBinaryExpression>& node)
+ASTNode* Visitor::visit(ASTBinaryExpression* node)
 {
   commonVisit(node);
   enteringNode(node);
 
-  dispatch(node->getOperand1());
-  dispatch(node->getOperand2());
+  dispatchAndReplace(node->getOperand1());
+  dispatchAndReplace(node->getOperand2());
 
-  exitingNode(node);
+  return exitingNode(node);
 }
 
-void Visitor::visit(unique_ptr<ASTTernaryExpression>& node)
+ASTNode* Visitor::visit(ASTTernaryExpression* node)
 {
   commonVisit(node);
   enteringNode(node);
   
-  dispatch(node->getOperand1());
-  dispatch(node->getOperand2());
-  dispatch(node->getOperand3());
+  dispatchAndReplace(node->getOperand1());
+  dispatchAndReplace(node->getOperand2());
+  dispatchAndReplace(node->getOperand3());
   
-  exitingNode(node);
+  return exitingNode(node);
 }
 
-void Visitor::visit(unique_ptr<ASTAssign>& node)
+ASTNode* Visitor::visit(ASTAssign* node)
 {
   commonVisit(node);
   enteringNode(node);
 
-  dispatch(node->getRightHand());
+  dispatchAndReplace(node->getRightHand());
   
-  exitingNode(node);
+  return exitingNode(node);
 }
 
-void Visitor::visit(unique_ptr<ASTDeclarationValue>& node)
+ASTNode* Visitor::visit(ASTDeclarationValue* node)
 {
   commonVisit(node);
   enteringNode(node);
 
-  OPTIONAL_DISPATCH(node->getInitializer())
+  dispatchAndReplace(node->getInitializer());
   
-  exitingNode(node);
+  return exitingNode(node);
 }
 
-void Visitor::visit(unique_ptr<ASTDeclarationArray>& node)
+ASTNode* Visitor::visit(ASTDeclarationArray* node)
 {
   commonVisit(node);
   enteringNode(node);
   
-  OPTIONAL_DISPATCH(node->getInitializer())
+  dispatchAndReplace(node->getInitializer());
   
-  exitingNode(node);
+  return exitingNode(node);
 }
 
-void Visitor::visit(unique_ptr<ASTFuncDeclaration>& node)
+ASTNode* Visitor::visit(ASTFuncDeclaration* node)
 {
   commonVisit(node);
   enteringNode(node);
 
-  dispatch(node->getStatements());
+  dispatchAndReplace(node->getStatements());
   
-  exitingNode(node);
+  return exitingNode(node);
 }
 
-void Visitor::visit(unique_ptr<ASTEnumDeclaration>& node)
+ASTNode* Visitor::visit(ASTEnumDeclaration* node)
 {
   commonVisit(node);
   enteringNode(node);
   
-  dispatch(node->getEntries());
+  dispatchAndReplace(node->getEntries());
   
-  exitingNode(node);
+  return exitingNode(node);
 }
 
 
-void Visitor::visit(unique_ptr<ASTWhile>& node)
+ASTNode* Visitor::visit(ASTWhile* node)
 {
   commonVisit(node);
   
   enteringNode(node);
   
-  dispatch(node->getCondition());
-  dispatch(node->getBody());
+  dispatchAndReplace(node->getCondition());
+  dispatchAndReplace(node->getBody());
   
-  exitingNode(node);
+  return exitingNode(node);
 }
 
 
@@ -327,19 +344,19 @@ void PrinterVisitor::pad(u16 indent)
 
 }
 
-void PrinterVisitor::commonEnteringNode(unique_ptr<ASTNode> node)
+void PrinterVisitor::commonEnteringNode(ASTNode* node)
 {
   //cout << "entering node" << endl;
   ++indent;
 }
 
-void PrinterVisitor::commonExitingNode(unique_ptr<ASTNode> node)
+void PrinterVisitor::commonExitingNode(ASTNode* node)
 {
   //cout << "exiting node" << endl;
   --indent;
 }
 
-void PrinterVisitor::commonVisit(unique_ptr<ASTNode> node)
+void PrinterVisitor::commonVisit(ASTNode* node)
 {
   cout << string(indent*2, ' ') << node->mnemonic() << endl;
 }

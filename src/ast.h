@@ -64,7 +64,7 @@ namespace nanoc
         this->elements.push_back(std::unique_ptr<T>(s));
     }
     
-    const std::list<std::unique_ptr<T>>& getElements() { return elements; }
+    std::list<std::unique_ptr<T>>& getElements() { return elements; }
   };
 
   class ASTStatement : virtual public ASTNode { };
@@ -107,6 +107,8 @@ namespace nanoc
   public:
     ASTReference(const std::string& name) : name(name) { }
     std::string mnemonic() const override { return fmt::sprintf("Reference(%s)", name.c_str()); }
+    
+    const std::string& getName() { return name; }
   };
   
   class ASTArrayReference : public ASTExpression
