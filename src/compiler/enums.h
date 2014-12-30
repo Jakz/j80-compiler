@@ -7,6 +7,8 @@
 #include <vector>
 #include <unordered_map>
 
+namespace nanoc {
+
 class Enum
 {
 private:
@@ -48,7 +50,6 @@ public:
   
 };
 
-
-
+}
 
 #endif

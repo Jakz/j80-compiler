@@ -17,7 +17,8 @@ namespace nanoc {
   
   class RealType : public BaseType
   {
-  
+  public:
+    u16 getSize() const { return 1; }
   };
   
   class Void : public BaseType

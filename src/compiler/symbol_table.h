@@ -6,6 +6,7 @@
 
 #include "enums.h"
 #include "types.h"
+#include "structs.h"
 
 #include "../format.h"
 #include "../ast_visitor.h"
