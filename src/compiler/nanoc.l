@@ -55,6 +55,7 @@
 "+" { return Parser::make_PLUS(loc); }
 "-" { return Parser::make_MINUS(loc); }
 "!" { return Parser::make_BANG(loc); }
+"~" { return Parser::make_TILDE(loc); }
 "?" { return Parser::make_QUESTION(loc); }
 "&" { return Parser::make_AND(loc); }
 "|" { return Parser::make_OR(loc); }

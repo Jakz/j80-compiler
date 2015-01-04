@@ -64,6 +64,7 @@
   LBRACE "{"
   RBRACE "}"
   BANG "!"
+  TILDE "~"
   QUESTION "?"
   AND "&"
   OR "|"
@@ -326,6 +327,7 @@ expression:
 
   | MINUS expression %prec UMINUS { $$ = new ASTUnaryExpression(Unary::NEG, $2); }
   | BANG expression { $$ = new ASTUnaryExpression(Unary::NOT, $2); }
+  | TILDE expression { $$ = new ASTUnaryExpression(Unary::FLIP, $2); }
 
 ;
 
