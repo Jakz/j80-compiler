@@ -15,7 +15,7 @@
 #include "compiler.h"
 
 #include "ast.h"
-#include "rtl.h"
+#include "compiler/rtl.h"
 
 #include "vm/ui.h"
 #include "vm.h"

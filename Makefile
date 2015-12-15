@@ -18,7 +18,7 @@ opt: CFLAGS = $(INCLUDE) -O3 -ffast-math -pipe -std=c++11 -stdlib=libc++ -Wno-de
 CXXFLAGS = $(CFLAGS)
 
 # added to use newest flex/bison
-LDFLAGS = -L/usr/local/opt/bison/lib -L/usr/local/opt/flex/lib
+LDFLAGS = -L/usr/local/opt/bison/lib -L/usr/local/opt/flex/lib -lncurses -lpanel
 
 # Find all source files
 BUILD = ./build
