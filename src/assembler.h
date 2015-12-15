@@ -351,6 +351,9 @@ class J80Assembler
       dataSegment.offset = codeSegment.length + codeSegment.offset;
       solveDataReferences();
     }
+  
+    const DataSegment& getDataSegment() { return dataSegment; }
+    const CodeSegment& getCodeSegment() { return codeSegment; }
     
     std::list<std::unique_ptr<Instruction>>::const_iterator iterator() { return instructions.begin(); }
     bool hasNext(std::list<std::unique_ptr<Instruction>>::const_iterator it) { return it  != instructions.end(); }

@@ -60,41 +60,52 @@ struct Regs
 
 enum Flag : u8
 {
-  CARRY = 0x01,
-  ZERO = 0x02,
-  SIGN = 0x04,
-  OVERFLOW = 0x08
+  FLAG_CARRY = 0x01,
+  FLAG_ZERO = 0x02,
+  FLAG_SIGN = 0x04,
+  FLAG_OVERFLOW = 0x08
 };
 
 class VM
 {
   private:
     Regs regs;
-    u8 *code;
-    u8 *ram;
+    u8 *memory;
     bool interruptEnabled;
   
-    void add8(u8& op1, u8& op2, u8& dest, bool flags = true);
-    void adc8(u8& op1, u8& op2, u8& dest, bool flags = true);
-    void sub8(u8& op1, u8& op2, u8& dest, bool flags = true);
-    void sbc8(u8& op1, u8& op2, u8& dest, bool flags = true);
-    void add16(u16& op1, u16& op2, u16& dest, bool flags = true);
-    void adc16(u16& op1, u16& op2, u16& dest, bool flags = true);
-    void sub16(u16& op1, u16& op2, u16& dest, bool flags = true);
-    void sbc16(u16& op1, u16& op2, u16& dest, bool flags = true);
+    template <typename W> void add(const W& op1, const W& op2, W& dest, bool flags = true);
+    template <typename W> void adc(const W& op1, const W& op2, W& dest, bool flags = true);
+    template <typename W> void sub(const W& op1, const W& op2, W& dest, bool flags = true);
+    template <typename W> void sbc(const W& op1, const W& op2, W& dest, bool flags = true);
+    template <typename W> void alu(AluOp op, const W& op1, const W& op2, W& dest, bool flags = true);
+    template <typename W> void aluFlagsArithmetic(const W& op1, const W& op2, const W& dest);
   
+    template <typename W> bool isNegative(W& value) { return (value & (1 << (sizeof(W)*8-1))) != 0; }
+
+    inline void setFlag(Flag flag, bool value) { if (value) setFlag(flag); else unsetFlag(flag); }
     inline void setFlag(Flag flag) { regs.FLAGS |= flag; }
     inline void unsetFlag(Flag flag) { regs.FLAGS &= ~flag; }
+    inline bool isFlagSet(Flag flag) { return (regs.FLAGS & flag) != 0; }
   
   public:
-    void reset() { regs.PC = 0; }
+    VM() { reset(); memory = new u8[0xFFFF]; }
+    ~VM() { delete[] memory; }
+    void reset() { memset(&regs, 0, sizeof(Regs)); }
     void executeInstruction();
   
     bool isConditionTrue(JumpCondition condition) const;
   
-    void ramWrite(u16 address, u8 value) { ram[address] = value; }
-    u8 ramRead(u16 address) { return ram[address]; }
+    void copyToRam(u8* data, size_t length, u16 offset = 0)
+    {
+      memcpy(&memory[offset], data, length);
+    }
   
+    void ramWrite(u16 address, u8 value) { memory[address] = value; }
+    u8 ramRead(u16 address) { return memory[address]; }
+    const u8* ram() { return memory; }
+
+    u16 pc() { return regs.PC; }
+    u8 flags() { return regs.FLAGS; }
     u8& reg8(Reg r);
     u16& reg16(Reg r);
 };

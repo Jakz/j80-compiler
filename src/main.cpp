@@ -15,8 +15,10 @@
 #include "compiler.h"
 
 #include "ast.h"
+#include "rtl.h"
 
 #include "vm/ui.h"
+#include "vm.h"
 
 using namespace std;
 /*
@@ -87,6 +89,31 @@ void runWithArgs(const vector<string>& args)
 
 int main(int argc, const char * argv[])
 {
+  VM vm;
+
+  Assembler::J80Assembler assembler;
+  assembler.parse("test.j80");
+  assembler.assemble();
+  
+  vm.copyToRam(assembler.getCodeSegment().data, assembler.getCodeSegment().length);
+  vm.copyToRam(assembler.getDataSegment().data, assembler.getDataSegment().length, assembler.getDataSegment().offset);
+
+  
+  vm::UI ui = vm::UI(vm);
+  ui.init();
+  
+  bool exit = false;
+  do
+  {
+    ui.draw();
+    ui.handleEvents();
+    exit = ui.shouldExit();
+  } while (!exit);
+  
+  ui.shutdown();
+  
+  return 0;
+
   if (argc > 1)
   {
     vector<string> args;
@@ -108,7 +135,7 @@ int main(int argc, const char * argv[])
   
   return 0;
   
-  Assembler::J80Assembler assembler;
+  //Assembler::J80Assembler assembler;
   assembler.parse("test.j80");
   assembler.assemble();
   

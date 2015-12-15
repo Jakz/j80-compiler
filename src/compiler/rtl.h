@@ -4,7 +4,10 @@
 #include "../utils.h"
 #include "../format.h"
 
+#include "../ast_visitor.h"
+
 #include <string>
+#include <vector>
 
 
 namespace rtl
@@ -22,17 +25,17 @@ namespace rtl
   class Temporary
   {
   private:
-    std::string name;
+    u32 index;
+    
     static u32 counter;
     
   public:
-    Temporary() : name(std::string("t") + std::to_string(counter)) { }
-    Temporary(const std::string& name) : name(name) { }
+    Temporary() : index(counter++) { }
+    Temporary(u32 index) : index(index) { }
     
-    const std::string& getName() const { return name; }
-    const char* getCName() const { return name.c_str(); }
+    const std::string getName() const { return std::string("t")+std::to_string(index); }
     
-    const bool operator==(const Temporary& other) const { return other.name == name; }
+    const bool operator==(const Temporary& other) const { return other.index == index; }
     const bool operator!=(const Temporary& other) const { return !(other == *this); }
   };
   
@@ -88,8 +91,101 @@ namespace rtl
         case Comparison::LESSEQ: sop = "<="; break;
       }
       
-      return fmt::sprintf("CJUMP(%s %s %s, %s", src1.getCName(), sop, src2.getCName(), label.c_str());
+      return fmt::sprintf("CJUMP(%s %s %s, %s", src1.getName().c_str(), sop, src2.getName().c_str(), label.c_str());
     }
+  };
+  
+  class ValueInstruction : Instruction
+  {
+  public:
+    virtual const Temporary& getDestination() = 0;
+  };
+  
+  enum class Operation
+  {
+    ADDITION
+  };
+  
+  struct value
+  {
+    enum Type
+    {
+      BOOL_TYPE,
+      BYTE_TYPE,
+      WORD_TYPE,
+      TEMP_TYPE,
+    } type;
+    
+    union
+    {
+      bool bbvalue;
+      u8 bvalue;
+      u16 wvalue;
+    };
+    const Temporary& temp;
+    
+    std::string mnemonic() const
+    {
+      switch (type)
+      {
+        case BOOL_TYPE: return bbvalue ? "true" : "false";
+        case BYTE_TYPE: return fmt::sprintf("%02xh", bvalue);
+        case WORD_TYPE: return fmt::sprintf("%04xh", wvalue);
+        case TEMP_TYPE: return temp.getName();
+      }
+    }
+    
+    value(bool b) : type(BOOL_TYPE), bbvalue(b), temp(*reinterpret_cast<const Temporary*>(NULL)) { }
+    value(u8 b) : type(BYTE_TYPE), bvalue(b), temp(*reinterpret_cast<const Temporary*>(NULL)) { }
+    value(u16 b) : type(WORD_TYPE), wvalue(b), temp(*reinterpret_cast<const Temporary*>(NULL)) { }
+    value(const Temporary& temp) : type(TEMP_TYPE), temp(temp) { }
+  };
+  
+  class AssignmentInstruction : public ValueInstruction
+  {
+  private:
+    Temporary dest;
+    value value;
+    
+  public:
+    AssignmentInstruction(struct value value) : dest(), value(value) { }
+    const Temporary& getDestination() override { return dest; }
+    
+    std::string mnemonic() const override { return fmt::sprintf("%s <- %s", dest.getName().c_str(), value.mnemonic().c_str()); }
+  };
+  
+  class OperationInstruction : public ValueInstruction
+  {
+  private:
+    Operation op;
+    const Temporary& src1, src2;
+    Temporary dest;
+    
+    
+  public:
+    OperationInstruction(const Temporary& src1, const Temporary& src2, Operation op) : src1(src1), src2(src2), dest(), op(op) { }
+    
+    std::string mnemonic() const override
+    {
+      const char* sop = nullptr;
+      switch (op) {
+        case Operation::ADDITION: sop = "+"; break;
+      }
+      
+      return fmt::sprintf("%s <- %s %s %s", dest.getName().c_str(), src1.getName().c_str(), sop, src2.getName().c_str());
+    }
+    
+    const Temporary& getDestination() override { return dest; }
+
+  };
+  
+  
+  class RTLBuilder : public nanoc::Visitor
+  {
+  private:
+    std::vector<std::unique_ptr<Instruction>> code;
+    
+  public:
     
   };
   

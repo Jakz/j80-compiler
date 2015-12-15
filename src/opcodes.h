@@ -130,12 +130,18 @@ enum JumpCondition : u8
 
 struct Instruction;
 
+struct MnemonicInfo
+{
+  std::string value;
+  u8 length;
+};
+
 class Opcodes
 {
   private:
 
   public:
-    static int printInstruction(u8 *data);
+    static MnemonicInfo printInstruction(const u8 *data);
     //static void printInstruction(Instruction &i);
   
   static const char* reg8(u8 reg);

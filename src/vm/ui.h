@@ -8,39 +8,36 @@
 
 #include "../utils.h"
 
+class VM;
+
 namespace vm
 {
-
-  enum class DataWidth : u8
-  {
-    BYTE,
-    WORD,
-    DWORD,
-  };
-
-  struct CpuSpec
-  {
-    DataWidth widthAddress;
-    DataWidth widthData;
-    DataWidth widthMaxInstruction;
-    std::string name;
-  };
-
   class UI
   {
   private:
-    WINDOW *wRegisters, *wRom, *wRam, *wOpt, *wPorts;
-    PANEL *pRegs, *pRom, *pRam, *pOpt, *pPorts; 
+    WINDOW *wRegisters, *wStack, *wCode;
+    PANEL *pRegs, *pStack, *pCode;
+    bool shouldQuit;
+    VM& vm;
 
+    
   public:
-    UI(const CpuSpec& spec);
-  
+    UI(VM& vm) : shouldQuit(false), vm(vm) { }
+    
+    void draw();
     void init();
+    void shutdown();
+    
+    void handleEvents();
+    bool shouldExit() { return shouldQuit; }
+    
+    void updateCode();
+    void updateRegisters();
+    void updateStack();
 
 
   };
 
 }
-
 
 #endif
