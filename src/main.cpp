@@ -102,6 +102,8 @@ int main(int argc, const char * argv[])
   vm::UI ui = vm::UI(vm);
   ui.init();
   
+  vm.setStdOut(ui.getStdOut());
+  
   bool exit = false;
   do
   {

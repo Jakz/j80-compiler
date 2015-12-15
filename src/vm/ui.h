@@ -9,20 +9,24 @@
 #include "../utils.h"
 
 class VM;
+class StdOut;
 
 namespace vm
 {
   class UI
   {
   private:
-    WINDOW *wRegisters, *wStack, *wCode;
-    PANEL *pRegs, *pStack, *pCode;
+    WINDOW *wRegisters, *wStack, *wCode, *wConsole;
+    PANEL *pRegs, *pStack, *pCode, *pConsole;
     bool shouldQuit;
     VM& vm;
+    
+    u64 counter;
+    u32 stepSize;
 
     
   public:
-    UI(VM& vm) : shouldQuit(false), vm(vm) { }
+    UI(VM& vm) : shouldQuit(false), vm(vm), counter(0), stepSize(256) { }
     
     void draw();
     void init();
@@ -34,6 +38,10 @@ namespace vm
     void updateCode();
     void updateRegisters();
     void updateStack();
+    void updateConsole();
+    
+    StdOut* getStdOut();
+    
 
 
   };

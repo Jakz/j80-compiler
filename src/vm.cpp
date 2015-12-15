@@ -47,6 +47,14 @@ bool VM::isConditionTrue(JumpCondition condition) const
   }
 }
 
+void VM::ramWrite(u16 address, u8 value)
+{
+  if (address == 0xFFFF && sout)
+    sout->out(value);
+  else
+    memory[address] = value;
+}
+
 template <typename W> void aluFlagsArithmetic(const W& op1, const W& op2, const W& dest)
 {
   setFlag(FLAG_CARRY, op1 + op2 > std::numeric_limits<W>::max());
@@ -82,56 +90,53 @@ template <typename W> void VM::sbc(const W& op1, const W& op2, W& dest, bool fla
 template <typename W> void VM::alu(AluOp op, const W &op1, const W &op2, W &dest, bool flags)
 {
   bool setArithmeticFlags = false;
+  s32 result = 0;
   
   switch (op) {
     case ALU_TRANSFER_A8:
     case ALU_TRANSFER_A16:
     {
       dest = op2;
-      break;
+      return;
     }
     
     case ALU_TRANSFER_B8:
     case ALU_TRANSFER_B16:
     {
       dest = op2;
-      break;
+      return;
     }
       
     case ALU_ADD8:
     case ALU_ADD16:
     {
-      u32 result = op1 + op2;
-      dest = result;
+      result = op1 + op2;
       setArithmeticFlags = true;
-      if (flags) setFlag(FLAG_CARRY, result > std::numeric_limits<W>::max());
+      setFlag(FLAG_CARRY, result > std::numeric_limits<W>::max());
       break;
     }
     case ALU_ADC8:
     case ALU_ADC16:
     {
-      u32 result = op1 + op2 + (isFlagSet(FLAG_CARRY) ? 1 : 0);
+      result = op1 + op2 + (isFlagSet(FLAG_CARRY) ? 1 : 0);
       dest = result;
-      if (flags) setFlag(FLAG_CARRY, result > std::numeric_limits<W>::max());
+      setFlag(FLAG_CARRY, result > std::numeric_limits<W>::max());
       setArithmeticFlags = true;
       break;
     }
     case ALU_SUB8:
     case ALU_SUB16:
     {
-      s32 result = op1 - op2;
-      if (flags)
-        dest = result;
-      if (flags) setFlag(FLAG_CARRY, result < 0);
+      result = op1 - op2;
+      setFlag(FLAG_CARRY, result < 0);
       setArithmeticFlags = true;
       break;
     }
     case ALU_SBC8:
     case ALU_SBC16:
     {
-      s32 result = op1 - op2 - (isFlagSet(FLAG_CARRY) ? 1 : 0);
-      dest = result; // TODO: verify behavior
-      if (flags) setFlag(FLAG_CARRY, result < 0);
+      result = op1 - op2 - (isFlagSet(FLAG_CARRY) ? 1 : 0);
+      setFlag(FLAG_CARRY, result < 0);
       setArithmeticFlags = true;
       break;
     }
@@ -155,7 +160,7 @@ template <typename W> void VM::alu(AluOp op, const W &op1, const W &op2, W &dest
     case ALU_LSH16:
     case ALU_LSH8:
     {
-      if (flags) setFlag(FLAG_CARRY, isNegative(op1));
+      setFlag(FLAG_CARRY, isNegative(op1));
       dest = op1 << 1;
       break;
     }
@@ -163,19 +168,21 @@ template <typename W> void VM::alu(AluOp op, const W &op1, const W &op2, W &dest
     case ALU_RSH16:
     case ALU_RSH8:
     {
-      if (flags) setFlag(FLAG_CARRY, op1 & 0x01);
+      setFlag(FLAG_CARRY, op1 & 0x01);
       dest = op1 >> 1;
       break;
     }
   }
   
-  if (setArithmeticFlags && flags)
+  if (flags)
+    dest = result;
+  
+  if (setArithmeticFlags)
   {
-    setFlag(FLAG_SIGN, isNegative(dest));
-    setFlag(FLAG_OVERFLOW, !(isNegative(op1) ^ isNegative(op2)) && (isNegative(op1) ^ isNegative(dest)));
+    setFlag(FLAG_SIGN, isNegative(result));
+    setFlag(FLAG_OVERFLOW, !(isNegative(op1) ^ isNegative(op2)) && (isNegative(op1) ^ isNegative(result)));
   }
-  else if (flags)
-    setFlag(FLAG_ZERO, dest == 0);
+  setFlag(FLAG_ZERO, dest == 0);
 }
 
 void VM::executeInstruction()
@@ -308,7 +315,7 @@ void VM::executeInstruction()
     case OPCODE_SD_PTR_NNNN:
     {
       u8& r = reg8(reg1);
-      u16 address = reg16(reg2);
+      u16 address = short1;
       
       ramWrite(address, r);
       
@@ -417,10 +424,10 @@ void VM::executeInstruction()
       if (isConditionTrue(cond))
       {
         u16& sp = reg16(REG_SP);
-        ++sp;
         u8 high = ramRead(sp);
         ++sp;
         u8 low = ramRead(sp);
+        ++sp;
         regs.PC = (high << 8) | low;
       }
       else
@@ -434,11 +441,12 @@ void VM::executeInstruction()
     {
       if (isConditionTrue(cond))
       {
+        u16 address = regs.PC+3;
         u16& sp = reg16(REG_SP);
         --sp;
-        ramWrite(sp, regs.PC & 0xFF);
+        ramWrite(sp, address & 0xFF);
         --sp;
-        ramWrite(sp, (regs.PC >> 8) & 0xFF);
+        ramWrite(sp, (address >> 8) & 0xFF);
         regs.PC = short1;
       }
       else length = 3;

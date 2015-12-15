@@ -11,8 +11,8 @@ struct Regs
   {
     struct
     {
-      u8 B;
       u8 A;
+      u8 B;
     };
     
     u16 BA;
@@ -21,8 +21,8 @@ struct Regs
   {
     struct
     {
-      u8 C;
       u8 D;
+      u8 C;
     };
     
     u16 CD;
@@ -31,8 +31,8 @@ struct Regs
   {
     struct
     {
-      u8 X;
       u8 Y;
+      u8 X;
     };
     
     u16 XY;
@@ -41,8 +41,8 @@ struct Regs
   {
     struct
     {
-      u8 E;
       u8 F;
+      u8 E;
     };
     
     u16 EF;
@@ -66,9 +66,16 @@ enum Flag : u8
   FLAG_OVERFLOW = 0x08
 };
 
+class StdOut
+{
+public:
+  virtual void out(u8 value) = 0;
+};
+
 class VM
 {
   private:
+    StdOut* sout;
     Regs regs;
     u8 *memory;
     bool interruptEnabled;
@@ -93,6 +100,8 @@ class VM
     void reset() { memset(&regs, 0, sizeof(Regs)); }
     void executeInstruction();
   
+    void setStdOut(StdOut* out) { this->sout = out; }
+  
     bool isConditionTrue(JumpCondition condition) const;
   
     void copyToRam(u8* data, size_t length, u16 offset = 0)
@@ -100,7 +109,7 @@ class VM
       memcpy(&memory[offset], data, length);
     }
   
-    void ramWrite(u16 address, u8 value) { memory[address] = value; }
+    void ramWrite(u16 address, u8 value);
     u8 ramRead(u16 address) { return memory[address]; }
     const u8* ram() { return memory; }
 

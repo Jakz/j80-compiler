@@ -14,6 +14,7 @@ static int width, height;
 
 constexpr u32 WINDOW_REGS_HEIGHT = 8;
 constexpr u32 SIDE_PANEL_WIDTH = 33;
+constexpr u32 LOWER_PANEL_HEIGHT = 5;
 
 void UI::init()
 {
@@ -33,11 +34,13 @@ void UI::init()
   
   wRegisters = newwin(WINDOW_REGS_HEIGHT, SIDE_PANEL_WIDTH, 0, width-SIDE_PANEL_WIDTH);
   wStack = newwin(height-WINDOW_REGS_HEIGHT, SIDE_PANEL_WIDTH, WINDOW_REGS_HEIGHT, width-SIDE_PANEL_WIDTH);
-  wCode = newwin(height, width-SIDE_PANEL_WIDTH, 0, 0);
+  wCode = newwin(height-LOWER_PANEL_HEIGHT, width-SIDE_PANEL_WIDTH, 0, 0);
+  wConsole = newwin(LOWER_PANEL_HEIGHT, width-SIDE_PANEL_WIDTH, height-LOWER_PANEL_HEIGHT, 0);
   
   pRegs = new_panel(wRegisters);
   pStack = new_panel(wStack);
   pCode = new_panel(wCode);
+  pConsole = new_panel(wConsole);
   
 }
 
@@ -46,9 +49,12 @@ void UI::draw()
   updateCode();
   updateRegisters();
   updateStack();
+  updateConsole();
   update_panels();
 	doupdate();
 }
+
+
 
 void UI::updateRegisters()
 {
@@ -67,7 +73,13 @@ void UI::updateRegisters()
   mvwprintw(wRegisters, 4, 2+14, "IY: %04Xh", vm.reg16(REG_IY));
   
   mvwprintw(wRegisters, 6, 2, "PC: %04Xh", vm.pc());
-  mvwprintw(wRegisters, 6, 2+12, "C%c Z%c S%c V%c", '0', '1', '0', '1');
+  mvwprintw(wRegisters, 5, 2, "C%c Z%c S%c V%c",
+            vm.flags() & FLAG_CARRY ? '1':'0',
+            vm.flags() & FLAG_ZERO ? '1':'0',
+            vm.flags() & FLAG_SIGN ? '1':'0',
+            vm.flags() & FLAG_OVERFLOW ? '1':'0');
+  
+  mvwprintw(wRegisters, 6, 2+14, "%8lu", counter);
 }
 
 void UI::updateStack()
@@ -95,10 +107,12 @@ void UI::updateStack()
       for (int j = 0; j < BYTES_PER_ROW; ++j)
       {
         u32 address = current + j;
+        mvwprintw(wStack, 1+i, 7+j*3 + 1, "%02X", vm.ramRead(address));
+        
         if (address == vm.reg16(REG_SP))
-          mvwprintw(wStack, 1+i, 7+j*3, ">%02X<", vm.ramRead(address));
-        else
-          mvwprintw(wStack, 1+i, 7+j*3 + 1, "%02X", vm.ramRead(address));
+          mvwprintw(wStack, 1+i, 7+j*3, ">", vm.ramRead(address));
+        if (address == vm.reg16(REG_FP))
+          mvwprintw(wStack, 1+i, 7+j*3+3, "<", vm.ramRead(address));
       }
     }
   }
@@ -110,7 +124,7 @@ void UI::updateCode()
   box(wCode, 0, 0);
   mvwprintw(wCode, 0, 1, "[Code]");
   
-  u32 ROWS = height-2;
+  u32 ROWS = height-2-LOWER_PANEL_HEIGHT;
   u32 CENTER = ROWS/2;
   u32 MIN_VALUE = 0x0000, MAX_VALUE = 0xFFFF;
 
@@ -145,6 +159,56 @@ void UI::updateCode()
   
 }
 
+template<size_t HEIGHT>
+class MyStdOut : public StdOut
+{
+public:
+  std::string buffer[HEIGHT];
+
+private:
+  void shiftUp()
+  {
+    for (int i = 0; i < HEIGHT-1; ++i)
+    {
+      buffer[i] = buffer[i+1];
+    }
+    
+    buffer[HEIGHT-1].clear();
+  }
+public:
+  size_t index = 0;
+  void out(u8 value) override
+  {
+    if (value == '\n')
+    {
+      if (index < HEIGHT-1)
+        ++index;
+      else
+        shiftUp();
+      
+      return;
+    }
+    
+    buffer[index] += value;
+  }
+};
+
+static MyStdOut<LOWER_PANEL_HEIGHT-2> sout;
+
+StdOut* UI::getStdOut() { return &sout; }
+
+void UI::updateConsole()
+{
+  wclear(wConsole);
+  box(wConsole, 0, 0);
+  for (int i = 0; i < LOWER_PANEL_HEIGHT-2; ++i)
+  {
+    mvwprintw(wConsole, 1+i, 1, "%s", sout.buffer[i].c_str());
+  }
+  
+  mvwprintw(wConsole, LOWER_PANEL_HEIGHT-1, 3, "(S) Step (T) Step x%lu", stepSize);
+}
+
 void UI::handleEvents()
 {
   int c = getch();
@@ -160,9 +224,35 @@ void UI::handleEvents()
     case 'S':
     {
       vm.executeInstruction();
+      ++counter;
       draw();
       break;
     }
+    case 't':
+    case 'T':
+    {
+      for (int i = 0; i < stepSize; ++i)
+        vm.executeInstruction();
+      counter += stepSize;
+      draw();
+      break;
+    }
+    case '+':
+    {
+      stepSize <<= 1;
+      draw();
+      break;
+    }
+    case '-':
+    {
+      if (stepSize > 2)
+      {
+        stepSize >>= 1;
+        draw();
+      }
+      break;
+    }
+    
   }
 }
 
