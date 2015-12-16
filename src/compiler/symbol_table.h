@@ -86,6 +86,7 @@ namespace nanoc
   private:
     std::unordered_map<std::string, FunctionSymbol> functions;
     std::unordered_map<std::string, std::unique_ptr<Enum>> enums;
+    std::unordered_map<std::string, std::unique_ptr<Struct>> structs;
 
     UniqueTable table;
     LocalSymbolTable* currentTable;
@@ -143,6 +144,7 @@ namespace nanoc
   private:
     SymbolTable table;
     Enum *currentEnum;
+    
     
   public:
     SymbolsVisitor() : currentEnum(nullptr) { }

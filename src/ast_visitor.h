@@ -17,6 +17,7 @@ namespace nanoc
   class ASTDeclarationArray;
   class ASTFuncDeclaration;
   class ASTEnumDeclaration;
+  class ASTStructDeclaration;
   
   class ASTNode;
   
@@ -42,6 +43,7 @@ namespace nanoc
   class ASTAssign;
   
   class ASTEnumEntry;
+  class ASTStructField;
 
   class Visitor
   {
@@ -51,8 +53,10 @@ namespace nanoc
     VISITOR_FUNCTIONALITY(ASTList<ASTDeclaration>)
     VISITOR_FUNCTIONALITY(ASTList<ASTConditionalBlock>)
     VISITOR_FUNCTIONALITY(ASTList<ASTEnumEntry>)
+    VISITOR_FUNCTIONALITY(ASTList<ASTStructField>)
     VISITOR_FUNCTIONALITY(ASTFuncDeclaration)
     VISITOR_FUNCTIONALITY(ASTEnumDeclaration)
+    VISITOR_FUNCTIONALITY(ASTStructDeclaration)
     VISITOR_FUNCTIONALITY(ASTScope)
     VISITOR_FUNCTIONALITY(ASTNumber)
     VISITOR_FUNCTIONALITY(ASTBool)
@@ -75,6 +79,7 @@ namespace nanoc
     VISITOR_FUNCTIONALITY(ASTWhile)
     
     VISITOR_FUNCTIONALITY(ASTEnumEntry)
+    VISITOR_FUNCTIONALITY(ASTStructField)
     
     template<typename T>
     void dispatchAndReplace(std::unique_ptr<T>& ptr);

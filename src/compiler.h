@@ -24,23 +24,25 @@ namespace nanoc
 {
   class Compiler
   {
-    private:    
-      std::unique_ptr<ASTList<ASTDeclaration>> ast;
+  private:
+    std::unique_ptr<ASTList<ASTDeclaration>> ast;
+  
+  public:
+    Compiler() { }
+  
+    std::string file;
+  
+    void error(const nanoc::location& l, const std::string& m);
+    void error(const std::string& m);
+  
+    bool parseString(const std::string& string);
+    bool parse(const std::string& filename);
+  
+    void setAST(ASTList<ASTDeclaration>* node) { ast = std::unique_ptr<ASTList<ASTDeclaration>>(node); }
     
-    public:
-      Compiler() { }
+    const decltype(ast)& getAST() { return ast; }
     
-      std::string file;
-    
-      void error(const nanoc::location& l, const std::string& m);
-      void error(const std::string& m);
-    
-      bool parseString(const std::string& string);
-      bool parse(const std::string& filename);
-    
-      void setAST(ASTList<ASTDeclaration>* node) { ast = std::unique_ptr<ASTList<ASTDeclaration>>(node); }
-        
-      void printAST();
+    void printAST();
   };
   
 }

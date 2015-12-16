@@ -11,9 +11,13 @@ namespace nanoc {
     virtual std::string mnemonic() const = 0;
     virtual Type* copy() const = 0;
     virtual ~Type() { }
+    virtual bool isVoid() const { return false; }
   };
   
-  class BaseType : public Type { };
+  class BaseType : public Type
+  {
+  public:
+  };
   
   class RealType : public BaseType
   {
@@ -26,6 +30,7 @@ namespace nanoc {
   public:
     std::string mnemonic() const override { return "void"; }
     Void* copy() const override { return new Void(); }
+    bool isVoid() const override { return true; }
   };
   
   class Byte : public RealType

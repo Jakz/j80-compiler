@@ -85,6 +85,7 @@
   THEN "then"
   FUNCTION "function"
   ENUM "enum"
+  STRUCT "struct"
 ;
 
 %token <bool> BOOL_VALUE
@@ -118,11 +119,15 @@
 %type<std::list<ASTDeclaration*>> declarations
 
 %type<ASTFuncDeclaration*> function_declaration
-%type<ASTDeclaration*> array_declaration variable_declaration
+%type<ASTDeclaration*> array_declaration
+%type<ASTDeclarationValue*> variable_declaration variable_declaration_initialized
 %type<ASTExpression*> expression
 
 %type<ASTEnumDeclaration*> enum_declaration
 %type<std::list<ASTEnumEntry*>> enum_entry_list
+
+%type<ASTStructDeclaration*> struct_declaration
+%type<std::list<ASTStructField*>> struct_field_list
 
 %type<ASTStatement*> statement
 %type<ASTScope*> scope
@@ -144,6 +149,8 @@
 %printer { yyoutput << ""; } <std::list<ASTDeclaration*>>
 %printer { yyoutput << ""; } <std::list<ASTEnumEntry*>>
 %printer { yyoutput << ""; } <std::list<ASTConditionalBlock*>>
+%printer { yyoutput << ""; } <std::list<ASTStructField*>>
+
 
 %nonassoc ELSE
 
@@ -177,9 +184,11 @@ declarations:
 
 declaration:
   variable_declaration { $$ = $1; }
+  | variable_declaration_initialized { $$ = $1; }
   | array_declaration { $$ = $1; }
   | FUNCTION function_declaration { $$ = $2; }
   | enum_declaration { $$ = $1; }
+  | struct_declaration { $$ = $1; }
 ;
 
 variable_declaration:
@@ -192,16 +201,18 @@ variable_declaration:
       error(@1, "Type specified for variable declaration can't be used."); YYERROR;
     }
   };
+;
 
-  | real_type IDENTIFIER EQUAL expression SEMICOL
+variable_declaration_initialized:
+ real_type IDENTIFIER EQUAL expression SEMICOL
+{
+  if (dynamic_cast<RealType*>($1))
+  $$ = new ASTDeclarationValue($2,static_cast<RealType*>($1),$4);
+  else
   {
-    if (dynamic_cast<RealType*>($1))
-      $$ = new ASTDeclarationValue($2,static_cast<RealType*>($1),$4);
-    else
-    {
-      error(@1, "Type specified for variable declaration can't be used."); YYERROR;
-    }
+    error(@1, "Type specified for variable declaration can't be used."); YYERROR;
   }
+}
 ;
 
 array_declaration:
@@ -253,6 +264,15 @@ enum_entry_list:
   | IDENTIFIER { $$ = std::list<ASTEnumEntry*>(); $$.push_front(new ASTEnumEntry($1));  }
   | enum_entry_list COMMA IDENTIFIER EQUAL NUMBER { $1.push_back(new ASTEnumEntry($3, $5)); $$ = $1; }
   | enum_entry_list COMMA IDENTIFIER { $1.push_back(new ASTEnumEntry($3)); $$ = $1; }
+;
+
+struct_field_list:
+  /* empty */ { $$ = std::list<ASTStructField*>(); }
+  | struct_field_list variable_declaration { if ($2) { $1.push_back(new ASTStructField($2)); } $$ = $1; }
+;
+
+struct_declaration:
+  STRUCT IDENTIFIER LBRACE struct_field_list RBRACE SEMICOL { $$ = new ASTStructDeclaration($2, $4); }
 ;
 
 real_type:

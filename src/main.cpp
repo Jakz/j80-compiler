@@ -89,7 +89,7 @@ void runWithArgs(const vector<string>& args)
 
 int main(int argc, const char * argv[])
 {
-  VM vm;
+  /*VM vm;
 
   Assembler::J80Assembler assembler;
   assembler.parse("test.j80");
@@ -114,9 +114,9 @@ int main(int argc, const char * argv[])
   
   ui.shutdown();
   
-  return 0;
+  return 0;*/
 
-  if (argc > 1)
+  /*if (argc > 1)
   {
     vector<string> args;
     
@@ -129,21 +129,16 @@ int main(int argc, const char * argv[])
   else if (argc == 1)
   {
     runWithArgs({"j80", "test.nc"});
-  }
+  }*/
     
   
   nanoc::Compiler compiler;
   compiler.parse("test.nc");
-  
+  /*
+  rtl::RTLBuilder builder;
+  const auto& ast = compiler.getAST();
+  builder.dispatch(ast.get());
+  builder.print();*/
   return 0;
-  
-  //Assembler::J80Assembler assembler;
-  assembler.parse("test.j80");
-  assembler.assemble();
-  
-  
-  return 0;
-  
-
 }
 

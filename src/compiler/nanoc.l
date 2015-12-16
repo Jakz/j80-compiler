@@ -85,6 +85,7 @@
 "elseif" { return Parser::make_ELSEIF(loc); }
 "function" { return Parser::make_FUNCTION(loc); }
 "enum" { return Parser::make_ENUM(loc); }
+"struct" { return Parser::make_STRUCT(loc); }
 
 "true" { return Parser::make_BOOL_VALUE(true, loc); }
 "false" { return Parser::make_BOOL_VALUE(false, loc); }

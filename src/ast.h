@@ -58,7 +58,7 @@ namespace nanoc
     
   public:
     ASTList() { }
-    ASTList(std::list<T*>& elements)
+    ASTList(const std::list<T*>& elements)
     {
       for (auto* s : elements)
         this->elements.push_back(std::unique_ptr<T>(s));
@@ -87,6 +87,7 @@ namespace nanoc
   public:
     ASTNumber(Value value) : value(value) { }
     std::string mnemonic() const override { return fmt::sprintf("Number(%d)", value); }
+    Value getValue() const { return value; }
   };
   
   class ASTBool : public ASTExpression
@@ -137,6 +138,7 @@ namespace nanoc
     ASTCall(const std::string& name, std::list<ASTExpression*>& arguments) : name(name),
       arguments(UniqueList<ASTExpression>(new ASTList<ASTExpression>(arguments))) { }
     
+    const std::string& getName() { return name; }
     std::unique_ptr<ASTList<ASTExpression>>& getArguments() { return arguments; }
   };
   
@@ -169,6 +171,7 @@ namespace nanoc
   public:
     ASTBinaryExpression(Binary op, ASTExpression* operand1, ASTExpression* operand2) : op(op), operand1(UniqueExpression(operand1)), operand2(UniqueExpression(operand2)) { }
     
+    Binary getOperation() { return op; }
     std::unique_ptr<ASTExpression>& getOperand1() { return operand1; }
     std::unique_ptr<ASTExpression>& getOperand2() { return operand2; }
   };
@@ -324,7 +327,7 @@ namespace nanoc
     arguments(std::move(arguments)) { }
   
     const std::string& getName() { return name; }
-    Type* getReturnType() { return returnType.get(); }
+    BaseType* getReturnType() { return returnType.get(); }
     const std::list<Argument>& getArguments() { return arguments; }
   };
 
@@ -360,12 +363,45 @@ private:
   std::string mnemonic() const override { return fmt::sprintf("EnumDeclaration(%s)", name.c_str()); }
   
 public:
-  ASTEnumDeclaration(std::string name, std::list<ASTEnumEntry*>& entries) : name(name), entries(UniqueList<ASTEnumEntry>(new ASTList<ASTEnumEntry>(entries))) { }
+  ASTEnumDeclaration(std::string name, const std::list<ASTEnumEntry*>& entries) : name(name), entries(UniqueList<ASTEnumEntry>(new ASTList<ASTEnumEntry>(entries))) { }
 
   std::unique_ptr<ASTList<ASTEnumEntry>>& getEntries() { return entries; }
   const std::string& getName() { return name; }
 };
 
+class ASTStructField : public ASTNode
+{
+private:
+  std::unique_ptr<ASTVariableDeclaration> entry;
+  
+public:
+  ASTStructField(ASTVariableDeclaration* entry) : entry(entry) { }
+  
+  std::string mnemonic() const override { return "StructField"; }
+  
+  const std::string& getName() { return entry->getName(); }
+  const Type* getType() { return entry->getType(); }
+  std::string getTypeName() { return entry->getTypeName(); }
+  
+  std::unique_ptr<ASTVariableDeclaration>& getDeclaration() { return entry; }
+};
+
+
+class ASTStructDeclaration : virtual public ASTDeclaration
+{
+private:
+  std::string name;
+  UniqueList<ASTStructField> fields;
+  
+  std::string mnemonic() const override { return fmt::sprintf("StructDeclaration(%s)", name.c_str()); }
+
+public:
+  ASTStructDeclaration(std::string name, const std::list<ASTStructField*>& fields) : name(name), fields(UniqueList<ASTStructField>(new ASTList<ASTStructField>(fields))) { }
+  UniqueList<ASTStructField>& getFields() { return fields; }
+
+  const std::string& getName() { return name; }
+
+};
 
 
 

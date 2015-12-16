@@ -22,8 +22,10 @@ ASTNode* Visitor::dispatch(ASTNode* node)
   DISPATCH(ASTList<ASTExpression>)
   DISPATCH(ASTList<ASTConditionalBlock>)
   DISPATCH(ASTList<ASTEnumEntry>)
+  DISPATCH(ASTList<ASTStructField>)
   DISPATCH(ASTFuncDeclaration)
   DISPATCH(ASTEnumDeclaration)
+  DISPATCH(ASTStructDeclaration)
   DISPATCH(ASTScope)
   DISPATCH(ASTCall)
   DISPATCH(ASTUnaryExpression)
@@ -42,6 +44,7 @@ ASTNode* Visitor::dispatch(ASTNode* node)
   DISPATCH(ASTIfBlock)
   DISPATCH(ASTReturn)
   DISPATCH(ASTEnumEntry)
+  DISPATCH(ASTStructField)
   
   string error = fmt::sprintf("visit unhandled on %s", Utils::execute(std::string("c++filt ")+typeid(node).name()).c_str());
   cout << error;
@@ -54,8 +57,10 @@ VISITOR_FUNCTIONALITY_IMPL(ASTList<ASTStatement>)
 VISITOR_FUNCTIONALITY_IMPL(ASTList<ASTExpression>)
 VISITOR_FUNCTIONALITY_IMPL(ASTList<ASTConditionalBlock>)
 VISITOR_FUNCTIONALITY_IMPL(ASTList<ASTEnumEntry>)
+VISITOR_FUNCTIONALITY_IMPL(ASTList<ASTStructField>)
 VISITOR_FUNCTIONALITY_IMPL(ASTFuncDeclaration)
 VISITOR_FUNCTIONALITY_IMPL(ASTEnumDeclaration)
+VISITOR_FUNCTIONALITY_IMPL(ASTStructDeclaration)
 VISITOR_FUNCTIONALITY_IMPL(ASTScope)
 VISITOR_FUNCTIONALITY_IMPL(ASTCall)
 VISITOR_FUNCTIONALITY_IMPL(ASTUnaryExpression)
@@ -74,6 +79,7 @@ VISITOR_FUNCTIONALITY_IMPL(ASTElseBlock)
 VISITOR_FUNCTIONALITY_IMPL(ASTIfBlock)
 VISITOR_FUNCTIONALITY_IMPL(ASTReturn)
 VISITOR_FUNCTIONALITY_IMPL(ASTEnumEntry)
+VISITOR_FUNCTIONALITY_IMPL(ASTStructField)
 
 
 template<typename T>
@@ -115,6 +121,14 @@ ASTNode* Visitor::visit(ASTEnumEntry* node)
 {
   commonVisit(node);
   enteringNode(node);
+  return exitingNode(node);
+}
+
+ASTNode* Visitor::visit(ASTStructField* node)
+{
+  commonVisit(node);
+  enteringNode(node);
+  dispatchAndReplace(node->getDeclaration());
   return exitingNode(node);
 }
 
@@ -190,6 +204,17 @@ ASTNode* Visitor::visit(ASTList<ASTEnumEntry>* node)
   for (auto& s : node->getElements())
     dispatchAndReplace(s);
     
+  return exitingNode(node);
+}
+
+ASTNode* Visitor::visit(ASTList<ASTStructField>* node)
+{
+  commonVisit(node);
+  enteringNode(node);
+  
+  for (auto& s : node->getElements())
+    dispatchAndReplace(s);
+  
   return exitingNode(node);
 }
 
@@ -327,6 +352,15 @@ ASTNode* Visitor::visit(ASTEnumDeclaration* node)
   return exitingNode(node);
 }
 
+ASTNode* Visitor::visit(ASTStructDeclaration* node)
+{
+  commonVisit(node);
+  enteringNode(node);
+  
+  dispatchAndReplace(node->getFields());
+  
+  return exitingNode(node);
+}
 
 ASTNode* Visitor::visit(ASTWhile* node)
 {
