@@ -13,30 +13,37 @@ class StructField
 private:
   u16 offset;
   std::string name;
-  std::unique_ptr<RealType> type;
+  std::unique_ptr<const RealType> type;
   
 public:
-  StructField(const std::string& name, RealType* type) : name(name), type(std::unique_ptr<RealType>(type)), offset(0) { }
+  StructField(const std::string& name, const RealType* type) : name(name), type(std::unique_ptr<const RealType>(type)), offset(0) { }
   void setOffset(u16 offset) { this->offset = offset; }
   
   const std::string& getName() const { return name; }
   u16 getOffset() { return offset; }
-  RealType* getType() { return type.get(); }
+  const RealType* getType() { return type.get(); }
 };
 
 class Struct
 {
 private:
+  std::string name;
   u16 size;
   std::vector<std::unique_ptr<StructField>> fields;
   
 public:
-  void addField(const std::string& name, RealType *type)
+  Struct(const std::string& name) : name(name) { }
+  
+  void addField(const std::string& name, const RealType *type)
   {
     fields.push_back(std::unique_ptr<StructField>(new StructField(name, type)));
   }
   
+  const std::string& getName() { return name; }
   u16 getSize() { return size; }
+  size_t getFieldCount() { return fields.size(); }
+  
+  const std::unique_ptr<StructField>& getField(size_t index) { return fields[index]; }
   
   void prepare()
   {

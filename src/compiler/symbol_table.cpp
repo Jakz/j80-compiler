@@ -27,6 +27,19 @@ void SymbolTable::print() const
       cout << "   " << e.second->getEnumName(i) << " = " << e.second->getEnumValue(i) << endl;
   }
   
+  cout << " Structs: " << endl;
+  for (const auto& s : structs)
+  {
+    cout << "  " << s.second->getName() << endl;
+    
+    for (int i = 0; i < s.second->getFieldCount(); ++i)
+    {
+      const auto& field = s.second->getField(i);
+      
+      cout << "   " << field->getName() << ", " << field->getType()->getSize() << " bytes at " << field->getOffset() << endl;
+    }
+  }
+  
 
   cout << " Symbols: " << endl;
   LocalSymbolTable* table = this->currentTable;
@@ -94,12 +107,35 @@ void SymbolsVisitor::enteringNode(ASTDeclarationArray* node)
 
 void SymbolsVisitor::enteringNode(ASTEnumDeclaration *node)
 {
-  currentEnum = table.addEnum(node->getName());
+  if (table.isNameFree(node->getName()))
+  {
+    currentEnum = table.addEnum(node->getName());
+  }
 }
 
 ASTNode* SymbolsVisitor::exitingNode(ASTEnumDeclaration* node)
 {
   currentEnum = nullptr;
+  return nullptr;
+}
+
+void SymbolsVisitor::enteringNode(ASTStructField* node)
+{
+  currentStruct->addField(node->getName(), node->getType());
+}
+
+void SymbolsVisitor::enteringNode(ASTStructDeclaration *node)
+{
+  if (table.isNameFree(node->getName()))
+  {
+    currentStruct = table.addStruct(node->getName());
+  }
+}
+
+ASTNode* SymbolsVisitor::exitingNode(ASTStructDeclaration* node)
+{
+  currentStruct->prepare();
+  currentStruct = nullptr;
   return nullptr;
 }
 
@@ -110,7 +146,6 @@ void SymbolsVisitor::enteringNode(ASTEnumEntry* node)
   else
     currentEnum->add(node->getName());
 }
-
 
 ASTNode* EnumReplaceVisitor::exitingNode(ASTReference* node)
 {

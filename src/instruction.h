@@ -150,7 +150,7 @@ namespace Assembler
     InstructionLD_NN(Reg dst, const std::string& label) : Instruction(LENGTH_3_BYTES), dst(dst), value(Value8(label)) { }
 
     
-    std::string mnemonic() const { return fmt::sprintf("LD %s, %.2Xh", Opcodes::reg8(dst), value.value); }
+    std::string mnemonic() const override { return fmt::sprintf("LD %s, %.2Xh", Opcodes::reg8(dst), value.value); }
     
     void assemble(u8* dest) const override
     {
@@ -309,7 +309,7 @@ namespace Assembler
   public:
     InstructionRET(JumpCondition condition) : Instruction(LENGTH_1_BYTES), condition(condition) { }
     
-    std::string mnemonic() const { return fmt::sprintf("RET%s", Opcodes::condName(condition)); }
+    std::string mnemonic() const override { return fmt::sprintf("RET%s", Opcodes::condName(condition)); }
     void assemble(u8* dest) const override { dest[0] = (OPCODE_RETC << 3) | condition;; }
   };
   
@@ -318,7 +318,7 @@ namespace Assembler
   public:
     InstructionNOP() : Instruction(LENGTH_1_BYTES) { }
     
-    std::string mnemonic() const { return "NOP"; }
+    std::string mnemonic() const override { return "NOP"; }
     void assemble(u8* dest) const override { dest[0] = OPCODE_NOP; }
   };
 }

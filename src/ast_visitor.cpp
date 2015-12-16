@@ -128,7 +128,7 @@ ASTNode* Visitor::visit(ASTStructField* node)
 {
   commonVisit(node);
   enteringNode(node);
-  dispatchAndReplace(node->getDeclaration());
+  //dispatchAndReplace(node->getDeclaration());
   return exitingNode(node);
 }
 

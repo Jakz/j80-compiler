@@ -380,7 +380,7 @@ public:
   std::string mnemonic() const override { return "StructField"; }
   
   const std::string& getName() { return entry->getName(); }
-  const Type* getType() { return entry->getType(); }
+  const RealType* getType() { return static_cast<RealType*>(entry->getType()); }
   std::string getTypeName() { return entry->getTypeName(); }
   
   std::unique_ptr<ASTVariableDeclaration>& getDeclaration() { return entry; }

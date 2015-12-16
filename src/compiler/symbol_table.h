@@ -110,12 +110,24 @@ namespace nanoc
       currentTable = currentTable->getParent();
     }
     
+    bool isNameFree(const std::string& name) const
+    {
+      return enums.find(name) == enums.end() && structs.find(name) == structs.end();
+    }
+    
     Enum* addEnum(const std::string& name)
     {
       Enum* newEnum = new Enum(name);
       enums[name] = std::unique_ptr<Enum>(newEnum);
       
       return newEnum;
+    }
+    
+    Struct* addStruct(const std::string& name)
+    {
+      Struct* newStruct = new Struct(name);
+      structs[name] = std::unique_ptr<Struct>(newStruct);
+      return newStruct;
     }
     
     const s32* const getValueForEnumEntry(const std::string& name) const
@@ -144,10 +156,10 @@ namespace nanoc
   private:
     SymbolTable table;
     Enum *currentEnum;
-    
+    Struct* currentStruct;
     
   public:
-    SymbolsVisitor() : currentEnum(nullptr) { }
+    SymbolsVisitor() : currentEnum(nullptr), currentStruct(nullptr) { }
     void enteringNode(ASTScope* node);
     ASTNode* exitingNode(ASTScope* node);
     ASTNode* exitingNode(ASTFuncDeclaration* node);
@@ -160,6 +172,10 @@ namespace nanoc
     ASTNode* exitingNode(ASTEnumDeclaration* node);
     void enteringNode(ASTEnumEntry* node);
 
+    void enteringNode(ASTStructDeclaration* node);
+    ASTNode* exitingNode(ASTStructDeclaration* node);
+    void enteringNode(ASTStructField* node);
+    
     
     void commonVisit(ASTNode* node) { }
     
