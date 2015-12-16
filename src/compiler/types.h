@@ -5,6 +5,8 @@
 #include "../format.h"
 
 namespace nanoc {
+  class SymbolTable;
+  
   class Type
   {
   public:
@@ -12,12 +14,12 @@ namespace nanoc {
     virtual Type* copy() const = 0;
     virtual ~Type() { }
     virtual bool isVoid() const { return false; }
+    virtual u16 getSize(const SymbolTable* table) const = 0;
   };
   
   class BaseType : public Type
   {
   public:
-    virtual u16 getSize() const = 0;
   };
   
   class RealType : public BaseType
@@ -31,13 +33,13 @@ namespace nanoc {
     std::string mnemonic() const override { return "void"; }
     Void* copy() const override { return new Void(); }
     bool isVoid() const override { return true; }
-    u16 getSize() const override { return 0; }
+    u16 getSize(const SymbolTable* table) const override { return 0; }
   };
   
   class Byte : public RealType
   {
   public:
-    u16 getSize() const override { return 1; }
+    u16 getSize(const SymbolTable* table) const override { return 1; }
     std::string mnemonic() const override { return "byte"; }
     Byte* copy() const override { return new Byte(); }
   };
@@ -45,7 +47,7 @@ namespace nanoc {
   class Word : public RealType
   {
   public:
-    u16 getSize() const override { return 2; }
+    u16 getSize(const SymbolTable* table) const override { return 2; }
     std::string mnemonic() const override { return "word"; }
     Word* copy() const override { return new Word(); }
 
@@ -57,6 +59,7 @@ namespace nanoc {
     std::string name;
   public:
     Named(const std::string& name) : name(name) { }
+    u16 getSize(const SymbolTable* table) const override;
     std::string mnemonic() const override { return fmt::sprintf("Named(%s)", name.c_str()); }
     Named* copy() const override { return new Named(name); }
   };
@@ -64,7 +67,7 @@ namespace nanoc {
   class Bool : public RealType
   {
   public:
-    u16 getSize() const override { return 1; }
+    u16 getSize(const SymbolTable* table) const override { return 1; }
     std::string mnemonic() const override { return "bool"; }
     Bool* copy() const override { return new Bool(); }
   };
@@ -77,7 +80,7 @@ namespace nanoc {
     Pointer(BaseType* type) : type(std::unique_ptr<BaseType>(type)) { }
     Pointer(const Pointer& other) : type(std::unique_ptr<BaseType>(static_cast<BaseType*>(other.type->copy()))) { }
     
-    u16 getSize() const override { return 2; }
+    u16 getSize(const SymbolTable* table) const override { return 2; }
     std::string mnemonic() const override { return type->mnemonic() + "*"; }
     Pointer* copy() const override { return new Pointer(*this); }
     
@@ -92,7 +95,7 @@ namespace nanoc {
   public:
     Array(RealType* type, u16 length) : type(std::unique_ptr<RealType>(type)), length(length) { }
     Array(const Array& other) : type(std::unique_ptr<RealType>(static_cast<RealType*>(other.type->copy()))), length(other.length) { }
-    u16 getSize() const override { return type->getSize()*length; }
+    u16 getSize(const SymbolTable* table) const override { return type->getSize(table)*length; }
     std::string mnemonic() const override { return type->mnemonic() + "["+std::to_string(length)+"]"; }
     Array* copy() const override { return new Array(*this); }
   };

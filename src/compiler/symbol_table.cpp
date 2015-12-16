@@ -7,6 +7,22 @@
 using namespace nanoc;
 using namespace std;
 
+u16 SymbolTable::getSizeForType(const std::string& name) const
+{
+  auto type = enums.find(name);
+  
+  if (type != enums.end())
+    return type->second->getType()->getSize(this);
+  
+  auto type2 = structs.find(name);
+  
+  if (type2 != structs.end())
+    return type2->second->getSize();
+  
+  return 0;
+  /* TODO: error */
+}
+
 void SymbolTable::print() const
 {
   cout << "Symbol Table" << endl;
@@ -36,7 +52,7 @@ void SymbolTable::print() const
     {
       const auto& field = s.second->getField(i);
       
-      cout << fmt::sprintf("   %s, %u bytes at %04X",field->getName(),field->getType()->getSize(),field->getOffset()) << endl;
+      cout << fmt::sprintf("   %s, %u bytes at %04X",field->getName(),field->getType()->getSize(this),field->getOffset()) << endl;
     }
   }
   
@@ -134,7 +150,7 @@ void SymbolsVisitor::enteringNode(ASTStructDeclaration *node)
 
 ASTNode* SymbolsVisitor::exitingNode(ASTStructDeclaration* node)
 {
-  currentStruct->prepare();
+  currentStruct->prepare(&table);
   currentStruct = nullptr;
   return nullptr;
 }

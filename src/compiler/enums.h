@@ -8,6 +8,8 @@
 #include <unordered_map>
 
 namespace nanoc {
+  
+class Type;
 
 class Enum
 {
@@ -15,6 +17,7 @@ private:
   std::string name;
   std::vector<std::string> entries;
   std::unordered_map<std::string, s32> values;
+  std::unique_ptr<Type> type;
   
 public:
   Enum() = default;
@@ -22,6 +25,8 @@ public:
   {
     
   }
+  
+  void setType(Type* type) { this->type = std::unique_ptr<Type>(type); }
   
   void add(const std::string& name, s32 value)
   {
@@ -44,6 +49,7 @@ public:
     return it != values.end() ? &it->second : nullptr;
   }
   
+  const Type* getType() { return type.get(); }
   const std::string& getName() const { return name; }
   const size_t size() const { return entries.size(); }
   const std::string& getEnumName(size_t index) const { return entries[index]; }

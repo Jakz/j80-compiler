@@ -45,14 +45,14 @@ public:
   
   const std::unique_ptr<StructField>& getField(size_t index) { return fields[index]; }
   
-  void prepare()
+  void prepare(SymbolTable* table)
   {
     u16 offset = 0;
     
     for (auto& sf : fields)
     {
       sf->setOffset(offset);
-      offset += sf->getType()->getSize();
+      offset += sf->getType()->getSize(table);
     }
     
     this->size = offset;

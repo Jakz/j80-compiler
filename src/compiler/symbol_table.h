@@ -130,6 +130,8 @@ namespace nanoc
       return enums.find(name) == enums.end() && structs.find(name) == structs.end();
     }
     
+    u16 getSizeForType(const std::string& name) const;
+    
     Enum* addEnum(const std::string& name)
     {
       Enum* newEnum = new Enum(name);
