@@ -70,6 +70,21 @@ namespace nanoc
     bool hasSymbol(const std::string& name) { auto it = symbols.find(name); return it != symbols.end(); }
     void addSymbol(const std::string& name, Type* type) { symbols[name] = Symbol(name, type); }
     
+    const Type* find(const std::string& name)
+    {
+      const auto it = symbols.find(name);
+      
+      if (it != symbols.end())
+        return it->second.getType();
+      else
+      {
+        if (parent)
+          return parent->find(name);
+        else
+          return nullptr;
+      }
+    }
+    
     LocalSymbolTable* pushScope()
     {
       scopes.push_back(UniqueTable(new LocalSymbolTable(this)));
@@ -109,7 +124,7 @@ namespace nanoc
     void popScope() {
       currentTable = currentTable->getParent();
     }
-    
+
     bool isNameFree(const std::string& name) const
     {
       return enums.find(name) == enums.end() && structs.find(name) == structs.end();

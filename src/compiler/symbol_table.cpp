@@ -30,13 +30,13 @@ void SymbolTable::print() const
   cout << " Structs: " << endl;
   for (const auto& s : structs)
   {
-    cout << "  " << s.second->getName() << endl;
+    cout << "  " << s.second->getName() << ", size: " << s.second->getSize() << endl;
     
     for (int i = 0; i < s.second->getFieldCount(); ++i)
     {
       const auto& field = s.second->getField(i);
       
-      cout << "   " << field->getName() << ", " << field->getType()->getSize() << " bytes at " << field->getOffset() << endl;
+      cout << fmt::sprintf("   %s, %u bytes at %04X",field->getName(),field->getType()->getSize(),field->getOffset()) << endl;
     }
   }
   
