@@ -166,10 +166,23 @@ void SymbolsVisitor::enteringNode(ASTEnumEntry* node)
     currentEnum->add(node->getName());
 }
 
+void SymbolsVisitor::enteringNode(ASTLeftHand* node)
+{
+  if (!table.isIdentifierBound(node->getName()))
+    throw identifier_undeclared(node->getLocation(), node->getName());
+}
+
 ASTNode* EnumReplaceVisitor::exitingNode(ASTReference* node)
 {
   const s32* const value = table.getValueForEnumEntry(node->getName());
-  return value ? new ASTNumber(node->getLocation(), *value) : nullptr;
+  
+  if (value)
+    return new ASTNumber(node->getLocation(), *value);
+  else
+  {
+    if (!table.isIdentifierBound(node->getName()))
+      throw identifier_undeclared(node->getLocation(), node->getName());
+    
+    return nullptr;
+  }
 }
-
-

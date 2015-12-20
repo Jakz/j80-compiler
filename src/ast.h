@@ -259,6 +259,7 @@ namespace nanoc
     ASTLeftHand(const location& loc, const std::string& name) : ASTNode(loc), name(name) { }
     
     std::string mnemonic() const override { return fmt::sprintf("%s", name.c_str()); }
+    const std::string& getName() { return name; }
   };
   
   class ASTScope : virtual public ASTStatement
@@ -290,6 +291,7 @@ namespace nanoc
       
     }
     
+    std::unique_ptr<ASTLeftHand>& getLeftHand() { return leftHand; }
     std::unique_ptr<ASTExpression>& getRightHand() { return expression; }
     
     std::string mnemonic() const override { return fmt::sprintf("Assign(%s)", leftHand->mnemonic().c_str()); }

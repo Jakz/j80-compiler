@@ -69,7 +69,7 @@ void Compiler::printAST()
     PrinterVisitor visitor;
     visitor.dispatch(ast.get());
   }
-  catch (const identifier_redefined& exception)
+  catch (const symbol_exception& exception)
   {
     cout << "Error: " << exception.what() << endl;
   }

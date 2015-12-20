@@ -20,6 +20,7 @@ namespace nanoc
   class ASTStructDeclaration;
   
   class ASTNode;
+
   
   class ASTScope;
   class ASTStatement;
@@ -37,6 +38,7 @@ namespace nanoc
   class ASTCall;
   class ASTWhile;
   class ASTReturn;
+  class ASTLeftHand;
   
   class ASTConditionalBlock;
   class ASTIfBlock;
@@ -74,6 +76,7 @@ namespace nanoc
     VISITOR_FUNCTIONALITY(ASTAddressOf)
     VISITOR_FUNCTIONALITY(ASTAssign)
     VISITOR_FUNCTIONALITY(ASTReturn)
+    VISITOR_FUNCTIONALITY(ASTLeftHand)
     
     VISITOR_FUNCTIONALITY(ASTDeclarationValue)
     VISITOR_FUNCTIONALITY(ASTDeclarationArray)

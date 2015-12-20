@@ -131,6 +131,11 @@ namespace nanoc
       return enums.find(name) == enums.end() && structs.find(name) == structs.end();
     }
     
+    bool isIdentifierBound(const std::string& name) const
+    {
+      return currentTable->find(name) != nullptr;
+    }
+    
     u16 getSizeForType(const std::string& name) const;
     
     Enum* addEnum(const std::string& name)
@@ -193,6 +198,8 @@ namespace nanoc
     void enteringNode(ASTStructDeclaration* node);
     ASTNode* exitingNode(ASTStructDeclaration* node);
     void enteringNode(ASTStructField* node);
+    
+    void enteringNode(ASTLeftHand* node);
     
     
     void commonVisit(ASTNode* node) { }

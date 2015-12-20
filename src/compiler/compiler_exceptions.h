@@ -26,7 +26,20 @@ namespace nanoc
     identifier_redefined(const location& loc, const std::string& identifier) : symbol_exception(loc, "identifier already defined"), identifier(identifier) { }
     const char* what() const throw() override
     {
-      buffer = fmt::sprintf("Exception at %u:%u, %s", loc.begin.line, loc.begin.column, symbol_exception::what());
+      buffer = fmt::sprintf("Exception at %u:%u, %s: %s", loc.begin.line, loc.begin.column, symbol_exception::what(), identifier.c_str());
+      return buffer.c_str();
+    }
+  };
+  
+  class identifier_undeclared : public symbol_exception
+  {
+  private:
+    std::string identifier;
+  public:
+    identifier_undeclared(const location& loc, const std::string& identifier) : symbol_exception(loc, "identifier undeclared"), identifier(identifier) { }
+    const char* what() const throw() override
+    {
+      buffer = fmt::sprintf("Exception at %u:%u, %s: %s", loc.begin.line, loc.begin.column, symbol_exception::what(), identifier.c_str());
       return buffer.c_str();
     }
   };
