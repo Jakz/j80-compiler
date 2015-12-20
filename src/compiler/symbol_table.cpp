@@ -101,6 +101,9 @@ ASTNode* SymbolsVisitor::exitingNode(ASTFuncDeclaration* node)
 
 void SymbolsVisitor::enteringNode(ASTFuncDeclaration *node)
 {
+  if (table.hasFunction(node->getName()))
+    throw identifier_redefined(node->getLocation(), node->getName());
+  
   table.pushScope();
   
   list<Argument> arguments = node->getArguments();
@@ -166,7 +169,7 @@ void SymbolsVisitor::enteringNode(ASTEnumEntry* node)
 ASTNode* EnumReplaceVisitor::exitingNode(ASTReference* node)
 {
   const s32* const value = table.getValueForEnumEntry(node->getName());
-  return value ? new ASTNumber(*value) : nullptr;
+  return value ? new ASTNumber(node->getLocation(), *value) : nullptr;
 }
 
 

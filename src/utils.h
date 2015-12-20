@@ -38,7 +38,9 @@ namespace nanoc {
     INCR,
     DECR,
     NEG,
-    FLIP
+    FLIP,
+    ADDRESSOF,
+    DEREFERENCE
   };
   
   enum Binary

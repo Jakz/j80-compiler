@@ -45,6 +45,9 @@ ASTNode* Visitor::dispatch(ASTNode* node)
   DISPATCH(ASTReturn)
   DISPATCH(ASTEnumEntry)
   DISPATCH(ASTStructField)
+  DISPATCH(ASTFieldAccess)
+  DISPATCH(ASTDereference)
+  DISPATCH(ASTAddressOf)
   
   string error = fmt::sprintf("visit unhandled on %s", Utils::execute(std::string("c++filt ")+typeid(node).name()).c_str());
   cout << error;
@@ -80,6 +83,9 @@ VISITOR_FUNCTIONALITY_IMPL(ASTIfBlock)
 VISITOR_FUNCTIONALITY_IMPL(ASTReturn)
 VISITOR_FUNCTIONALITY_IMPL(ASTEnumEntry)
 VISITOR_FUNCTIONALITY_IMPL(ASTStructField)
+VISITOR_FUNCTIONALITY_IMPL(ASTFieldAccess)
+VISITOR_FUNCTIONALITY_IMPL(ASTDereference)
+VISITOR_FUNCTIONALITY_IMPL(ASTAddressOf)
 
 
 template<typename T>
@@ -129,6 +135,30 @@ ASTNode* Visitor::visit(ASTStructField* node)
   commonVisit(node);
   enteringNode(node);
   //dispatchAndReplace(node->getDeclaration());
+  return exitingNode(node);
+}
+
+ASTNode* Visitor::visit(ASTFieldAccess* node)
+{
+  commonVisit(node);
+  enteringNode(node);
+  dispatchAndReplace(node->getExpression());
+  return exitingNode(node);
+}
+
+ASTNode* Visitor::visit(ASTDereference* node)
+{
+  commonVisit(node);
+  enteringNode(node);
+  dispatchAndReplace(node->getExpression());
+  return exitingNode(node);
+}
+
+ASTNode* Visitor::visit(ASTAddressOf* node)
+{
+  commonVisit(node);
+  enteringNode(node);
+  dispatchAndReplace(node->getExpression());
   return exitingNode(node);
 }
 

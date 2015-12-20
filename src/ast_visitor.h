@@ -31,6 +31,9 @@ namespace nanoc
   class ASTTernaryExpression;
   class ASTReference;
   class ASTArrayReference;
+  class ASTDereference;
+  class ASTAddressOf;
+  class ASTFieldAccess;
   class ASTCall;
   class ASTWhile;
   class ASTReturn;
@@ -66,6 +69,9 @@ namespace nanoc
     VISITOR_FUNCTIONALITY(ASTTernaryExpression)
     VISITOR_FUNCTIONALITY(ASTBinaryExpression)
     VISITOR_FUNCTIONALITY(ASTUnaryExpression)
+    VISITOR_FUNCTIONALITY(ASTFieldAccess)
+    VISITOR_FUNCTIONALITY(ASTDereference)
+    VISITOR_FUNCTIONALITY(ASTAddressOf)
     VISITOR_FUNCTIONALITY(ASTAssign)
     VISITOR_FUNCTIONALITY(ASTReturn)
     

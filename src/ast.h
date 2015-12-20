@@ -11,6 +11,9 @@
 #include "ast_visitor.h"
 #include "compiler/types.h"
 
+#include "compiler/location.hh"
+
+
 namespace nanoc
 {
   typedef signed int Value;
@@ -38,8 +41,17 @@ namespace nanoc
 
   class ASTNode
   {
-  public:    
+  private:
+    location loc;
+    
+    ASTNode(const ASTNode&) = delete;
+    ASTNode() = delete;
+    
+  public:
+    ASTNode(const location& loc) : loc(loc) { }
     virtual std::string mnemonic() const = 0;
+    
+    const location& getLocation() { return loc; }
   };
   
   template<typename T>
@@ -58,7 +70,7 @@ namespace nanoc
     
   public:
     ASTList() { }
-    ASTList(const std::list<T*>& elements)
+    ASTList(const location& loc, const std::list<T*>& elements) : ASTNode(loc)
     {
       for (auto* s : elements)
         this->elements.push_back(std::unique_ptr<T>(s));
@@ -67,14 +79,25 @@ namespace nanoc
     std::list<std::unique_ptr<T>>& getElements() { return elements; }
   };
 
-  class ASTStatement : virtual public ASTNode { };
-  class ASTDeclaration : virtual public ASTStatement { };
+  class ASTStatement : virtual public ASTNode
+  {
+  protected:
+    ASTStatement(const location& loc) : ASTNode(loc) { }
+  };
+  
+  class ASTDeclaration : virtual public ASTStatement
+  {
+  protected:
+    ASTDeclaration(const location& loc) : ASTStatement(loc) { }
+  };
   
   
   
   class ASTExpression : public ASTStatement
   {
   public:
+    ASTExpression(const location& loc) : ASTStatement(loc) { }
+
     // TODO: make pure virtual and implement in subtypes
     virtual Type* getType() const { return nullptr; }
   };
@@ -85,7 +108,7 @@ namespace nanoc
     Value value;
     
   public:
-    ASTNumber(Value value) : value(value) { }
+    ASTNumber(const location& loc, Value value) : ASTNode(loc), ASTExpression(loc), value(value) { }
     std::string mnemonic() const override { return fmt::sprintf("Number(%d)", value); }
     Value getValue() const { return value; }
   };
@@ -96,7 +119,7 @@ namespace nanoc
     bool value;
     
   public:
-    ASTBool(bool value) : value(value) { }
+    ASTBool(const location& loc, bool value) : ASTNode(loc), ASTExpression(loc), value(value) { }
     std::string mnemonic() const override { return value ? "true" : "false"; }
   };
   
@@ -106,7 +129,7 @@ namespace nanoc
     std::string name;
     
   public:
-    ASTReference(const std::string& name) : name(name) { }
+    ASTReference(const location& loc, const std::string& name) : ASTNode(loc), ASTExpression(loc), name(name) { }
     std::string mnemonic() const override { return fmt::sprintf("Reference(%s)", name.c_str()); }
     
     const std::string& getName() { return name; }
@@ -119,7 +142,7 @@ namespace nanoc
     UniqueExpression index;
     
   public:
-    ASTArrayReference(const std::string& name, ASTExpression* index) : name(name), index(UniqueExpression(index)) { }
+    ASTArrayReference(const location& loc, const std::string& name, ASTExpression* index) : ASTNode(loc), ASTExpression(loc), name(name), index(UniqueExpression(index)) { }
     std::string mnemonic() const override { return fmt::sprintf("ArrayReference(%s)", name.c_str()); }
     
     std::unique_ptr<ASTExpression>& getIndex() { return index; }
@@ -134,9 +157,9 @@ namespace nanoc
     std::string mnemonic() const override { return fmt::sprintf("Call(%s)", name.c_str()); }
     
   public:
-    ASTCall(const std::string& name) : name(name) { }
-    ASTCall(const std::string& name, std::list<ASTExpression*>& arguments) : name(name),
-      arguments(UniqueList<ASTExpression>(new ASTList<ASTExpression>(arguments))) { }
+    ASTCall(const location& loc, const std::string& name) : ASTNode(loc), ASTExpression(loc), name(name) { }
+    ASTCall(const location& loc, const std::string& name, std::list<ASTExpression*>& arguments) : ASTNode(loc), ASTExpression(loc), name(name),
+      arguments(UniqueList<ASTExpression>(new ASTList<ASTExpression>(loc, arguments))) { }
     
     const std::string& getName() { return name; }
     std::unique_ptr<ASTList<ASTExpression>>& getArguments() { return arguments; }
@@ -151,7 +174,7 @@ namespace nanoc
     std::string mnemonic() const override { return fmt::sprintf("TernaryExpression(%s)", Mnemonics::mnemonicForTernary(op)); }
     
   public:
-    ASTTernaryExpression(Ternary op, ASTExpression* operand1, ASTExpression* operand2, ASTExpression* operand3) : op(op),
+    ASTTernaryExpression(const location& loc, Ternary op, ASTExpression* operand1, ASTExpression* operand2, ASTExpression* operand3) : ASTNode(loc), ASTExpression(loc), op(op),
       operand1(UniqueExpression(operand1)), operand2(UniqueExpression(operand2)), operand3(UniqueExpression(operand3)) { }
     
     std::unique_ptr<ASTExpression>& getOperand1() { return operand1; }
@@ -169,7 +192,8 @@ namespace nanoc
     std::string mnemonic() const override { return fmt::sprintf("BinaryExpression(%s)", Mnemonics::mnemonicForBinary(op)); }
     
   public:
-    ASTBinaryExpression(Binary op, ASTExpression* operand1, ASTExpression* operand2) : op(op), operand1(UniqueExpression(operand1)), operand2(UniqueExpression(operand2)) { }
+    ASTBinaryExpression(const location& loc, Binary op, ASTExpression* operand1, ASTExpression* operand2) : ASTNode(loc), ASTExpression(loc), op(op),
+      operand1(UniqueExpression(operand1)), operand2(UniqueExpression(operand2)) { }
     
     Binary getOperation() { return op; }
     std::unique_ptr<ASTExpression>& getOperand1() { return operand1; }
@@ -186,18 +210,53 @@ namespace nanoc
     std::string mnemonic() const override { return fmt::sprintf("UnaryExpression(%s)", Mnemonics::mnemonicForUnary(op)); }
     
   public:
-    ASTUnaryExpression(Unary op, ASTExpression* operand) : op(op), operand(UniqueExpression(operand)) { }
+    ASTUnaryExpression(const location& loc, Unary op, ASTExpression* operand) : ASTNode(loc), ASTExpression(loc), op(op), operand(operand) { }
     
     std::unique_ptr<ASTExpression>& getOperand() { return operand; }
   };
+  
+  class ASTFieldAccess : public ASTExpression
+  {
+  private:
+    bool isPointer;
+    std::string field;
+    UniqueExpression expression;
+    
+  public:
+    ASTFieldAccess(const location& loc, ASTExpression* expression, const std::string& field, bool isPointer) : ASTNode(loc), ASTExpression(loc), expression(expression), field(field), isPointer(isPointer) { }
+    std::string mnemonic() const override { return fmt::sprintf("FieldAccess(%s)", field.c_str()); }
+    UniqueExpression& getExpression() { return expression; }
+  };
+  
+  class ASTDereference : public ASTExpression
+  {
+  private:
+    UniqueExpression expression;
+  public:
+    ASTDereference(const location& loc, ASTExpression* expression) : ASTNode(loc), ASTExpression(loc), expression(expression) { }
+    std::string mnemonic() const override { return "Dereference"; }
+    UniqueExpression& getExpression() { return expression; }
 
+  };
+  
+  class ASTAddressOf : public ASTExpression
+  {
+  private:
+    UniqueExpression expression;
+  public:
+    ASTAddressOf(const location& loc, ASTExpression* expression) : ASTNode(loc), ASTExpression(loc), expression(expression) { }
+    std::string mnemonic() const override { return "AddressOf"; }
+    UniqueExpression& getExpression() { return expression; }
+
+  };
+  
   class ASTLeftHand : public ASTNode
   {
   private:
     std::string name;
     
   public:
-    ASTLeftHand(const std::string& name) : name(name) { }
+    ASTLeftHand(const location& loc, const std::string& name) : ASTNode(loc), name(name) { }
     
     std::string mnemonic() const override { return fmt::sprintf("%s", name.c_str()); }
   };
@@ -212,7 +271,7 @@ namespace nanoc
 
     
   public:
-    ASTScope(std::list<ASTStatement*>& statements) : statements(UniqueList<ASTStatement>(new ASTList<ASTStatement>(statements))) { }
+    ASTScope(const location& loc, std::list<ASTStatement*>& statements) : ASTNode(loc), ASTStatement(loc), statements(UniqueList<ASTStatement>(new ASTList<ASTStatement>(loc, statements))) { }
     
     std::unique_ptr<ASTList<ASTStatement>>& getStatements() { return statements; }
     
@@ -226,7 +285,7 @@ namespace nanoc
     UniqueExpression expression;
     
   public:
-    ASTAssign(ASTLeftHand *leftHand, ASTExpression* expression) : leftHand(std::unique_ptr<ASTLeftHand>(leftHand)), expression(UniqueExpression(expression))
+    ASTAssign(const location& loc, ASTLeftHand *leftHand, ASTExpression* expression) : ASTNode(loc), ASTStatement(loc), leftHand(std::unique_ptr<ASTLeftHand>(leftHand)), expression(UniqueExpression(expression))
     {
       
     }
@@ -240,7 +299,7 @@ namespace nanoc
   class ASTVariableDeclaration : public ASTDeclaration
   {
   protected:
-    ASTVariableDeclaration(const std::string& name) : name(name) { }
+    ASTVariableDeclaration(const location& loc, const std::string& name) : ASTDeclaration(loc), name(name) { }
     
     std::string name;
     std::string mnemonic() const override { return fmt::sprintf("Declaration(%s, %s)", name.c_str(), getTypeName().c_str()); }
@@ -258,7 +317,8 @@ namespace nanoc
     std::unique_ptr<RealType> type;
     UniqueExpression value;
   public:
-    ASTDeclarationValue(const std::string& name, RealType* type, ASTExpression* value = nullptr) : ASTVariableDeclaration(name), type(std::unique_ptr<RealType>(type)), value(UniqueExpression(value)) { }
+    ASTDeclarationValue(const location& loc, const std::string& name, RealType* type, ASTExpression* value = nullptr) : ASTNode(loc), ASTStatement(loc), ASTVariableDeclaration(loc, name),
+    type(std::unique_ptr<RealType>(type)), value(UniqueExpression(value)) { }
     Type* getType() const override { return type.get(); }
     std::string getTypeName() const override  { return type->mnemonic(); }
     std::unique_ptr<ASTExpression>& getInitializer() { return value; }
@@ -274,8 +334,10 @@ namespace nanoc
     std::string mnemonic() const override { return fmt::sprintf("DeclarationArray(%s, %s, %u)", name.c_str(), getTypeName().c_str(), length); }
     
   public:
-    ASTDeclarationArray(const std::string& name, Array* type, u16 length) : ASTVariableDeclaration(name), type(std::unique_ptr<Array>(type)), length(length) { }
-    ASTDeclarationArray(const std::string& name, Array* type, u16 length, std::list<ASTExpression*>& initializer) : ASTVariableDeclaration(name), type(std::unique_ptr<Array>(type)), length(length), initializer(UniqueList<ASTExpression>(new ASTList<ASTExpression>(initializer))) { }
+    ASTDeclarationArray(const location& loc, const std::string& name, Array* type, u16 length) : ASTNode(loc), ASTStatement(loc), ASTVariableDeclaration(loc, name),
+      type(std::unique_ptr<Array>(type)), length(length) { }
+    ASTDeclarationArray(const location& loc, const std::string& name, Array* type, u16 length, std::list<ASTExpression*>& initializer) : ASTNode(loc), ASTStatement(loc), ASTVariableDeclaration(loc, name),
+      type(std::unique_ptr<Array>(type)), length(length), initializer(UniqueList<ASTExpression>(new ASTList<ASTExpression>(loc, initializer))) { }
     Type* getType() const override { return type.get(); }
     std::string getTypeName() const override { return type->mnemonic(); }
     
@@ -288,7 +350,7 @@ namespace nanoc
     u16 address;
     std::unique_ptr<Pointer> type;
   public:
-    ASTDeclarationPtr(const std::string& name, Pointer* type, u16 address = 0) : ASTVariableDeclaration(name), type(std::unique_ptr<Pointer>(type)), address(address) { }
+    ASTDeclarationPtr(const location& loc, const std::string& name, Pointer* type, u16 address = 0) : ASTNode(loc), ASTStatement(loc), ASTVariableDeclaration(loc, name), type(std::unique_ptr<Pointer>(type)), address(address) { }
     Type* getType() const override { return type.get(); }
     Type* getItemType() const { return type->innerType(); }
     std::string getTypeName() const override  { return type->mnemonic(); }
@@ -323,7 +385,7 @@ namespace nanoc
     }
     
   public:
-    ASTFuncDeclaration(std::string name, BaseType* returnType, std::list<Argument>& arguments, std::list<ASTStatement*>& body) : ASTScope(body), name(name), returnType(std::unique_ptr<BaseType>(returnType)),
+    ASTFuncDeclaration(const location& loc, std::string name, BaseType* returnType, std::list<Argument>& arguments, std::list<ASTStatement*>& body) : ASTNode(loc), ASTDeclaration(loc), ASTStatement(loc), ASTScope(loc, body), name(name), returnType(std::unique_ptr<BaseType>(returnType)),
     arguments(std::move(arguments)) { }
   
     const std::string& getName() { return name; }
@@ -346,8 +408,8 @@ private:
   }
   
 public:
-  ASTEnumEntry(const std::string& name, s32 value) : name(name), value(value), hasValue(true) { }
-  ASTEnumEntry(const std::string& name) : name(name), hasValue(false) { }
+  ASTEnumEntry(const location& loc, const std::string& name, s32 value) : ASTNode(loc), name(name), value(value), hasValue(true) { }
+  ASTEnumEntry(const location& loc, const std::string& name) : ASTNode(loc), name(name), hasValue(false) { }
   
   const std::string& getName() { return name; }
   bool getHasValue() { return hasValue; }
@@ -363,7 +425,7 @@ private:
   std::string mnemonic() const override { return fmt::sprintf("EnumDeclaration(%s)", name.c_str()); }
   
 public:
-  ASTEnumDeclaration(std::string name, const std::list<ASTEnumEntry*>& entries) : name(name), entries(UniqueList<ASTEnumEntry>(new ASTList<ASTEnumEntry>(entries))) { }
+  ASTEnumDeclaration(const location& loc, std::string name, const std::list<ASTEnumEntry*>& entries) : ASTNode(loc), ASTStatement(loc), ASTDeclaration(loc), name(name), entries(UniqueList<ASTEnumEntry>(new ASTList<ASTEnumEntry>(loc, entries))) { }
 
   std::unique_ptr<ASTList<ASTEnumEntry>>& getEntries() { return entries; }
   const std::string& getName() { return name; }
@@ -375,7 +437,7 @@ private:
   std::unique_ptr<ASTVariableDeclaration> entry;
   
 public:
-  ASTStructField(ASTVariableDeclaration* entry) : entry(entry) { }
+  ASTStructField(const location& loc, ASTVariableDeclaration* entry) : ASTNode(loc), entry(entry) { }
   
   std::string mnemonic() const override { return "StructField"; }
   
@@ -396,7 +458,7 @@ private:
   std::string mnemonic() const override { return fmt::sprintf("StructDeclaration(%s)", name.c_str()); }
 
 public:
-  ASTStructDeclaration(std::string name, const std::list<ASTStructField*>& fields) : name(name), fields(UniqueList<ASTStructField>(new ASTList<ASTStructField>(fields))) { }
+  ASTStructDeclaration(const location& loc, std::string name, const std::list<ASTStructField*>& fields) : ASTNode(loc), ASTStatement(loc), ASTDeclaration(loc), name(name), fields(UniqueList<ASTStructField>(new ASTList<ASTStructField>(loc, fields))) { }
   UniqueList<ASTStructField>& getFields() { return fields; }
 
   const std::string& getName() { return name; }
@@ -414,7 +476,7 @@ public:
     std::string mnemonic() const override { return "While"; }
     
   public:
-    ASTWhile(ASTExpression* condition, ASTStatement* body) : condition(UniqueExpression(condition)),
+    ASTWhile(const location& loc, ASTExpression* condition, ASTStatement* body) : ASTNode(loc), ASTStatement(loc), condition(UniqueExpression(condition)),
       body(std::unique_ptr<ASTStatement>(body)) { }
     
     std::unique_ptr<ASTExpression>& getCondition() { return condition; }
@@ -427,7 +489,7 @@ public:
     std::unique_ptr<ASTStatement> body;
     
   public:
-    ASTConditionalBlock(ASTStatement* body) : body(std::unique_ptr<ASTStatement>(body)) { }
+    ASTConditionalBlock(const location& loc, ASTStatement* body) : ASTNode(loc), body(std::unique_ptr<ASTStatement>(body)) { }
     std::unique_ptr<ASTStatement>& getBody() { return body; }
   };
   
@@ -440,7 +502,7 @@ public:
 
     
   public:
-    ASTIfBlock(ASTExpression* condition, ASTStatement* body) : ASTConditionalBlock(body), condition(std::unique_ptr<ASTExpression>(condition)) { }
+    ASTIfBlock(const location& loc, ASTExpression* condition, ASTStatement* body) : ASTConditionalBlock(loc, body), condition(std::unique_ptr<ASTExpression>(condition)) { }
     
     std::unique_ptr<ASTExpression>& getCondition() { return condition; }
   };
@@ -451,7 +513,7 @@ public:
     std::string mnemonic() const override { return "Else"; }
     
   public:
-    ASTElseBlock(ASTStatement* body) : ASTConditionalBlock(body) { }
+    ASTElseBlock(const location& loc, ASTStatement* body) : ASTConditionalBlock(loc, body) { }
   };
   
 
@@ -463,7 +525,7 @@ private:
   std::string mnemonic() const override { return "Conditional"; }
   
 public:
-  ASTConditional(std::list<ASTConditionalBlock*>& blocks) : blocks(UniqueList<ASTConditionalBlock>(new ASTList<ASTConditionalBlock>(blocks))) { }
+  ASTConditional(const location& loc, std::list<ASTConditionalBlock*>& blocks) : ASTNode(loc), ASTStatement(loc), blocks(UniqueList<ASTConditionalBlock>(new ASTList<ASTConditionalBlock>(loc, blocks))) { }
   
   std::unique_ptr<ASTList<ASTConditionalBlock>>& getBlocks() { return blocks; }
 };
@@ -477,7 +539,7 @@ private:
   std::string mnemonic() const override { return "Return"; }
   
 public:
-  ASTReturn(ASTExpression *value = nullptr) : value(UniqueExpression(value)) { }  
+  ASTReturn(const location& loc, ASTExpression *value = nullptr) : ASTNode(loc), ASTStatement(loc), value(UniqueExpression(value)) { }
   std::unique_ptr<ASTExpression>& getValue() { return value; }
 };
 

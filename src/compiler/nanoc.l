@@ -63,6 +63,11 @@
 "||" { return Parser::make_LOR(loc); }
 "&&" { return Parser::make_LAND(loc); }
 
+"->" { return Parser::make_ARROW(loc); }
+"*" { return Parser::make_DEREFERENCE(loc); }
+"." { return Parser::make_DOT(loc); }
+"&" { return Parser::make_ADDRESSOF(loc); }
+
 "!=" { return Parser::make_COMP(Binary::NEQ, loc); }
 "==" { return Parser::make_COMP(Binary::EQ, loc); }
 ">=" { return Parser::make_COMP(Binary::GREATEREQ, loc); }

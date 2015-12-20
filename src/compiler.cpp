@@ -56,16 +56,26 @@ void Compiler::printAST()
   }
   
   SymbolsVisitor svisitor;
-  svisitor.dispatch(ast.get());
   
-  svisitor.getTable().print();
+  try
+  {
+    svisitor.dispatch(ast.get());
+    svisitor.getTable().print();
+    
+    EnumReplaceVisitor evisitor = EnumReplaceVisitor(svisitor.getTable());
+    
+    evisitor.dispatch(ast.get());
+    
+    PrinterVisitor visitor;
+    visitor.dispatch(ast.get());
+  }
+  catch (const identifier_redefined& exception)
+  {
+    cout << "Error: " << exception.what() << endl;
+  }
   
-  EnumReplaceVisitor evisitor = EnumReplaceVisitor(svisitor.getTable());
   
-  evisitor.dispatch(ast.get());
-  
-  PrinterVisitor visitor;
-  visitor.dispatch(ast.get());
+
   
     //ast->recursivePrint(0);
 }
