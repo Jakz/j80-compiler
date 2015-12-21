@@ -15,6 +15,8 @@ namespace nanoc {
     virtual ~Type() { }
     virtual bool isVoid() const { return false; }
     virtual u16 getSize(const SymbolTable* table) const = 0;
+    
+    virtual bool isStruct(const SymbolTable *table) const { return false; }
   };
   
   class BaseType : public Type
@@ -62,6 +64,7 @@ namespace nanoc {
     u16 getSize(const SymbolTable* table) const override;
     std::string mnemonic() const override { return fmt::sprintf("Named(%s)", name.c_str()); }
     Named* copy() const override { return new Named(name); }
+    bool isStruct(const SymbolTable *table) const override;
   };
   
   class Bool : public RealType

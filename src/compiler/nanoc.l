@@ -121,7 +121,7 @@
 
 [a-zA-Z_][a-zA-Z0-9_]* { return Parser::make_IDENTIFIER(yytext,loc); }
 
-"//"[^\n]*\n { Parser::make_EOL(loc); loc.step(); }
+"//"[^\n]*\n { Parser::make_EOL(loc); loc.lines(1); loc.step(); }
 
 
 \n|"\r\n" { Parser::make_EOL(loc); loc.lines(yyleng); loc.step();  }

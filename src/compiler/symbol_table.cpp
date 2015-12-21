@@ -110,6 +110,7 @@ void SymbolsVisitor::enteringNode(ASTFuncDeclaration *node)
   vector<Symbol> sarguments;
   
   transform(arguments.begin(), arguments.end(), std::back_inserter(sarguments), [](const Argument& arg){ return Symbol(arg.name, arg.type.get()); } );
+  for_each(arguments.begin(), arguments.end(), [this](const Argument& arg){ table.addSymbol(arg.name, arg.type.get()); });
   
   table.addFunction(node->getName(), node->getReturnType(), sarguments);
 }
@@ -168,9 +169,17 @@ void SymbolsVisitor::enteringNode(ASTEnumEntry* node)
 
 void SymbolsVisitor::enteringNode(ASTLeftHand* node)
 {
-  if (!table.isIdentifierBound(node->getName()))
+  if (!table.isIdentifierBound(node->getName()) && !table.isEnumIdentifierBound(node->getName()))
     throw identifier_undeclared(node->getLocation(), node->getName());
 }
+
+void SymbolsVisitor::enteringNode(ASTReference* node)
+{
+  if (!table.isIdentifierBound(node->getName()) && !table.isEnumIdentifierBound(node->getName()))
+    throw identifier_undeclared(node->getLocation(), node->getName());
+}
+
+#pragma mark EnumReplaceVisitor
 
 ASTNode* EnumReplaceVisitor::exitingNode(ASTReference* node)
 {
@@ -179,10 +188,15 @@ ASTNode* EnumReplaceVisitor::exitingNode(ASTReference* node)
   if (value)
     return new ASTNumber(node->getLocation(), *value);
   else
-  {
-    if (!table.isIdentifierBound(node->getName()))
-      throw identifier_undeclared(node->getLocation(), node->getName());
-    
     return nullptr;
-  }
+}
+
+#pragma mark TypeCheckVisitor
+
+void TypeCheckVisitor::enteringNode(ASTCall *node)
+{
+  const FunctionSymbol& symbol = table.getFunction(node->getName());
+  
+  if (node->getArguments()->getElements().size() != symbol.getArguments().size())
+    throw wrong_number_of_arguments(node->getLocation(), symbol, node->getArguments()->getElements().size());
 }

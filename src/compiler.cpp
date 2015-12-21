@@ -62,14 +62,16 @@ void Compiler::printAST()
     svisitor.dispatch(ast.get());
     svisitor.getTable().print();
     
-    EnumReplaceVisitor evisitor = EnumReplaceVisitor(svisitor.getTable());
+    TypeCheckVisitor tvisitor = TypeCheckVisitor(svisitor.getTable());
+    tvisitor.dispatch(ast.get());
     
+    EnumReplaceVisitor evisitor = EnumReplaceVisitor(svisitor.getTable());
     evisitor.dispatch(ast.get());
     
     PrinterVisitor visitor;
     visitor.dispatch(ast.get());
   }
-  catch (const symbol_exception& exception)
+  catch (const compiler_exception& exception)
   {
     cout << "Error: " << exception.what() << endl;
   }

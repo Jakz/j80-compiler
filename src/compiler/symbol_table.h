@@ -45,9 +45,9 @@ namespace nanoc
     
   public:
     FunctionSymbol() = default;
-    FunctionSymbol(const FunctionSymbol& other) : name(other.name), returnType(UniqueType(other.returnType->copy())), arguments(other.arguments) { }
-    FunctionSymbol& operator=(const FunctionSymbol& other) { this->name = other.name; this->returnType = UniqueType(other.returnType->copy()); this->arguments = arguments; return *this; }
-    FunctionSymbol(const std::string& name, Type* returnType, std::vector<Symbol>& arguments) : name(name), returnType(UniqueType(returnType->copy())), arguments(arguments) { }
+    FunctionSymbol(const FunctionSymbol& other) = delete;
+    FunctionSymbol& operator=(const FunctionSymbol& other) { this->name = other.name; this->returnType = UniqueType(other.returnType->copy()); this->arguments = other.arguments; return *this; }
+    FunctionSymbol(const std::string& name, Type* returnType, const std::vector<Symbol>& arguments) : name(name), returnType(UniqueType(returnType->copy())), arguments(arguments) { }
     
     const std::string mnemonic() { return fmt::sprintf("Function(%s, %s)", name, returnType->mnemonic().c_str()); }
 
@@ -113,8 +113,9 @@ namespace nanoc
 
     }
   
-    void addFunction(const std::string& name, Type* returnType, std::vector<Symbol>& arguments) { functions[name] = FunctionSymbol(name, returnType, arguments); }
+    void addFunction(const std::string& name, Type* returnType, const std::vector<Symbol>& arguments) { functions[name] = FunctionSymbol(name, returnType, arguments); }
     bool hasFunction(const std::string& name) { auto it = functions.find(name); return it != functions.end(); }
+    const FunctionSymbol& getFunction(const std::string& name) const { return functions.find(name)->second; }
     
     void addSymbol(const std::string& name, Type* type) { currentTable->addSymbol(name, type); }
     
@@ -128,7 +129,7 @@ namespace nanoc
 
     bool isNameFree(const std::string& name) const
     {
-      return enums.find(name) == enums.end() && structs.find(name) == structs.end();
+      return enums.find(name) == enums.end() && !isStructType(name);
     }
     
     bool isIdentifierBound(const std::string& name) const
@@ -136,6 +137,13 @@ namespace nanoc
       return currentTable->find(name) != nullptr;
     }
     
+    bool isEnumIdentifierBound(const std::string& name) const
+    {
+      return std::any_of(std::begin(enums), std::end(enums), [name](const decltype(enums)::value_type& e) { return e.second->retrieve(name) == nullptr; });
+    }
+    
+    bool isStructType(const std::string& name) const { return structs.find(name) != structs.end(); }
+        
     u16 getSizeForType(const std::string& name) const;
     
     Enum* addEnum(const std::string& name)
@@ -199,6 +207,7 @@ namespace nanoc
     ASTNode* exitingNode(ASTStructDeclaration* node);
     void enteringNode(ASTStructField* node);
     
+    void enteringNode(ASTReference* node);
     void enteringNode(ASTLeftHand* node);
     
     
@@ -216,7 +225,17 @@ namespace nanoc
     EnumReplaceVisitor(const SymbolTable& table) : table(table) { }
     
     ASTNode* exitingNode(ASTReference* node);
+  };
+  
+  class TypeCheckVisitor : public Visitor
+  {
+  private:
+    const SymbolTable& table;
     
+  public:
+    TypeCheckVisitor(const SymbolTable& table) : table(table) { }
+    
+    void enteringNode(ASTCall* node) override;
   };
   
 }
