@@ -99,7 +99,7 @@ namespace nanoc
     ASTExpression(const location& loc) : ASTStatement(loc) { }
 
     // TODO: make pure virtual and implement in subtypes
-    virtual const Type* getType(const SymbolTable& table) const = 0;
+    virtual const Type* getType(const SymbolTable& table) const { return nullptr; /* TODO: used to make it compile */ }; // = 0;
   };
   
   class ASTNumber : public ASTExpression
