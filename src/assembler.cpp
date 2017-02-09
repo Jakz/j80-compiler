@@ -30,7 +30,7 @@ bool J80Assembler::parse(const std::string &filename)
   ifstream is;
   is.open(filename);
   
-  Assembler::Lexer lexer = Assembler::Lexer(*this, &is);
+  Assembler::Lexer lexer(*this, &is);
   Assembler::Parser parser(lexer, *this);
   parser.set_debug_level(shouldGenerateTrace);
   int res = parser.parse();

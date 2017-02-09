@@ -14,7 +14,7 @@ bool Compiler::parseString(const std::string &string)
   file = "none";
   istringstream stream(string);
   
-  nanoc::Lexer lexer = nanoc::Lexer(*this, &stream);
+  nanoc::Lexer lexer(*this, &stream);
   nanoc::Parser parser(lexer, *this);
   parser.set_debug_level(false);
   int res = parser.parse();
@@ -30,7 +30,7 @@ bool Compiler::parse(const std::string &filename)
   ifstream is;
   is.open(filename);
   
-  nanoc::Lexer lexer = nanoc::Lexer(*this, &is);
+  nanoc::Lexer lexer(*this, &is);
   nanoc::Parser parser(lexer, *this);
   parser.set_debug_level(shouldGenerateTrace);
   int res = parser.parse();
