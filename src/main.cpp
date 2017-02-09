@@ -86,9 +86,9 @@ void runWithArgs(const vector<string>& args)
   }
 }
 
-
 int main(int argc, const char * argv[])
 {
+
   /*VM vm;
 
   Assembler::J80Assembler assembler;
@@ -134,8 +134,8 @@ int main(int argc, const char * argv[])
   
   nanoc::Compiler compiler;
   compiler.parse("test.nc");
-  /*
-  rtl::RTLBuilder builder;
+  
+  /*rtl::RTLBuilder builder;
   const auto& ast = compiler.getAST();
   builder.dispatch(ast.get());
   builder.print();*/

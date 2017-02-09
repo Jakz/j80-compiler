@@ -143,6 +143,7 @@ namespace nanoc
     }
     
     bool isStructType(const std::string& name) const { return structs.find(name) != structs.end(); }
+    const Struct& getStruct(const std::string& name) const { return *structs.find(name)->second.get(); }
         
     u16 getSizeForType(const std::string& name) const;
     

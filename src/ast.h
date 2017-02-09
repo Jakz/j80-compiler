@@ -99,7 +99,7 @@ namespace nanoc
     ASTExpression(const location& loc) : ASTStatement(loc) { }
 
     // TODO: make pure virtual and implement in subtypes
-    virtual Type* getType() const { return nullptr; }
+    virtual const Type* getType(const SymbolTable& table) const = 0;
   };
   
   class ASTNumber : public ASTExpression
@@ -111,6 +111,9 @@ namespace nanoc
     ASTNumber(const location& loc, Value value) : ASTNode(loc), ASTExpression(loc), value(value) { }
     std::string mnemonic() const override { return fmt::sprintf("Number(%d)", value); }
     Value getValue() const { return value; }
+    
+    //TODO: leak, manage width of immediate
+    Type* getType(const SymbolTable& table) const override { return new Word(); }
   };
   
   class ASTBool : public ASTExpression
@@ -121,6 +124,7 @@ namespace nanoc
   public:
     ASTBool(const location& loc, bool value) : ASTNode(loc), ASTExpression(loc), value(value) { }
     std::string mnemonic() const override { return value ? "true" : "false"; }
+    Type* getType(const SymbolTable& table) const override { return new Bool(); }
   };
   
   class ASTReference : public ASTExpression
@@ -138,13 +142,14 @@ namespace nanoc
   class ASTArrayReference : public ASTExpression
   {
   private:
-    std::string name;
+    UniqueExpression lhs;
     UniqueExpression index;
     
   public:
-    ASTArrayReference(const location& loc, const std::string& name, ASTExpression* index) : ASTNode(loc), ASTExpression(loc), name(name), index(UniqueExpression(index)) { }
-    std::string mnemonic() const override { return fmt::sprintf("ArrayReference(%s)", name.c_str()); }
+    ASTArrayReference(const location& loc, ASTExpression* lhs, ASTExpression* index) : ASTNode(loc), ASTExpression(loc), lhs(lhs), index(UniqueExpression(index)) { }
+    std::string mnemonic() const override { return fmt::sprintf("ArrayReference(%s)"); }
     
+    UniqueExpression& getLeftHand() { return lhs; }
     std::unique_ptr<ASTExpression>& getIndex() { return index; }
   };
   
@@ -177,6 +182,8 @@ namespace nanoc
     ASTTernaryExpression(const location& loc, Ternary op, ASTExpression* operand1, ASTExpression* operand2, ASTExpression* operand3) : ASTNode(loc), ASTExpression(loc), op(op),
       operand1(UniqueExpression(operand1)), operand2(UniqueExpression(operand2)), operand3(UniqueExpression(operand3)) { }
     
+    const Type* getType(const SymbolTable& table) const override;
+    
     std::unique_ptr<ASTExpression>& getOperand1() { return operand1; }
     std::unique_ptr<ASTExpression>& getOperand2() { return operand2; }
     std::unique_ptr<ASTExpression>& getOperand3() { return operand3; }
@@ -195,6 +202,8 @@ namespace nanoc
     ASTBinaryExpression(const location& loc, Binary op, ASTExpression* operand1, ASTExpression* operand2) : ASTNode(loc), ASTExpression(loc), op(op),
       operand1(UniqueExpression(operand1)), operand2(UniqueExpression(operand2)) { }
     
+    const Type* getType(const SymbolTable& table) const override;
+    
     Binary getOperation() { return op; }
     std::unique_ptr<ASTExpression>& getOperand1() { return operand1; }
     std::unique_ptr<ASTExpression>& getOperand2() { return operand2; }
@@ -212,6 +221,8 @@ namespace nanoc
   public:
     ASTUnaryExpression(const location& loc, Unary op, ASTExpression* operand) : ASTNode(loc), ASTExpression(loc), op(op), operand(operand) { }
     
+    const Type* getType(const SymbolTable& table) const override;
+    
     std::unique_ptr<ASTExpression>& getOperand() { return operand; }
   };
   
@@ -226,6 +237,7 @@ namespace nanoc
     ASTFieldAccess(const location& loc, ASTExpression* expression, const std::string& field, bool isPointer) : ASTNode(loc), ASTExpression(loc), expression(expression), field(field), isPointer(isPointer) { }
     std::string mnemonic() const override { return fmt::sprintf("FieldAccess(%s)", field.c_str()); }
     UniqueExpression& getExpression() { return expression; }
+    const Type* getType(const SymbolTable& table) const override;
   };
   
   class ASTDereference : public ASTExpression
@@ -354,7 +366,7 @@ namespace nanoc
   public:
     ASTDeclarationPtr(const location& loc, const std::string& name, Pointer* type, u16 address = 0) : ASTNode(loc), ASTStatement(loc), ASTVariableDeclaration(loc, name), type(std::unique_ptr<Pointer>(type)), address(address) { }
     Type* getType() const override { return type.get(); }
-    Type* getItemType() const { return type->innerType(); }
+    const Type* getItemType() const { return type->innerType(); }
     std::string getTypeName() const override  { return type->mnemonic(); }
 
   };

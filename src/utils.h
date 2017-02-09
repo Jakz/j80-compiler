@@ -35,8 +35,6 @@ namespace nanoc {
   enum Unary
   {
     NOT,
-    INCR,
-    DECR,
     NEG,
     FLIP,
     ADDRESSOF,

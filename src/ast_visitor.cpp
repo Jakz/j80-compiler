@@ -169,6 +169,7 @@ ASTNode* Visitor::visit(ASTArrayReference* node)
   commonVisit(node);
   enteringNode(node);
 
+  dispatchAndReplace(node->getLeftHand());
   dispatchAndReplace(node->getIndex());
 
   return exitingNode(node);

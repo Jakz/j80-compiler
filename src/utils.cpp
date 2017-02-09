@@ -45,8 +45,6 @@ std::string nanoc::Mnemonics::mnemonicForUnary(Unary op)
 {
   switch (op) {
     case Unary::NOT: return "!";
-    case Unary::INCR: return "++";
-    case Unary::DECR: return "--";
     case Unary::NEG: return "-";
     case Unary::FLIP: return "~";
     default: return "";

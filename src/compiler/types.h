@@ -78,16 +78,16 @@ namespace nanoc {
   class Pointer : public RealType
   {
   private:
-    std::unique_ptr<BaseType> type;
+    std::unique_ptr<const Type> type;
   public:
-    Pointer(BaseType* type) : type(std::unique_ptr<BaseType>(type)) { }
-    Pointer(const Pointer& other) : type(std::unique_ptr<BaseType>(static_cast<BaseType*>(other.type->copy()))) { }
+    Pointer(const Type* type) : type(std::unique_ptr<const Type>(type)) { }
+    Pointer(const Pointer& other) : type(std::unique_ptr<const Type>(other.type->copy())) { }
     
     u16 getSize(const SymbolTable* table) const override { return 2; }
     std::string mnemonic() const override { return type->mnemonic() + "*"; }
     Pointer* copy() const override { return new Pointer(*this); }
     
-    Type* innerType() { return type.get(); }
+    const Type* innerType() const { return type.get(); }
   };
   
   class Array : public Type
