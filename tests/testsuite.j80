@@ -1,0 +1,455 @@
+
+.ascii testintro "Test "
+.ascii success "success"
+.ascii fail "fail"
+.ascii test_ld_nn "LD NN"
+.ascii test_ld_nnnn "LD NNNN"
+.ascii test_lsh_r8 "LSH R8"
+.ascii test_lsh_r16 "LSH R16"
+.ascii test_st_pp "ST [PP+SS], R"
+.ascii test_ld_pp "LD R, [PP+SS]"
+.ascii test_recursion "Recursion"
+
+LD SP, 8000h
+
+CALL ld_r_pp_test
+CALL st_pp_r_test
+CALL ld_nn_test
+CALL ld_nnnn_test
+CALL lsh_r_test
+CALL lsh_rr_test
+
+end:
+JMP end
+
+# prints decimal number
+# X (in): value to be printed
+printDecimal:
+LD Y, 0
+LD A, X
+printDecimal3:
+CMP A, 100
+JMPV printDecimal2
+ADD Y, 1
+SUB A, 100
+JMP printDecimal3
+printDecimal2:
+ADD Y, '0'
+ST [FFFFh], Y
+LD Y, 0
+printDecimal4:
+CMP A, 10
+JMPV printDecimal5
+ADD Y, 1
+SUB A, 10
+JMP printDecimal4
+printDecimal5:
+ADD Y, '0'
+ST [FFFFh], Y
+ADD A, '0'
+ST [FFFFh], A
+RET
+
+# prints string
+# X (in): length of the string
+# BA (in): pointer to data
+printString:
+CMP X
+RETZ
+LD Y, [BA]
+ST [FFFFh], Y
+SUB X, 1
+ADD BA, 1
+JMP printString
+
+# print test result
+# C (in): which test
+# X (in): test name length
+# BA (in): test name address
+# Y (in): 0 if fail, otherwise success
+printTestResult:
+PUSH BA
+PUSH X
+PUSH Y
+PUSH C
+LD BA, testintro
+LD X, length(testintro)
+CALL printString
+POP C
+POP Y
+POP X
+POP BA
+PUSH Y
+CALL printString
+LD X, ':'
+ST [FFFFh], X
+LD X, ' '
+ST [FFFFh], X
+POP Y
+CMP Y
+JMPZ printTestResult2
+LD BA, success
+LD X, length(success)
+CALL printString
+LD X, 0Ah
+ST [FFFFh], X
+RET
+printTestResult2:
+LD BA, fail
+LD X, length(fail)
+CALL printString
+LD X, ' '
+ST [FFFFh], X
+LD X, '('
+ST [FFFFh], X
+LD X, C
+CALL printDecimal
+LD X, ')'
+ST [FFFFh], X
+LD X, 0Ah
+ST [FFFFh], X
+RET
+
+# test LSH R8
+lsh_r_test:
+LD X, 1
+
+LSH X
+CMP X, 2
+
+LD C, 1
+JMPNZ lsh_r_test_fail
+
+LSH X
+CMP X, 4
+
+LD C, 2
+JMPNZ lsh_r_test_fail
+
+LSH X
+CMP X, 8
+
+LD C, 3
+JMPNZ lsh_r_test_fail
+
+# zero flag set after shifting back to zero
+LD X, 80h
+LSH X
+
+LD C, 4
+JMPNZ lsh_r_test_fail
+
+# zero flag clear after shifting not to zero
+LD X, 40h
+LSH X
+
+LD C, 5
+JMPZ lsh_r_test_fail
+
+# carry flag set after shifting a 1 outside
+LD X, FFh
+LSH X
+
+LD C, 6
+JMPNC lsh_r_test_fail
+
+# carry flag reset after shifting a 0 outside
+LD X, 40h
+LSH X
+LD C, 7
+JMPC lsh_r_test_fail
+
+# sign flag set after shifting 1 to last bit
+LD C, 8
+JMPNN lsh_r_test_fail
+
+#sign flag reset after shifting 0 to last bit
+LD X, 20h
+LSH X
+
+LD C, 9
+JMPN lsh_r_test_fail
+
+
+
+LD Y, 1
+LD BA, test_lsh_r8
+LD X, length(test_lsh_r8)
+CALL printTestResult
+RET
+
+lsh_r_test_fail:
+LD Y, 0
+LD BA, test_lsh_r8
+LD X, length(test_lsh_r8)
+CALL printTestResult
+RET
+
+
+# test LSH R16
+lsh_rr_test:
+LD BA, 1
+
+LSH BA
+CMP BA, 2
+
+LD C, 1
+JMPNZ lsh_r_test_fail
+
+LSH BA
+CMP BA, 4
+
+LD C, 2
+JMPNZ lsh_r_test_fail
+
+LSH BA
+CMP BA, 8
+
+LD C, 3
+JMPNZ lsh_r_test_fail
+
+LD BA, 100h
+LSH BA
+CMP BA, 200h
+LD C, 4
+JMPNZ lsh_r_test_fail
+
+
+# zero flag set after shifting back to zero
+LD BA, 8000h
+LSH BA
+
+LD C, 5
+JMPNZ lsh_r_test_fail
+
+# zero flag clear after shifting not to zero
+LD BA, 4000h
+LSH BA
+
+LD C, 6
+JMPZ lsh_r_test_fail
+
+# carry flag set after shifting a 1 outside
+LD BA, FFFFh
+LSH BA
+
+LD C, 7
+JMPNC lsh_r_test_fail
+
+# carry flag reset after shifting a 0 outside
+LD BA, 4000h
+LSH BA
+LD C, 8
+JMPC lsh_r_test_fail
+
+# sign flag set after shifting 1 to last bit
+LD C, 9
+JMPNN lsh_r_test_fail
+
+#sign flag reset after shifting 0 to last bit
+LD BA, 2000h
+LSH BA
+
+LD C, 9
+JMPN lsh_rr_test_fail
+
+
+
+LD Y, 1
+LD BA, test_lsh_r16
+LD X, length(test_lsh_r16)
+CALL printTestResult
+RET
+
+lsh_rr_test_fail:
+LD Y, 0
+LD BA, test_lsh_r16
+LD X, length(test_lsh_r16)
+CALL printTestResult
+RET
+
+
+# test LD R, NN
+ld_nn_test:
+LD A, 10
+CMP A, 10
+LD C, 1
+JMPNZ ld_nn_test_fail
+
+LD B, 11
+CMP B, 11
+LD C, 2
+JMPNZ ld_nn_test_fail
+
+LD X, 12
+CMP X, 12
+LD C, 3
+JMPNZ ld_nn_test_fail
+
+LD Y, 13
+CMP Y, 13
+LD C, 4
+JMPNZ ld_nn_test_fail
+
+LD C, 14
+CMP C, 14
+LD C, 5
+JMPNZ ld_nn_test_fail
+
+LD D, 15
+CMP D, 15
+LD C, 6
+JMPNZ ld_nn_test_fail
+
+LD E, 16
+CMP E, 16
+LD C, 7
+JMPNZ ld_nn_test_fail
+
+LD F, 17
+CMP F, 17
+LD C, 8
+JMPNZ ld_nn_test_fail
+
+
+LD Y, 1
+LD BA, test_ld_nn
+LD X, length(test_ld_nn)
+CALL printTestResult
+RET
+ld_nn_test_fail:
+LD Y, 0
+LD BA, test_ld_nn
+LD X, length(test_ld_nn)
+CALL printTestResult
+RET
+
+
+
+
+# test LD P, NNNN
+ld_nnnn_test:
+
+LD BA, 1234h
+CMP BA, 1234h
+LD C, 1
+JMPNZ ld_nnnn_test_fail
+
+LD CD, 3456h
+CMP CD, 3456h
+LD C, 2
+JMPNZ ld_nnnn_test_fail
+
+LD XY, 5678h
+CMP XY, 5678h
+LD C, 3
+JMPNZ ld_nnnn_test_fail
+
+LD EF, 789Ah
+CMP EF, 789Ah
+LD C, 4
+JMPNZ ld_nnnn_test_fail
+
+LD FP, 9ABCh
+CMP FP, 9ABCh
+LD C, 5
+JMPNZ ld_nnnn_test_fail
+
+LD IX, BCDEh
+CMP IX, BCDEh
+LD C, 6
+JMPNZ ld_nnnn_test_fail
+
+LD IY, DE12h
+CMP IY, DE12h
+LD C, 7
+JMPNZ ld_nnnn_test_fail
+
+LD BA, SP
+LD SP, 6512h
+CMP SP, 6512h
+LD SP, BA
+LD C, 8
+JMPNZ ld_nnnn_test_fail
+
+LD Y, 1
+ld_nnnn_test_end:
+LD BA, test_ld_nnnn
+LD X, length(test_ld_nnnn)
+CALL printTestResult
+RET
+ld_nnnn_test_fail:
+LD Y, 0
+JMP ld_nnnn_test_end
+
+# test ST [PP+SS], R
+st_pp_r_test:
+
+LD BA, 2000h
+
+LD X, 10
+ST [BA], X
+LD Y, [2000h]
+CMP X, Y
+LD C, 1
+JMPNZ st_pp_r_test_fail
+
+LD X, 15
+ST [BA-1], X
+LD Y, [1FFFh]
+CMP X, Y
+LD C, 2
+JMPNZ st_pp_r_test_fail
+
+LD X, 20
+ST [BA+1], X
+LD Y, [2001h]
+CMP X, Y
+LD C, 3
+JMPNZ st_pp_r_test_fail
+
+LD Y, 1
+st_pp_r_test_end:
+LD BA, test_st_pp
+LD X, length(test_st_pp)
+CALL printTestResult
+RET
+st_pp_r_test_fail:
+LD Y, 0
+JMP st_pp_r_test_end
+
+
+ld_r_pp_test:
+
+LD BA, 2000h
+
+LD X, 10
+ST [2010h], X
+LD Y, [BA+16]
+CMP X, Y
+LD C, 1
+JMPNZ ld_r_pp_test_fail
+
+LD X, 16
+ST [2000h], X
+LD Y, [BA]
+CMP X, Y
+LD C, 2
+JMPNZ ld_r_pp_test_fail
+
+LD X, 20
+ST [1FF6h], X # 2000h - 10
+LD Y, [BA-10]
+CMP X, Y
+LD C, 3
+JMPNZ ld_r_pp_test_fail
+
+LD Y, 1
+ld_r_pp_test_end:
+LD BA, test_ld_pp
+LD X, length(test_ld_pp)
+CALL printTestResult
+RET
+ld_r_pp_test_fail:
+LD Y, 0
+JMP ld_r_pp_test_end

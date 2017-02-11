@@ -1,0 +1,161 @@
+.ascii fib "fib("
+.ascii retbase "base = "
+.ascii retrecur "recur = "
+
+.stackbase 2000h
+
+main:
+LD X, 10
+PUSH X
+CALL fibonacci
+ADD SP, 1
+CALL printDecimal
+end:
+JMP end
+
+
+fibonacci:
+PUSH FP
+MOV FP, SP
+
+# SUB FP, 0
+MOV A, [FP+4]
+
+PUSH A
+CALL printFib
+POP A
+
+CMP A, 3
+JMPC fibonacci_base
+SUB A, A, 1
+PUSH A
+CALL fibonacci
+POP A
+PUSH X
+SUB A, A, 1
+PUSH A
+CALL fibonacci
+ADD SP, 1
+
+PUSH X
+
+LD BA, retrecur
+LD X, length(retrecur)
+CALL printString
+
+LD X, [SP+0]
+CALL printDecimal
+MOV C, ' '
+ST [FFFFh], C
+MOV C, '+'
+ST [FFFFh], C
+MOV C, ' '
+ST [FFFFh], C
+
+LD X, [SP+1]
+CALL printDecimal
+
+MOV C, 0Ah
+ST [FFFFh], C
+
+POP X
+POP D
+ADD X, X, D
+
+JMP fibonacci_end
+fibonacci_base:
+
+LD BA, retbase
+PUSH BA
+LD B, length(retbase)
+PUSH B
+LD X, 1
+PUSH X
+CALL printRet
+ADD SP, 4
+MOV X, 1
+
+
+fibonacci_end:
+MOV SP, FP
+POP FP
+RET
+
+
+
+printRet:
+PUSH FP
+MOV FP, SP
+MOV X, [FP+5]
+MOV B, [FP+6]
+MOV A, [FP+7]
+CALL printString
+MOV X, [FP+4]
+CALL printDecimal
+MOV X, 0Ah
+ST [FFFFh], X
+MOV SP, FP
+POP FP
+RET
+
+
+
+printFib:
+PUSH FP
+MOV FP, SP
+MOV X, length(fib)
+MOV BA, fib
+CALL printString
+MOV X, [FP+4]
+CALL printDecimal
+MOV X, ')'
+ST [FFFFh], X
+MOV X, 0Ah
+ST [FFFFh], X
+MOV SP, FP
+POP FP
+RET
+
+# prints decimal number
+# X (in): value to be printed
+printDecimal:
+PUSH FP
+MOV FP, SP
+MOV Y, 0
+MOV A, X
+printDecimal3:
+CMP A, 100
+JMPV printDecimal2
+ADD Y, 1
+SUB A, 100
+JMP printDecimal3
+printDecimal2:
+ADD Y, '0'
+ST [FFFFh], Y
+MOV Y, 0
+printDecimal4:
+CMP A, 10
+JMPV printDecimal5
+ADD Y, 1
+SUB A, 10
+JMP printDecimal4
+printDecimal5:
+ADD Y, '0'
+ST [FFFFh], Y
+ADD A, '0'
+ST [FFFFh], A
+MOV SP, FP
+POP FP
+RET
+
+# prints string
+# X (in): length of the string
+# BA (in): pointer to data
+printString:
+CMP X
+RETZ
+LD Y, [BA]
+ST [FFFFh], Y
+SUB X, 1
+ADD BA, 1
+JMP printString

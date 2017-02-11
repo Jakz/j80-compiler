@@ -1,0 +1,41 @@
+LD ST, FFFFh
+LD A, 5
+NOP
+PUSH A
+CALL fact
+LD Y, [ST 0]
+loop:
+JMP loop
+
+fact:
+LD A, [ST 2]
+CMP A, 1
+RETZ
+PUSH A
+SUB A, 1
+PUSH A
+CALL fact
+POP A
+POP B
+PUSH A
+PUSH B
+CALL mult
+POP X
+ADD ST, 1
+SD [ST 2], X
+RET
+
+mult:
+LD A, [ST 2]
+LD B, [ST 3]
+LD X, 0
+multl:
+CMP A, 0
+JMPZ multe
+SUB A, 1
+ADD X, B
+JMP multl
+multe:
+SD [ST 2], X
+LD X, 0
+RET

@@ -1,0 +1,65 @@
+LD SP, 8000h
+LD A, 5
+NOP
+PUSH A
+CALL fact
+LD Y, [SP]
+LD A, 0
+LD B, 100
+hundreds:
+CMP Y, B
+JMPC tenths
+ADD A, 1
+SUB Y, 100
+JMP hundreds
+tenths:
+ADD A, 30h
+ST [FFFFh], A
+LD A, 0
+LD B, 10
+tenths2:
+CMP Y, B
+JMPC units
+ADD A, 1
+SUB Y, 10
+JMP tenths2
+units:
+ADD A, 30h
+ST [FFFFh], A
+ADD Y, 30h
+ST [FFFFh], Y
+loop:
+JMP loop
+
+fact:
+LD A, [SP+2]
+CMP A, 1
+RETZ
+PUSH A
+SUB A, 1
+PUSH A
+CALL fact
+POP A
+POP B
+PUSH A
+PUSH B
+CALL mult
+POP X
+ADD SP, 1
+ST [SP+2], X
+RET
+
+mult:
+LD A, [SP+2]
+LD B, [SP+3]
+LD X, 0
+multl:
+CMP A, 0
+JMPZ multe
+SUB A, 1
+ADD X, B
+JMP multl
+multe:
+ST [SP+2], X
+LD X, 0
+RET

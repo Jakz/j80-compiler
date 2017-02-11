@@ -1,0 +1,25 @@
+LD ST, FFFFh
+LD A, 'h'
+SD [ST 0], A
+LD A, 'e'
+SD [ST 0], A
+LD A, 'l'
+SD [ST 0], A
+LD A, 'l'
+SD [ST 0], A
+LD A, 'o'
+SD [ST 0], A
+LD A, ' '
+SD [ST 0], A
+LD A, 'w'
+SD [ST 0], A
+LD A, 'o'
+SD [ST 0], A
+LD A, 'r'
+SD [ST 0], A
+LD A, 'l'
+SD [ST 0], A
+LD A, 'd'
+SD [ST 0], A
+LD A, '!'
+SD [ST 0], A

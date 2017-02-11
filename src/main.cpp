@@ -116,7 +116,7 @@ int main(int argc, const char * argv[])
   
   return 0;*/
 
-  /*if (argc > 1)
+  if (argc > 1)
   {
     vector<string> args;
     
@@ -128,12 +128,12 @@ int main(int argc, const char * argv[])
   }
   else if (argc == 1)
   {
-    runWithArgs({"j80", "test.nc"});
-  }*/
+    runWithArgs({"j80", "tests/testsuite.j80"});
+  }
     
   
-  nanoc::Compiler compiler;
-  compiler.parse("test.nc");
+  //nanoc::Compiler compiler;
+  //compiler.parse("test.nc");
   
   /*rtl::RTLBuilder builder;
   const auto& ast = compiler.getAST();

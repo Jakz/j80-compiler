@@ -1,0 +1,88 @@
+.ascii text "Running\n"
+.ascii int1 "Int1"
+.ascii int2 "Int2"
+.ascii int3 "Int3"
+.ascii int4 "Int4"
+
+.stackbase 8000h
+
+main:
+EI
+LD BA, text
+LD X, length(text)
+CALL printString
+JMP main
+
+.interrupt 0
+DI
+PUSH B
+PUSH A
+PUSH X
+PUSH Y
+LD BA, int1
+LD X, length(int1)
+CALL printString
+POP Y
+POP X
+POP A
+POP B
+EI
+RET
+
+.interrupt 1
+DI
+PUSH B
+PUSH A
+PUSH X
+PUSH Y
+LD BA, int2
+LD X, length(int2)
+CALL printString
+POP Y
+POP X
+POP A
+POP B
+EI
+RET
+
+
+printString:
+CMP X
+RETZ
+LD Y, [BA]
+ST [FFFFh], Y
+ADD BA, 1
+SUB X, 1
+JMP printString
+
+.interrupt 2
+DI
+PUSH B
+PUSH A
+PUSH X
+PUSH Y
+LD BA, int3
+LD X, length(int3)
+CALL printString
+POP Y
+POP X
+POP A
+POP B
+EI
+RET
+
+.interrupt 3
+DI
+PUSH B
+PUSH A
+PUSH X
+PUSH Y
+LD BA, int4
+LD X, length(int4)
+CALL printString
+POP Y
+POP X
+POP A
+POP B
+EI
+RET

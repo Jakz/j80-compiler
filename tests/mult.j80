@@ -1,0 +1,43 @@
+LD ST, ffffh
+LD A, 5
+LD B, 5
+SD [ST], A
+ADD ST, -1
+SD [ST], B
+ADD ST, -1
+SD [ST], P
+ADD ST, -1
+LD A, C
+ADD A, 10
+SD [ST], A
+ADD ST, -1
+JMP mult
+LD A, [ST]
+LD B, [ST]
+LD Y, [ST]
+loop:
+JMP loop
+mult:
+ADD ST, 3
+LD A, [ST]
+ADD ST, 1
+LD B, [ST]
+ADD ST, -4
+LD X, 0h
+mloop:
+CMP B, 0h
+JMPZ end
+SUB B, 1
+ADD X, A
+JMP mloop
+end:
+ADD ST, 1
+LD A, [ST]
+ADD ST, 1
+LD B, [ST]
+ADD ST, 2
+SD [ST], X
+LD PC, BA
+
+
+

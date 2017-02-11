@@ -1,0 +1,15 @@
+.reserve buffer 16
+.ascii text "Hello World!"
+
+LD BA, text
+LD X, 11
+loop1:
+CMP X, 0
+JMPZ end
+LD Y, [BA]
+ST [FFFFh], Y
+ADD BA, 1
+
+
+end:
+JMP end

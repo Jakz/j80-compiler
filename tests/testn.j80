@@ -1,0 +1,20 @@
+LD ST, FFFFh
+LD A, 5
+LD B, 4
+PUSH A
+PUSH B
+CALL mult
+loop:
+JMP loop
+
+
+mult:
+LD A, [ST 1]
+LD B, [ST 2]
+LD X, 0
+multl:
+CMP A, 0
+RETZ
+SUB A, 1
+ADD X, B
+JMP multl

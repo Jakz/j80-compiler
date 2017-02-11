@@ -11,10 +11,6 @@
 		040E829B1A407633004070ED /* nanoclexer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 040E82981A407633004070ED /* nanoclexer.cpp */; };
 		040E829C1A407633004070ED /* nanocparser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 040E82991A407633004070ED /* nanocparser.cpp */; };
 		04207F651A4C9847005BA78B /* symbol_table.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 04207F631A4C9847005BA78B /* symbol_table.cpp */; };
-		0440C73B1A4B8D2B002ECF04 /* test.nc in CopyFiles */ = {isa = PBXBuildFile; fileRef = 0418BADA1A41E4C100F0EFDA /* test.nc */; };
-		0440C73C1A4B8D2B002ECF04 /* test.j80 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 046E4180190DC55D0029D3C0 /* test.j80 */; };
-		0440C73D1A4B8D2B002ECF04 /* testsuite.j80 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 040E829E1A413CB0004070ED /* testsuite.j80 */; };
-		0440C73E1A4B8D2B002ECF04 /* testtext2.j80 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 0418BADB1A42022600F0EFDA /* testtext2.j80 */; };
 		04433CF81C221B6500172B98 /* types.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 04433CF71C221B6500172B98 /* types.cpp */; };
 		044B95B31E4C0DF900FA2891 /* libpanel.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 044B95B21E4C0DF900FA2891 /* libpanel.tbd */; };
 		044B95B51E4C0DFF00FA2891 /* libcurses.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 044B95B41E4C0DFF00FA2891 /* libcurses.tbd */; };
@@ -30,6 +26,7 @@
 		04AFDCA21A3F86070004F585 /* utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 04A945471A3F7887004FA90F /* utils.cpp */; };
 		04AFDCA31A3F86070004F585 /* vm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 04A945491A3F7887004FA90F /* vm.cpp */; };
 		04BB67221A44CB7B0082FB5D /* format.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 04BB67201A44CB7B0082FB5D /* format.cpp */; };
+		04C4ED991E4EC6EE004B2309 /* tests in CopyFiles */ = {isa = PBXBuildFile; fileRef = 04C4ED981E4EC6E1004B2309 /* tests */; };
 		04CD7AF41C26DC69000E6520 /* compiler_exceptions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 04CD7AF31C26DC69000E6520 /* compiler_exceptions.cpp */; };
 /* End PBXBuildFile section */
 
@@ -40,10 +37,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 16;
 			files = (
-				0440C73B1A4B8D2B002ECF04 /* test.nc in CopyFiles */,
-				0440C73C1A4B8D2B002ECF04 /* test.j80 in CopyFiles */,
-				0440C73D1A4B8D2B002ECF04 /* testsuite.j80 in CopyFiles */,
-				0440C73E1A4B8D2B002ECF04 /* testtext2.j80 in CopyFiles */,
+				04C4ED991E4EC6EE004B2309 /* tests in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -67,9 +61,6 @@
 		040E82981A407633004070ED /* nanoclexer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = nanoclexer.cpp; sourceTree = "<group>"; };
 		040E82991A407633004070ED /* nanocparser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = nanocparser.cpp; sourceTree = "<group>"; };
 		040E829A1A407633004070ED /* nanocparser.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = nanocparser.hpp; sourceTree = "<group>"; };
-		040E829E1A413CB0004070ED /* testsuite.j80 */ = {isa = PBXFileReference; lastKnownFileType = text; path = testsuite.j80; sourceTree = "<group>"; };
-		0418BADA1A41E4C100F0EFDA /* test.nc */ = {isa = PBXFileReference; lastKnownFileType = text; path = test.nc; sourceTree = "<group>"; };
-		0418BADB1A42022600F0EFDA /* testtext2.j80 */ = {isa = PBXFileReference; lastKnownFileType = text; path = testtext2.j80; sourceTree = "<group>"; };
 		04207F611A4C9223005BA78B /* ui.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ui.cpp; sourceTree = "<group>"; };
 		04207F621A4C9223005BA78B /* ui.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ui.h; sourceTree = "<group>"; };
 		04207F631A4C9847005BA78B /* symbol_table.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = symbol_table.cpp; sourceTree = "<group>"; };
@@ -83,7 +74,6 @@
 		045A5CCC1A59AF0A0017D759 /* rtl.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = rtl.cpp; sourceTree = "<group>"; };
 		045A5CCD1A59AF0A0017D759 /* rtl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rtl.h; sourceTree = "<group>"; };
 		046115E31A5108E700074282 /* enums.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = enums.h; sourceTree = "<group>"; };
-		046E4180190DC55D0029D3C0 /* test.j80 */ = {isa = PBXFileReference; lastKnownFileType = text; path = test.j80; sourceTree = "<group>"; };
 		0477E0D71C26BE8B00144D70 /* compiler_exceptions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = compiler_exceptions.h; sourceTree = "<group>"; };
 		048E641C1A4EF707002BFB9F /* types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = types.h; sourceTree = "<group>"; };
 		049875BD1A491AD70006938C /* ast_visitor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ast_visitor.cpp; sourceTree = "<group>"; };
@@ -109,6 +99,7 @@
 		04AEE8CF1C1FAA0A00A620A4 /* instruction.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = instruction.h; sourceTree = "<group>"; };
 		04BB67201A44CB7B0082FB5D /* format.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = format.cpp; sourceTree = "<group>"; };
 		04BB67211A44CB7B0082FB5D /* format.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = format.h; sourceTree = "<group>"; };
+		04C4ED981E4EC6E1004B2309 /* tests */ = {isa = PBXFileReference; lastKnownFileType = folder; name = tests; path = ../../tests; sourceTree = "<group>"; };
 		04CD7AF31C26DC69000E6520 /* compiler_exceptions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = compiler_exceptions.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -169,8 +160,9 @@
 		044DA7F9190C2FF400ED42E6 = {
 			isa = PBXGroup;
 			children = (
+				044DA818190C318D00ED42E6 /* Makefile */,
+				04C4ED981E4EC6E1004B2309 /* tests */,
 				04A945371A3F7887004FA90F /* src */,
-				044DA804190C2FF400ED42E6 /* J80 Compiler */,
 				044DA803190C2FF400ED42E6 /* Products */,
 				044B95B11E4C0DF900FA2891 /* Frameworks */,
 			);
@@ -182,18 +174,6 @@
 				044DA802190C2FF400ED42E6 /* J80 Compiler */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		044DA804190C2FF400ED42E6 /* J80 Compiler */ = {
-			isa = PBXGroup;
-			children = (
-				044DA818190C318D00ED42E6 /* Makefile */,
-				0418BADA1A41E4C100F0EFDA /* test.nc */,
-				046E4180190DC55D0029D3C0 /* test.j80 */,
-				040E829E1A413CB0004070ED /* testsuite.j80 */,
-				0418BADB1A42022600F0EFDA /* testtext2.j80 */,
-			);
-			path = "J80 Compiler";
 			sourceTree = "<group>";
 		};
 		04A945371A3F7887004FA90F /* src */ = {
