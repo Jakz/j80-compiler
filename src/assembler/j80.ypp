@@ -94,9 +94,9 @@
   DI
   SEXT
   NOP
-  DATA_ASCII
-  DATA_RESERVE
-  DATA_RAW
+  DATA_ASCII ".ascii"
+  DATA_RESERVE ".reserve"
+  DATA_RAW ".raw"
   DATA_LENGTH "LENGTH"
   ENTRY ".entry"
   INTERRUPT ".interrupt"
@@ -135,7 +135,7 @@ instruction:
 
 | LD REG16 COMMA U16 { assembler.add(new InstructionLD_NNNN($2, $4)); }
 | LD REG16 COMMA STRING { assembler.add(new InstructionLD_NNNN($2, $4)); }
-//| LD REG16 COMMA STRING U16 { assembler.assembleLD_NNNN($2, 0, $4, (s8)$5); }
+| LD REG16 COMMA DATA_LENGTH LPAREN STRING RPAREN { assembler.add(new InstructionLD_NNNN($2, $6)); }
 
 | ST LBRACK U16 RBRACK COMMA REG8 { assembler.assembleSD_PTR_NNNN($6, $3); }
 | ST LBRACK STRING RBRACK COMMA REG8 { assembler.assembleSD_PTR_NNNN($6, 0, $3, 0); }

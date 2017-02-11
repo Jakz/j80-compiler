@@ -18,6 +18,14 @@
 #include "instruction.h"
 #include "opcodes.h"
 
+enum class Log
+{
+  ERROR,
+  WARNING,
+  INFO,
+  VERBOSE_INFO
+};
+
 namespace Assembler
 {
 
@@ -98,6 +106,8 @@ public:
 class J80Assembler
 {
   private:
+    void log(Log l, const char* str, ...);
+  
     u16 position;
     std::list<std::unique_ptr<Instruction>> instructions;
   

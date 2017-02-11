@@ -11,6 +11,21 @@ J80Assembler::J80Assembler() : dataSegment(DataSegment()), codeSegment(CodeSegme
   
 }
 
+void J80Assembler::log(Log type, const char* str, ...)
+{
+  static char buffer[1024];
+  va_list arg;
+  va_start(arg, str);
+  std::vsnprintf(buffer, 1024, str, arg);
+  va_end(arg);
+  
+  switch (type)
+  {
+    case Log::ERROR: cerr << buffer << endl;
+    default: cout << buffer << endl;
+  }
+}
+
 bool J80Assembler::parse(const std::string &filename)
 {
   entryPoint = Optional<u16>();
@@ -39,12 +54,12 @@ bool J80Assembler::parse(const std::string &filename)
 
 void J80Assembler::error (const Assembler::location& l, const std::string& m)
 {
-  cerr << "Assembler error at " << file << ":" << l.begin.line << "," << l.begin.column << " : " << m << endl;
+  log(Log::ERROR, "Assembler error at %s: %u,%u : %s", file.c_str(), l.begin.line, l.begin.column, m.c_str());
 }
 
 void J80Assembler::error (const std::string& m)
 {
-  cerr << "Assembler error: " << m << endl;
+  log(Log::ERROR, "Assembler error: %s", m.c_str());
 }
 
 void J80Assembler::printProgram() const
@@ -127,23 +142,26 @@ void J80Assembler::printProgram() const
 
 void J80Assembler::buildDataSegment()
 {
-  printf("Building data segment.\n");
+  /* for each entry specified as data compute total size in bytes of segment */
   u16 totalSize = 0;
   for (auto &entry : data)
     totalSize += entry.second.length;
   
-  printf("  Data segment size: %u bytes.\n", totalSize);
+  log(Log::INFO, "Building data segment, total size: %u bytes", totalSize);
   
   dataSegment.alloc(totalSize);
   
   totalSize = 0;
   
+  /* copy data from data entry to final data segment at correct offset and save
+     the offset to solve references to it when assembling code
+   */
   for (auto &entry : data)
   {
     memcpy(&dataSegment.data[totalSize], entry.second.data, entry.second.length);
     entry.second.offset = totalSize;
     
-    printf("  > Data %s at offset %.4Xh\n",entry.first.c_str(),entry.second.offset);
+    log(Log::VERBOSE_INFO, "  > Data %s (%u bytes) at offset %.4Xh", entry.first.c_str(), entry.second.length, entry.second.offset);
     
     totalSize += entry.second.length;
   }
@@ -151,7 +169,7 @@ void J80Assembler::buildDataSegment()
 
 void J80Assembler::buildCodeSegment()
 {
-  printf("Building code segment.\n");
+  log(Log::INFO, "Building code segment.");
   
   u16 totalSize = 0;
   
@@ -163,10 +181,10 @@ void J80Assembler::buildCodeSegment()
     ++it;
   }
   
-  printf("  Code segment total size: %u bytes (%lu entries).\n", totalSize, instructions.size());
+  log(Log::INFO, "  Code segment total size: %u bytes (%lu entries).", totalSize, instructions.size());
   
   if (entryPoint.isSet())
-    printf("  Entry point specified at %.4Xh.\n", entryPoint.get());
+    log(Log::VERBOSE_INFO, "  Entry point specified at %.4Xh.", entryPoint.get());
   
   codeSegment.alloc(totalSize+codeSegment.offset);
   totalSize = 0;

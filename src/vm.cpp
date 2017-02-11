@@ -216,8 +216,7 @@ void VM::executeInstruction()
   }
   else if (opcode == OPCODE_CMP_REG)
   {
-    if (aluop & 0x1) aluop = ALU_SUB8;
-    aluop = ALU_SUB16;
+    aluop = aluop & 0x1 ? ALU_SUB8 : ALU_SUB16;
     saveFlags = false;
   }
   

@@ -1,0 +1,6 @@
+.ascii test "test ascii"
+.reserve rrr 8
+
+main:
+LD CD, length(test)
+JMP main

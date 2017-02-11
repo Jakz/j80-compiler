@@ -57,14 +57,13 @@ string trimExtension(const string& text)
     return text;
 }
 
-void runWithArgs(const vector<string>& args)
+void runWithArgs(const vector<string>& args, Assembler::J80Assembler& assembler, nanoc::Compiler& compiler)
 {
   if (args.size() == 2)
   {
     if (stringEndsWith(args[1], ".j80"))
     {
       cout << "Assembling " << args[1] << ".." << endl;
-      Assembler::J80Assembler assembler;
       bool success = assembler.parse(args[1]);
       
       if (success)
@@ -80,7 +79,6 @@ void runWithArgs(const vector<string>& args)
     }
     else if (stringEndsWith(args[1], ".nc"))
     {
-      nanoc::Compiler compiler;
       compiler.parse(args[1]);
     }
   }
@@ -89,15 +87,17 @@ void runWithArgs(const vector<string>& args)
 int main(int argc, const char * argv[])
 {
 
-  /*VM vm;
-
+  VM vm;
+  
   Assembler::J80Assembler assembler;
-  assembler.parse("test.j80");
-  assembler.assemble();
+  nanoc::Compiler compiler;
+  
+  runWithArgs({"j80", "tests/ntest.j80"}, assembler, compiler);
+  return 0;
+  
   
   vm.copyToRam(assembler.getCodeSegment().data, assembler.getCodeSegment().length);
   vm.copyToRam(assembler.getDataSegment().data, assembler.getDataSegment().length, assembler.getDataSegment().offset);
-
   
   vm::UI ui = vm::UI(vm);
   ui.init();
@@ -114,7 +114,7 @@ int main(int argc, const char * argv[])
   
   ui.shutdown();
   
-  return 0;*/
+  return 0;
 
   if (argc > 1)
   {
@@ -123,12 +123,12 @@ int main(int argc, const char * argv[])
     for (int i = 0; i < argc; ++i)
       args.push_back(argv[i]);
     
-    runWithArgs(args);
+    runWithArgs(args, assembler, compiler);
     return 0;
   }
   else if (argc == 1)
   {
-    runWithArgs({"j80", "tests/testsuite.j80"});
+    runWithArgs({"j80", "tests/testsuite.j80"}, assembler, compiler);
   }
     
   

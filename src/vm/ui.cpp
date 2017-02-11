@@ -207,6 +207,7 @@ void UI::updateConsole()
   }
   
   mvwprintw(wConsole, LOWER_PANEL_HEIGHT-1, 3, "(S) Step (T) Step x%lu", stepSize);
+  mvwprintw(wConsole, LOWER_PANEL_HEIGHT-1, width - SIDE_PANEL_WIDTH - strlen("(Q) Quit") - 3, "(Q) Quit");
 }
 
 void UI::handleEvents()
