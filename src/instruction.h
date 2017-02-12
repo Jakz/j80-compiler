@@ -1,9 +1,15 @@
 #ifndef __INSTRUCTION_H__
 #define __INSTRUCTION_H__
 
+#include <unordered_map>
+
+#include "format.h"
+#include "opcodes.h"
+
 namespace Assembler
 {
-  #include "opcodes.h"
+  
+  class J80Assembler;
   
   enum InstructionLength : u8
   {
@@ -14,7 +20,71 @@ namespace Assembler
     LENGTH_4_BYTES = 4
   };
   
-  typedef u8 InterruptIndex;
+  struct DataSegmentEntry
+  {
+    u8 *data;
+    u16 length;
+    u16 offset;
+    
+    DataSegmentEntry() : data(nullptr), length(0), offset(0) { }
+    DataSegmentEntry(const std::string& ascii) { offset = 0x0000; data = reinterpret_cast<u8*>(strdup(ascii.c_str())); length = ascii.length(); }
+    DataSegmentEntry(u16 size) { offset = 0x0000; data = new u8[size](); length = size; }
+    ~DataSegmentEntry() { /* TODO: can't release because it's copy constructed by STL*/ }
+  };
+  
+  class DataSegment
+  {
+  public:
+    u16 offset;
+    u8 *data;
+    u16 length;
+    
+    DataSegment() : offset(0), data(nullptr), length(0) { }
+    void alloc(u16 length) { if (data) delete[] data; data = new u8[length](); this->length = length;}
+    ~DataSegment() { delete [] data; }
+  };
+  
+  class CodeSegment
+  {
+  public:
+    u16 offset;
+    u8 *data;
+    u16 length;
+    
+    CodeSegment() : offset(0), data(nullptr), length(0) { }
+    void alloc(u16 length) { delete[] data; data = new u8[length](); this->length = length;}
+    ~CodeSegment() { delete [] data; }
+  };
+  
+  struct DataReference
+  {
+    enum class Type
+    {
+      POINTER,
+      LENGTH8,
+      LENGTH16
+    };
+    
+    Type type;
+    std::string label;
+    s8 offset;
+    
+    DataReference(const std::string& label, s8 offset) : type(Type::POINTER), label(label), offset(offset) { }
+    DataReference(const std::string& label, Type type) : type(type), label(label), offset(0) { }
+  };
+
+  using InterruptIndex = u8;
+  
+  using data_map = std::unordered_map<std::string, DataSegmentEntry>;
+  using const_map = std::unordered_map<std::string, u16>;
+  using assembler = J80Assembler;
+  
+  struct Environment
+  {
+    assembler& assembler;
+    data_map& data;
+    const_map& consts;
+  };
   
   class Instruction
   {
@@ -35,6 +105,8 @@ namespace Assembler
     {
       memcpy(dest, &data, sizeof(u8)*length);
     }
+    
+    virtual bool solve(const Environment& env) { return true; }
   };
   
   class Padding : public Instruction
@@ -109,47 +181,39 @@ namespace Assembler
     Address(InterruptIndex interrupt) : type(INTERRUPT), interrupt(interrupt) { }
   };
   
-  struct Value8
+  template<typename T>
+  struct Value
   {
     enum Type
     {
       VALUE,
-      DATA_LENGTH
+      DATA_LENGTH,
+      CONST
     } type;
     
-    u8 value;
+    T value;
     std::string label;
     
-    Value8(u8 value) : type(VALUE), value(value) { }
-    Value8(const std::string& label) : type(DATA_LENGTH), label(label) { }
+    Value() = default;
+    Value(T value) : type(VALUE), value(value) { }
+    Value(const std::string& label) : type(DATA_LENGTH), label(label) { }
+    
+    using type_t = T;
   };
   
-  struct Value16
-  {
-    enum Type
-    {
-      VALUE,
-      DATA_ADDRESS
-    } type;
-    
-    u16 value;
-    std::string label;
-    
-    Value16(u16 value) : type(VALUE), value(value) { }
-    Value16(const std::string& label) : type(DATA_ADDRESS), label(label) { }
-  };
-  
+  using Value8 = Value<u8>;
+  using Value16 = Value<u16>;
+
   class InstructionLD_NN : public Instruction
   {
   private:
+    using dest_t = u8;
     Reg dst;
     Value8 value;
     
   public:
-    InstructionLD_NN(Reg dst, u8 value) : Instruction(LENGTH_3_BYTES), dst(dst), value(Value8(value)) { }
-    InstructionLD_NN(Reg dst, const std::string& label) : Instruction(LENGTH_3_BYTES), dst(dst), value(Value8(label)) { }
+    InstructionLD_NN(Reg dst, Value8 value) : Instruction(LENGTH_3_BYTES), dst(dst), value(value) { }
 
-    
     std::string mnemonic() const override { return fmt::sprintf("LD %s, %.2Xh", Opcodes::reg8(dst), value.value); }
     
     void assemble(u8* dest) const override
@@ -162,6 +226,8 @@ namespace Assembler
     const std::string& getLabel() { return value.label; }
     bool mustBeSolved() { return value.type != Value8::Type::VALUE; }
     void solve(u8 value) { this->value.value = value; this->value.type = Value8::Type::VALUE; }
+    
+    bool solve(const Environment& env) override;
   };
   
   class InstructionSingleReg : public Instruction

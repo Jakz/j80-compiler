@@ -28,60 +28,7 @@ enum class Log
 
 namespace Assembler
 {
-
-struct DataSegmentEntry
-{
-  u8 *data;
-  u16 length;
-  u16 offset;
   
-  DataSegmentEntry() : data(nullptr), length(0), offset(0) { }
-  DataSegmentEntry(const std::string& ascii) { offset = 0x0000; data = reinterpret_cast<u8*>(strdup(ascii.c_str())); length = ascii.length(); }
-  DataSegmentEntry(u16 size) { offset = 0x0000; data = new u8[size](); length = size; }
-  ~DataSegmentEntry() { /* TODO: can't release because it's copy constructed by STL*/ }
-};
-  
-class DataSegment
-{
-  public:
-    u16 offset;
-    u8 *data;
-    u16 length;
-
-    DataSegment() : offset(0), data(nullptr), length(0) { }
-    void alloc(u16 length) { if (data) delete[] data; data = new u8[length](); this->length = length;}
-    ~DataSegment() { delete [] data; }
-};
-  
-class CodeSegment
-{
-  public:
-    u16 offset;
-    u8 *data;
-    u16 length;
-  
-  CodeSegment() : offset(0), data(nullptr), length(0) { }
-  void alloc(u16 length) { delete[] data; data = new u8[length](); this->length = length;}
-  ~CodeSegment() { delete [] data; }
-};
-  
-struct DataReference
-{
-  enum class Type
-  {
-    POINTER,
-    LENGTH8,
-    LENGTH16
-  };
-  
-  Type type;
-  std::string label;
-  s8 offset;
-  
-  DataReference(const std::string& label, s8 offset) : type(Type::POINTER), label(label), offset(offset) { }
-  DataReference(const std::string& label, Type type) : type(type), label(label), offset(0) { }
-};
-
 template<typename T>
 struct Optional
 {
@@ -106,7 +53,7 @@ public:
 class J80Assembler
 {
   private:
-    void log(Log l, const char* str, ...);
+    const char* sprintf(const char* fmt, ...) const;
   
     u16 position;
     std::list<std::unique_ptr<Instruction>> instructions;
@@ -114,6 +61,7 @@ class J80Assembler
     std::vector<std::pair<u16, DataReference> > dataReferences;
   
     std::unordered_map<std::string, DataSegmentEntry> data;
+    std::unordered_map<std::string, u16> consts;
   
     bool irqs[4] = {false,false,false,false};
   
@@ -129,8 +77,8 @@ class J80Assembler
   public:
     J80Assembler();
   
+    void log(Log l, bool newline, const char* str, ...) const;
 
-  
     std::string file;
   
     void error (const Assembler::location& l, const std::string& m);
@@ -331,11 +279,16 @@ class J80Assembler
       data[label] = DataSegmentEntry(size);
     }
   
+    void addConstValue(const std::string& label, u16 value)
+    {
+      consts[label] = value;
+    }
+  
     void prepareSource();
   
     void buildDataSegment();
     void buildCodeSegment();
-    void solveDataReferences();
+    bool solveDataReferences();
   
     u16 computeDataSegmentOffset()
     {
@@ -356,7 +309,6 @@ class J80Assembler
       
       solveJumps();
       buildDataSegment();
-      solveDataReferences();
       buildCodeSegment();
       dataSegment.offset = codeSegment.length + codeSegment.offset;
       solveDataReferences();
@@ -368,7 +320,7 @@ class J80Assembler
     std::list<std::unique_ptr<Instruction>>::const_iterator iterator() { return instructions.begin(); }
     bool hasNext(std::list<std::unique_ptr<Instruction>>::const_iterator it) { return it  != instructions.end(); }
 
-    void printProgram() const;
+    void printProgram(std::ostream& out) const;
     void saveForLogisim(const std::string& filename) const;
     void saveBinary(const std::string& filename) const;
 };

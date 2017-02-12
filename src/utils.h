@@ -74,6 +74,19 @@ namespace nanoc {
   };
 }
 
+template<typename T, typename V> bool valueFitsType(V v)
+{
+  static_assert(sizeof(T) < sizeof(V), "");
+  using base_t = typename std::make_signed<V>::type;
+  using signed_t = typename std::make_signed<T>::type;
+  using unsigned_t = typename std::make_unsigned<T>::type;
+  
+  bool unfitAsSigned = ((base_t)v < 0 && (base_t)v != (signed_t)v);
+  bool unfitAsUnsigned = ((base_t)v > 0 && v != (unsigned_t)v);
+  
+  return !(unfitAsSigned || unfitAsUnsigned);
+}
+
 class Utils
 {
   private:

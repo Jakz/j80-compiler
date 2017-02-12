@@ -11,6 +11,7 @@
 
 %code requires {
   #include "opcodes.h"
+  #include "instruction.h"
 
   namespace Assembler
   {
@@ -37,6 +38,7 @@
   #include "assembler.h"
   #include "j80lexer.h"
   #include "j80parser.hpp"
+  #include "instruction.h"
   
   static Assembler::Parser::symbol_type yylex(Assembler::Lexer &scanner, Assembler::J80Assembler &assembler) {
     return scanner.get_next_token();
@@ -80,6 +82,7 @@
 
 %token <u8> INTSTART;
 
+
 %token
   LD
   ST
@@ -95,6 +98,7 @@
   SEXT
   NOP
   DATA_ASCII ".ascii"
+  DATA_CONST ".const"
   DATA_RESERVE ".reserve"
   DATA_RAW ".raw"
   DATA_LENGTH "LENGTH"
@@ -103,8 +107,11 @@
   STACK_BASE ".stackbase"
 ;
 
+%type<Value8> value8
+
 
 %printer { yyoutput << $$; } <*>
+%printer { yyoutput << ""; } <Value8>
 
 %%
 
@@ -121,8 +128,7 @@ instructions:
 instruction:
   
   LD REG8 COMMA REG8 { assembler.assembleLD_RSH_LSH($2, $4, ALU_TRANSFER_A8, false); }
-| LD REG8 COMMA U16 { assembler.add(new InstructionLD_NN($2, (u8)$4)); }
-| LD REG8 COMMA DATA_LENGTH LPAREN STRING RPAREN { assembler.add(new InstructionLD_NN($2, $6)); }
+| LD REG8 COMMA value8 { assembler.add(new InstructionLD_NN($2, $4)); }
 
 | LD REG16 COMMA REG16 { assembler.assembleLD_RSH_LSH($2, $4, ALU_TRANSFER_A16, true); }
 
@@ -204,6 +210,7 @@ instruction:
 
 | DATA_ASCII STRING LITERAL { assembler.addAsciiData($2,$3); }
 | DATA_RESERVE STRING U16 { assembler.addEmptyData($2,$3); }
+| DATA_CONST STRING U16 { }
 
 | ENTRY U16 { if (!assembler.setEntryPoint($2)) { error(@1, "entry point specified more than once"); YYERROR; } }
 
@@ -236,6 +243,16 @@ instruction:
   | JUMPC STRING EOL { ASSEMBLER->asmJump($2, true); }*/
 
 ;
+
+value8:
+U16 {
+  if (!valueFitsType<u8>($1)) {
+    error(@1, "8bit value exceeds range: " + std::to_string((s16)$1));
+    YYERROR;
+  }
+  $$ = Value8($1);
+}
+| DATA_LENGTH LPAREN STRING RPAREN { $$ = Value8($3); }
 
 /*
 label:

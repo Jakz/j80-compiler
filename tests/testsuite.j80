@@ -2,6 +2,7 @@
 .ascii testintro "Test "
 .ascii success "success"
 .ascii fail "fail"
+.ascii test_add_nn "ADD NN"
 .ascii test_ld_nn "LD NN"
 .ascii test_ld_nnnn "LD NNNN"
 .ascii test_lsh_r8 "LSH R8"
@@ -12,6 +13,7 @@
 
 LD SP, 8000h
 
+CALL add_nn
 CALL ld_r_pp_test
 CALL st_pp_r_test
 CALL ld_nn_test
@@ -418,7 +420,7 @@ st_pp_r_test_fail:
 LD Y, 0
 JMP st_pp_r_test_end
 
-
+# test LD R, [PP+SS]
 ld_r_pp_test:
 
 LD BA, 2000h
@@ -453,3 +455,33 @@ RET
 ld_r_pp_test_fail:
 LD Y, 0
 JMP ld_r_pp_test_end
+
+
+#test ADD NN
+add_nn:
+
+# x = 10, x += 5, assert(!carry && x == 15)
+LD X, 10
+ADD X, 5
+LD C, 0
+JMPC add_nn_test_fail
+CMP X, 15
+JMPNZ add_nn_test_fail
+
+# x = 100, x += 300, assert(carry && x == 0x2C)
+LD X, 100
+ADD X, 200
+LD C, 1
+JMPNC add_nn_test_fail
+CMP X, 2Ch
+JMPNZ add_nn_test_fail
+
+
+add_nn_test_end:
+LD BA, test_add_nn
+LD X, length(test_add_nn)
+CALL printTestResult
+RET
+add_nn_test_fail:
+LD Y, 0
+JMP add_nn_test_end

@@ -27,6 +27,7 @@
 		04AFDCA31A3F86070004F585 /* vm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 04A945491A3F7887004FA90F /* vm.cpp */; };
 		04BB67221A44CB7B0082FB5D /* format.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 04BB67201A44CB7B0082FB5D /* format.cpp */; };
 		04C4ED991E4EC6EE004B2309 /* tests in CopyFiles */ = {isa = PBXBuildFile; fileRef = 04C4ED981E4EC6E1004B2309 /* tests */; };
+		04C4ED9C1E50F1C8004B2309 /* instruction.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 04C4ED9B1E50F1C8004B2309 /* instruction.cpp */; };
 		04CD7AF41C26DC69000E6520 /* compiler_exceptions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 04CD7AF31C26DC69000E6520 /* compiler_exceptions.cpp */; };
 /* End PBXBuildFile section */
 
@@ -100,6 +101,7 @@
 		04BB67201A44CB7B0082FB5D /* format.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = format.cpp; sourceTree = "<group>"; };
 		04BB67211A44CB7B0082FB5D /* format.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = format.h; sourceTree = "<group>"; };
 		04C4ED981E4EC6E1004B2309 /* tests */ = {isa = PBXFileReference; lastKnownFileType = folder; name = tests; path = ../../tests; sourceTree = "<group>"; };
+		04C4ED9B1E50F1C8004B2309 /* instruction.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = instruction.cpp; sourceTree = "<group>"; };
 		04CD7AF31C26DC69000E6520 /* compiler_exceptions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = compiler_exceptions.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -192,6 +194,7 @@
 				049875BE1A491AD70006938C /* ast_visitor.h */,
 				04A945451A3F7887004FA90F /* opcodes.cpp */,
 				04A945461A3F7887004FA90F /* opcodes.h */,
+				04C4ED9B1E50F1C8004B2309 /* instruction.cpp */,
 				04AEE8CF1C1FAA0A00A620A4 /* instruction.h */,
 				04A945471A3F7887004FA90F /* utils.cpp */,
 				04A945481A3F7887004FA90F /* utils.h */,
@@ -289,6 +292,7 @@
 				04AFDCA31A3F86070004F585 /* vm.cpp in Sources */,
 				040E82971A407615004070ED /* compiler.cpp in Sources */,
 				040E829B1A407633004070ED /* nanoclexer.cpp in Sources */,
+				04C4ED9C1E50F1C8004B2309 /* instruction.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -125,6 +125,7 @@
 
 "LENGTH"|"length" { return Parser::make_DATA_LENGTH(loc); }
 ".ASCII"|".ascii" { return Parser::make_DATA_ASCII(loc); }
+".CONST"|".const" { return Parser::make_DATA_CONST(loc); }
 ".RESERVE"|".reserve" { return Parser::make_DATA_RESERVE(loc); }
 ".RAW"|".raw" { return Parser::make_DATA_RAW(loc); }
 ".ENTRY"|".entry" { return Parser::make_ENTRY(loc); }

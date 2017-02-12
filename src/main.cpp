@@ -71,7 +71,7 @@ void runWithArgs(const vector<string>& args, Assembler::J80Assembler& assembler,
         assembler.assemble();
         
         cout << "Program Assembled, output:" << endl;
-        assembler.printProgram();
+        assembler.printProgram(cout);
         
         string output = trimExtension(args[1]) + ".bin";
         assembler.saveForLogisim(output);
