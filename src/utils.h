@@ -87,6 +87,16 @@ template<typename T, typename V> bool valueFitsType(V v)
   return !(unfitAsSigned || unfitAsUnsigned);
 }
 
+struct Result
+{
+  std::string message;
+  bool success;
+  
+  Result() : success(true) { }
+  Result(const std::string& message) : success(false), message(message) { }
+  operator bool() const { return success; }
+};
+
 class Utils
 {
   private:

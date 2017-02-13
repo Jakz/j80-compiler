@@ -105,10 +105,10 @@ void J80Assembler::printProgram(std::ostream& out) const
     for (int i = length; i < LENGTH_4_BYTES+1; ++i)
       out << sprintf("  ");
     
-    const std::string mnemonic = i->mnemonic();
+    std::string mnemonic = i->mnemonic();
     
     if (mnemonic.empty())
-      Opcodes::printInstruction(opcode);
+      mnemonic = Opcodes::printInstruction(opcode).value;
     
     out << sprintf("%s", mnemonic.c_str());
     
@@ -346,19 +346,21 @@ bool J80Assembler::solveJumps()
   return true;
 }
 
-bool J80Assembler::solveDataReferences()
+Result J80Assembler::solveDataReferences()
 {  
   u16 base = computeDataSegmentOffset();
 
-  log(Log::INFO, true, "Solving data references. Base data segment offset: %d.", base);
+  log(Log::INFO, true, "Solving data references. Base data segment offset: %04Xh.", base);
   
   Environment env{ *this, data, consts };
   
   for (const auto& i : instructions)
   {
-    if (!i->solve(env))
-      return false;
+    Result result = i->solve(env);
     
+    if (!result)
+      return result;
+
     InstructionLD_NNNN* vi16 = dynamic_cast<InstructionLD_NNNN*>(i.get());
     
     if (vi16 && vi16->mustBeSolved())
@@ -373,7 +375,7 @@ bool J80Assembler::solveDataReferences()
     }
   }
   
-  return true;
+  return Result();
 }
 
 void J80Assembler::saveForLogisim(const std::string &filename) const

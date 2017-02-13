@@ -106,7 +106,7 @@ namespace Assembler
       memcpy(dest, &data, sizeof(u8)*length);
     }
     
-    virtual bool solve(const Environment& env) { return true; }
+    virtual Result solve(const Environment& env) { return Result(); }
   };
   
   class Padding : public Instruction
@@ -196,7 +196,7 @@ namespace Assembler
     
     Value() = default;
     Value(T value) : type(VALUE), value(value) { }
-    Value(const std::string& label) : type(DATA_LENGTH), label(label) { }
+    Value(Type type, const std::string& label) : type(type), label(label) { }
     
     using type_t = T;
   };
@@ -227,7 +227,7 @@ namespace Assembler
     bool mustBeSolved() { return value.type != Value8::Type::VALUE; }
     void solve(u8 value) { this->value.value = value; this->value.type = Value8::Type::VALUE; }
     
-    bool solve(const Environment& env) override;
+    Result solve(const Environment& env) override;
   };
   
   class InstructionSingleReg : public Instruction
@@ -281,7 +281,7 @@ namespace Assembler
     
   public:
     InstructionLD_NNNN(Reg dst, u16 value) : Instruction(LENGTH_3_BYTES), dst(dst), value(Value16(value)) { }
-    InstructionLD_NNNN(Reg dst, const std::string& label) : Instruction(LENGTH_3_BYTES), dst(dst), value(Value16(label)) { }
+    InstructionLD_NNNN(Reg dst, const std::string& label) : Instruction(LENGTH_3_BYTES), dst(dst), value(Value16::Type::DATA_LENGTH, label) { }
     
     std::string mnemonic() const override {
       if (value.label.empty())

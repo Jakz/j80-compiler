@@ -63,8 +63,8 @@ const char* Opcodes::condName(JumpCondition cond)
 const char* m[] =
 {
   "nop",
-  "mov",//"ld",
-  "mov",//"st",
+  "ld",//"ld",
+  "st",//"st",
   "lsh",
   "rsh",
   "add",

@@ -47,10 +47,10 @@
 "B"|"b" { return Parser::make_REG8(REG_B, loc); }
 "X"|"x" { return Parser::make_REG8(REG_X, loc); }
 "Y"|"y" { return Parser::make_REG8(REG_Y, loc); }
-"C"|"C" { return Parser::make_REG8(REG_C, loc); }
-"D"|"D" { return Parser::make_REG8(REG_D, loc); }
-"E"|"E" { return Parser::make_REG8(REG_E, loc); }
-"F"|"F" { return Parser::make_REG8(REG_F, loc); }
+"C"|"c" { return Parser::make_REG8(REG_C, loc); }
+"D"|"d" { return Parser::make_REG8(REG_D, loc); }
+"E"|"e" { return Parser::make_REG8(REG_E, loc); }
+"F"|"f" { return Parser::make_REG8(REG_F, loc); }
 
 "BA"|"ba" { return Parser::make_REG16(REG_BA, loc); }
 "XY"|"xy" { return Parser::make_REG16(REG_XY, loc); }

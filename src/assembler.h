@@ -288,7 +288,7 @@ class J80Assembler
   
     void buildDataSegment();
     void buildCodeSegment();
-    bool solveDataReferences();
+    Result solveDataReferences();
   
     u16 computeDataSegmentOffset()
     {
@@ -300,18 +300,27 @@ class J80Assembler
       return offset;
     }
   
-    void assemble()
+    Result assemble()
     {
+      Result result;
+      
       if (entryPoint.isSet())
         codeSegment.offset = entryPoint.get();
       
       prepareSource();
       
-      solveJumps();
       buildDataSegment();
+      
+      if (result)
+        result = solveDataReferences();
+      
+      solveJumps();
       buildCodeSegment();
       dataSegment.offset = codeSegment.length + codeSegment.offset;
-      solveDataReferences();
+      
+
+      
+      return result;
     }
   
     const DataSegment& getDataSegment() { return dataSegment; }

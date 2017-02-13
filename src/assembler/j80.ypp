@@ -210,7 +210,7 @@ instruction:
 
 | DATA_ASCII STRING LITERAL { assembler.addAsciiData($2,$3); }
 | DATA_RESERVE STRING U16 { assembler.addEmptyData($2,$3); }
-| DATA_CONST STRING U16 { }
+| DATA_CONST STRING U16 { assembler.addConstValue($2, $3); }
 
 | ENTRY U16 { if (!assembler.setEntryPoint($2)) { error(@1, "entry point specified more than once"); YYERROR; } }
 
@@ -252,7 +252,8 @@ U16 {
   }
   $$ = Value8($1);
 }
-| DATA_LENGTH LPAREN STRING RPAREN { $$ = Value8($3); }
+| DATA_LENGTH LPAREN STRING RPAREN { $$ = Value8(Value8::Type::DATA_LENGTH, $3); }
+| STRING { $$ = Value8(Value8::Type::CONST, $1); }
 
 /*
 label:

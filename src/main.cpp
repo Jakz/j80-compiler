@@ -68,13 +68,18 @@ void runWithArgs(const vector<string>& args, Assembler::J80Assembler& assembler,
       
       if (success)
       {
-        assembler.assemble();
+        Result result = assembler.assemble();
         
-        cout << "Program Assembled, output:" << endl;
-        assembler.printProgram(cout);
-        
-        string output = trimExtension(args[1]) + ".bin";
-        assembler.saveForLogisim(output);
+        if (result)
+        {
+          cout << "Program Assembled, output:" << endl;
+          assembler.printProgram(cout);
+          
+          string output = trimExtension(args[1]) + ".bin";
+          assembler.saveForLogisim(output);
+        }
+        else
+          assembler.log(Log::ERROR, true, "Error: %s", result.message.c_str());
       }
     }
     else if (stringEndsWith(args[1], ".nc"))
@@ -92,7 +97,7 @@ int main(int argc, const char * argv[])
   Assembler::J80Assembler assembler;
   nanoc::Compiler compiler;
   
-  runWithArgs({"j80", "tests/ntest.j80"}, assembler, compiler);
+  runWithArgs({"j80", "tests/testsuite.j80"}, assembler, compiler);
   return 0;
   
   
