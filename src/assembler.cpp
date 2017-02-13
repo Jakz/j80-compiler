@@ -161,7 +161,7 @@ void J80Assembler::buildDataSegment()
   /* for each entry specified as data compute total size in bytes of segment */
   u16 totalSize = 0;
   for (auto &entry : data)
-    totalSize += entry.second.length;
+    totalSize += entry->second.length;
   
   log(Log::INFO, true, "Building data segment, total size: %u bytes", totalSize);
   
@@ -174,12 +174,12 @@ void J80Assembler::buildDataSegment()
    */
   for (auto &entry : data)
   {
-    memcpy(&dataSegment.data[totalSize], entry.second.data, entry.second.length);
-    entry.second.offset = totalSize;
+    memcpy(&dataSegment.data[totalSize], entry->second.data, entry->second.length);
+    entry->second.offset = totalSize;
     
-    log(Log::VERBOSE_INFO, true, "  > Data %s (%u bytes) at offset %.4Xh", entry.first.c_str(), entry.second.length, entry.second.offset);
+    log(Log::VERBOSE_INFO, true, "  > Data %s (%u bytes) at offset %.4Xh", entry->first.c_str(), entry->second.length, entry->second.offset);
     
-    totalSize += entry.second.length;
+    totalSize += entry->second.length;
   }
 }
 
@@ -365,9 +365,9 @@ Result J80Assembler::solveDataReferences()
     
     if (vi16 && vi16->mustBeSolved())
     {
-      std::unordered_map<std::string, DataSegmentEntry>::const_iterator it = data.find(vi16->getLabel());
+      std::unordered_map<std::string, DataSegmentEntry>::const_iterator it = data.map.find(vi16->getLabel());
 
-      if (it != data.end())
+      if (it != data.map.end())
       {
         vi16->solve(base + it->second.offset);
         log(Log::INFO, true, "  > Data '%s' at %.4Xh", vi16->getLabel().c_str(), base + it->second.offset);

@@ -2,6 +2,7 @@
 #define __INSTRUCTION_H__
 
 #include <unordered_map>
+#include <vector>
 
 #include "format.h"
 #include "opcodes.h"
@@ -75,7 +76,18 @@ namespace Assembler
 
   using InterruptIndex = u8;
   
-  using data_map = std::unordered_map<std::string, DataSegmentEntry>;
+  struct data_map
+  {
+    using map_t = std::unordered_map<std::string, DataSegmentEntry>;
+    map_t map;
+    std::vector<map_t::iterator> lru;
+    
+    void clear() { map.clear(); lru.clear(); }
+    
+    decltype(lru)::const_iterator begin() const { return lru.begin(); }
+    decltype(lru)::const_iterator end() const { return lru.end(); }
+  };
+  
   using const_map = std::unordered_map<std::string, u16>;
   using assembler = J80Assembler;
   

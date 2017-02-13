@@ -3,6 +3,7 @@
 .ascii success "success"
 .ascii fail "fail"
 .ascii test_add_nn "ADD NN"
+.ascii test_add_nnnn "ADD NNNN"
 .ascii test_ld_nn "LD NN"
 .ascii test_ld_nnnn "LD NNNN"
 .ascii test_lsh_r8 "LSH R8"
@@ -14,6 +15,7 @@
 LD SP, 8000h
 
 CALL add_nn
+CALL add_nnnn
 CALL ld_r_pp_test
 CALL st_pp_r_test
 CALL ld_nn_test
@@ -468,7 +470,7 @@ JMPC add_nn_test_fail
 CMP X, 15
 JMPNZ add_nn_test_fail
 
-# x = 100, x += 300, assert(carry && x == 0x2C)
+# x = 100, x += 200, assert(carry && x == 0x2C)
 LD X, 100
 ADD X, 200
 LD C, 1
@@ -476,6 +478,25 @@ JMPNC add_nn_test_fail
 CMP X, 2Ch
 JMPNZ add_nn_test_fail
 
+# x = 10 x += -10, assert(x == 90)
+LD X, 100
+ADD X, -10
+LD C, 2
+CMP X, 90
+JMPNZ add_nn_test_fail
+
+# x = 120, x += 10, assert(overflow)
+LD X, 120
+ADD X, 10
+LD C, 3
+JMPNV add_nn_test_fail
+
+# x = -120, x += -10, assert(overflow)
+#FIX
+LD X, -120
+ADD X, -150
+LD C, 4
+JMPNV add_nn_test_fail
 
 add_nn_test_end:
 LD BA, test_add_nn
@@ -485,3 +506,51 @@ RET
 add_nn_test_fail:
 LD Y, 0
 JMP add_nn_test_end
+
+#test ADD NNNN
+add_nnnn:
+
+# x = 1000, x += 500, assert(!carry && x == 15)
+LD XY, 1000
+ADD XY, 500
+LD C, 0
+JMPC add_nnnn_test_fail
+CMP X, 1500
+JMPNZ add_nnnn_test_fail
+
+# x = 40000, x += 40000, assert(carry && x == 0x2C)
+LD XY, 40000
+ADD XY, 40000
+LD C, 1
+JMPNC add_nnnn_test_fail
+CMP XY, 3880h
+JMPNZ add_nnnn_test_fail
+
+# x = 1000 x += -100, assert(x == 900)
+LD XY, 1000
+ADD XY, -100
+LD C, 2
+CMP XY, 900
+JMPNZ add_nnnn_test_fail
+
+# x = 30000, x += 10000, assert(overflow)
+LD XY, 30000
+ADD XY, 10000
+LD C, 3
+JMPNV add_nnnn_test_fail
+
+# x = -120, x += -10, assert(overflow)
+LD XY, -30000
+ADD XY, -10000
+LD C, 4
+JMPNV add_nnnn_test_fail
+
+
+add_nnnn_test_end:
+LD BA, test_add_nnnn
+LD X, length(test_add_nnnn)
+CALL printTestResult
+RET
+add_nnnn_test_fail:
+LD Y, 0
+JMP add_nnnn_test_end

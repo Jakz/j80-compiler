@@ -12,9 +12,9 @@ Result InstructionLD_NN::solve(const Environment& env)
     case Value8::Type::VALUE: break;
     case Value8::Type::DATA_LENGTH:
     {
-      auto it = env.data.find(value.label);
+      auto it = env.data.map.find(value.label);
       
-      if (it == env.data.end())
+      if (it == env.data.map.end())
         return Result(fmt::sprintf("reference to missing data '%s'.", value.label.c_str()));
       
       u16 cvalue = it->second.length;

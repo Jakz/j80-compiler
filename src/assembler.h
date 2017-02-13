@@ -60,7 +60,7 @@ class J80Assembler
   
     std::vector<std::pair<u16, DataReference> > dataReferences;
   
-    std::unordered_map<std::string, DataSegmentEntry> data;
+    data_map data;
     std::unordered_map<std::string, u16> consts;
   
     bool irqs[4] = {false,false,false,false};
@@ -271,12 +271,12 @@ class J80Assembler
   
     void addAsciiData(const std::string& label, const std::string& sdata)
     {
-      data[label] = DataSegmentEntry(sdata);
+      data.lru.push_back(data.map.insert(std::make_pair(label, DataSegmentEntry(sdata))).first);
     }
   
     void addEmptyData(const std::string& label, u16 size)
     {
-      data[label] = DataSegmentEntry(size);
+      data.lru.push_back(data.map.insert(std::make_pair(label, DataSegmentEntry(size))).first);
     }
   
     void addConstValue(const std::string& label, u16 value)

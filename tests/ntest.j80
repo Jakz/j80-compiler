@@ -1,2 +1,5 @@
-.const xxx 123
-LD c, xxx
+.ascii hello "Hello"
+main:
+LD BA, hello
+end:
+JMP end
