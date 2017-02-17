@@ -271,7 +271,7 @@ void J80Assembler::prepareSource()
 }
 
 
-bool J80Assembler::solveJumps()
+Result J80Assembler::solveJumps()
 {
   log(Log::INFO, true, "Computing label addresses.");
   
@@ -323,8 +323,8 @@ bool J80Assembler::solveJumps()
         }
         else
         {
-          log(Log::ERROR, true, "  Label %s unresolved.", ai->getLabel().c_str());
-          return false;
+          //log(Log::ERROR, true, "  Label %s unresolved.", );
+          return Result(fmt::sprintf("Label %s unresolved.", ai->getLabel().c_str()));
         }
       }
       else if (ai->getType() == Address::Type::INTERRUPT)
@@ -343,7 +343,7 @@ bool J80Assembler::solveJumps()
     }
   }
   
-  return true;
+  return Result();
 }
 
 Result J80Assembler::solveDataReferences()

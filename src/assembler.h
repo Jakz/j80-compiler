@@ -265,13 +265,9 @@ class J80Assembler
       postamble(i);
     }
   
-  
-    bool solveJumps();
-  
-  
-    void addAsciiData(const std::string& label, const std::string& sdata)
+    void addAsciiData(const std::string& label, const std::string& sdata, bool includeNul)
     {
-      data.lru.push_back(data.map.insert(std::make_pair(label, DataSegmentEntry(sdata))).first);
+      data.lru.push_back(data.map.insert(std::make_pair(label, DataSegmentEntry(sdata, includeNul))).first);
     }
   
     void addEmptyData(const std::string& label, u16 size)
@@ -289,6 +285,7 @@ class J80Assembler
     void buildDataSegment();
     void buildCodeSegment();
     Result solveDataReferences();
+    Result solveJumps();
   
     u16 computeDataSegmentOffset()
     {
@@ -314,11 +311,10 @@ class J80Assembler
       if (result)
         result = solveDataReferences();
       
-      solveJumps();
+      if (result)
+        result = solveJumps();
       buildCodeSegment();
       dataSegment.offset = codeSegment.length + codeSegment.offset;
-      
-
       
       return result;
     }

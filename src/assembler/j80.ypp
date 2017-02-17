@@ -98,6 +98,7 @@
   SEXT
   NOP
   DATA_ASCII ".ascii"
+  DATA_ASCIIZ ".asciiz"
   DATA_CONST ".const"
   DATA_RESERVE ".reserve"
   DATA_RAW ".raw"
@@ -208,7 +209,8 @@ instruction:
 | CMP REG8 { assembler.assembleCMP_NN($2, 0); }
 | CMP REG16 { assembler.assembleCMP_NNNN($2, 0); }
 
-| DATA_ASCII STRING LITERAL { assembler.addAsciiData($2,$3); }
+| DATA_ASCII STRING LITERAL { assembler.addAsciiData($2,$3,false); }
+| DATA_ASCIIZ STRING LITERAL { assembler.addAsciiData($2,$3,true); }
 | DATA_RESERVE STRING U16 { assembler.addEmptyData($2,$3); }
 | DATA_CONST STRING U16 { assembler.addConstValue($2, $3); }
 

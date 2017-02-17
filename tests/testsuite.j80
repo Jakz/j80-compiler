@@ -1,19 +1,23 @@
 
-.ascii testintro "Test "
-.ascii success "success"
-.ascii fail "fail"
-.ascii test_add_nn "ADD NN"
-.ascii test_add_nnnn "ADD NNNN"
-.ascii test_ld_nn "LD NN"
-.ascii test_ld_nnnn "LD NNNN"
-.ascii test_lsh_r8 "LSH R8"
-.ascii test_lsh_r16 "LSH R16"
-.ascii test_st_pp "ST [PP+SS], R"
-.ascii test_ld_pp "LD R, [PP+SS]"
-.ascii test_recursion "Recursion"
+.asciiz testintro "Test "
+.asciiz success "success"
+.asciiz fail "fail"
+.asciiz test_sf "SF R"
+.asciiz test_lf "LF R"
+.asciiz test_add_nn "ADD NN"
+.asciiz test_add_nnnn "ADD NNNN"
+.asciiz test_ld_nn "LD NN"
+.asciiz test_ld_nnnn "LD NNNN"
+.asciiz test_lsh_r8 "LSH R8"
+.asciiz test_lsh_r16 "LSH R16"
+.asciiz test_st_pp "ST [PP+SS], R"
+.asciiz test_ld_pp "LD R, [PP+SS]"
+.asciiz test_recursion "Recursion"
 
 LD SP, 8000h
 
+CALL sf_r
+CALL lf_r
 CALL add_nn
 CALL add_nnnn
 CALL ld_r_pp_test
@@ -55,14 +59,12 @@ ST [FFFFh], A
 RET
 
 # prints string
-# X (in): length of the string
 # BA (in): pointer to data
 printString:
-CMP X
-RETZ
 LD Y, [BA]
+CMP Y, 0
+RETZ
 ST [FFFFh], Y
-SUB X, 1
 ADD BA, 1
 JMP printString
 
@@ -73,15 +75,12 @@ JMP printString
 # Y (in): 0 if fail, otherwise success
 printTestResult:
 PUSH BA
-PUSH X
 PUSH Y
 PUSH C
 LD BA, testintro
-LD X, length(testintro)
 CALL printString
 POP C
 POP Y
-POP X
 POP BA
 PUSH Y
 CALL printString
@@ -93,14 +92,12 @@ POP Y
 CMP Y
 JMPZ printTestResult2
 LD BA, success
-LD X, length(success)
 CALL printString
 LD X, 0Ah
 ST [FFFFh], X
 RET
 printTestResult2:
 LD BA, fail
-LD X, length(fail)
 CALL printString
 LD X, ' '
 ST [FFFFh], X
@@ -178,14 +175,12 @@ JMPN lsh_r_test_fail
 
 LD Y, 1
 LD BA, test_lsh_r8
-LD X, length(test_lsh_r8)
 CALL printTestResult
 RET
 
 lsh_r_test_fail:
 LD Y, 0
 LD BA, test_lsh_r8
-LD X, length(test_lsh_r8)
 CALL printTestResult
 RET
 
@@ -261,14 +256,12 @@ JMPN lsh_rr_test_fail
 
 LD Y, 1
 LD BA, test_lsh_r16
-LD X, length(test_lsh_r16)
 CALL printTestResult
 RET
 
 lsh_rr_test_fail:
 LD Y, 0
 LD BA, test_lsh_r16
-LD X, length(test_lsh_r16)
 CALL printTestResult
 RET
 
@@ -318,13 +311,11 @@ JMPNZ ld_nn_test_fail
 
 LD Y, 1
 LD BA, test_ld_nn
-LD X, length(test_ld_nn)
 CALL printTestResult
 RET
 ld_nn_test_fail:
 LD Y, 0
 LD BA, test_ld_nn
-LD X, length(test_ld_nn)
 CALL printTestResult
 RET
 
@@ -379,7 +370,6 @@ JMPNZ ld_nnnn_test_fail
 LD Y, 1
 ld_nnnn_test_end:
 LD BA, test_ld_nnnn
-LD X, length(test_ld_nnnn)
 CALL printTestResult
 RET
 ld_nnnn_test_fail:
@@ -415,7 +405,6 @@ JMPNZ st_pp_r_test_fail
 LD Y, 1
 st_pp_r_test_end:
 LD BA, test_st_pp
-LD X, length(test_st_pp)
 CALL printTestResult
 RET
 st_pp_r_test_fail:
@@ -451,7 +440,6 @@ JMPNZ ld_r_pp_test_fail
 LD Y, 1
 ld_r_pp_test_end:
 LD BA, test_ld_pp
-LD X, length(test_ld_pp)
 CALL printTestResult
 RET
 ld_r_pp_test_fail:
@@ -498,9 +486,9 @@ ADD X, -150
 LD C, 4
 JMPNV add_nn_test_fail
 
+LD Y, 1
 add_nn_test_end:
 LD BA, test_add_nn
-LD X, length(test_add_nn)
 CALL printTestResult
 RET
 add_nn_test_fail:
@@ -545,12 +533,100 @@ ADD XY, -10000
 LD C, 4
 JMPNV add_nnnn_test_fail
 
-
+LD Y, 1
 add_nnnn_test_end:
 LD BA, test_add_nnnn
-LD X, length(test_add_nnnn)
 CALL printTestResult
 RET
 add_nnnn_test_fail:
 LD Y, 0
 JMP add_nnnn_test_end
+
+##############################
+# LF R
+##############################
+lf_r:
+# FLAGS <- 0 all flags must be 0
+LD X, 0
+LF X
+LD C, 0
+JMPC lf_r_test_fail
+JMPZ lf_r_test_fail
+JMPN lf_r_test_fail
+JMPV lf_r_test_fail
+
+# FLAGS <- 1 just carry set
+LD X, 1
+LF X
+LD C, 1
+JMPNC lf_r_test_fail
+JMPZ lf_r_test_fail
+JMPN lf_r_test_fail
+JMPV lf_r_test_fail
+
+# FLAGS <- 2 just zero set
+LD X, 2
+LF X
+LD C, 2
+JMPC lf_r_test_fail
+JMPNZ lf_r_test_fail
+JMPN lf_r_test_fail
+JMPV lf_r_test_fail
+
+# FLAGS <- 4 just sign set
+LD X, 4
+LF X
+LD C, 3
+JMPC lf_r_test_fail
+JMPZ lf_r_test_fail
+JMPNN lf_r_test_fail
+JMPV lf_r_test_fail
+
+# FLAGS <- 8 just sign set
+LD X, 8
+LF X
+LD C, 4
+JMPC lf_r_test_fail
+JMPZ lf_r_test_fail
+JMPN lf_r_test_fail
+JMPNV lf_r_test_fail
+
+LD Y, 1
+lf_r_test_end:
+LD BA, test_lf
+CALL printTestResult
+RET
+lf_r_test_fail:
+LD Y, 0
+JMP lf_r_test_end
+
+
+##############################
+# SF R
+##############################
+sf_r:
+LD X, 0
+sf_r_loop:
+# test values [0x00, 0x0F] by saving them into flags, loading them and then check equality
+# for (byte i = 0; i < 16; ++i)
+#   loadFlags(i);
+#   y = storeFlags(i);
+#   if (i != y) testFail()
+CMP X, 16
+JMPZ sf_r_loop_end
+LF X
+SF Y
+CMP X, Y
+JMPNZ sf_r_test_fail
+ADD X, 1
+JMP sf_r_loop;
+
+sf_r_loop_end:
+LD Y, 1
+sf_r_test_end:
+LD BA, test_sf
+CALL printTestResult
+RET
+sf_r_test_fail:
+LD Y, 0
+JMP sf_r_test_end

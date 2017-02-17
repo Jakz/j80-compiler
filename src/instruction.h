@@ -28,7 +28,20 @@ namespace Assembler
     u16 offset;
     
     DataSegmentEntry() : data(nullptr), length(0), offset(0) { }
-    DataSegmentEntry(const std::string& ascii) { offset = 0x0000; data = reinterpret_cast<u8*>(strdup(ascii.c_str())); length = ascii.length(); }
+    DataSegmentEntry(const std::string& ascii, bool includeNul) {
+      offset = 0x0000;
+      if (!includeNul)
+      {
+        data = reinterpret_cast<u8*>(strdup(ascii.c_str()));
+        length = ascii.length();
+      }
+      else
+      {
+        data = new u8[ascii.length()+1];
+        strcpy((char*)data, ascii.c_str());
+        length = ascii.length() + 1;
+      }
+    }
     DataSegmentEntry(u16 size) { offset = 0x0000; data = new u8[size](); length = size; }
     ~DataSegmentEntry() { /* TODO: can't release because it's copy constructed by STL*/ }
   };
