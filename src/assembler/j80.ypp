@@ -174,9 +174,9 @@ instruction:
 | RSH REG16 { assembler.add(new InstructionLD_LSH_RSH($2, $2, ALU_RSH16, false)); }
 
 | SEXT REG8 {
-  if ($2 != REG_A || $2 != REG_D || $2 != REG_F || $2 != REG_X)
+  if ($2 != REG_A && $2 != REG_D && $2 != REG_F && $2 != REG_Y)
   {
-    error(@2, "SEXT instruction can be executed only on lower regs (A, D, F or X)"); YYERROR;
+    error(@2, fmt::sprintf("SEXT instruction can be executed only on lower regs (A, D, F or Y), %s is not valid.", Opcodes::reg8($2))); YYERROR;
   }
 
   assembler.add(new InstructionSEXT($2));
