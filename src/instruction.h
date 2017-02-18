@@ -228,6 +228,29 @@ namespace Assembler
   
   using Value8 = Value<u8>;
   using Value16 = Value<u16>;
+  
+  class InstructionLD_LSH_RSH : public Instruction
+  {
+  private:
+    Reg dst;
+    Reg src;
+    AluOp alu;
+    
+  public:
+    InstructionLD_LSH_RSH(Reg dst, Reg src, AluOp alu, bool extended) : Instruction(LENGTH_2_BYTES),
+      dst(dst), src(src), alu(static_cast<AluOp>(alu | (extended ? 0b1 : 0)))
+    { }
+    
+    std::string mnemonic() const override;
+    
+    /* 10000RRR SSSAAAAA */
+    void assemble(u8* dest) const override
+    {
+      dest[0] = (OPCODE_LD_RSH_LSH << 3) | dst;
+      dest[1] = alu | (src << 5);
+    }
+    
+  };
 
   class InstructionLD_NN : public Instruction
   {
@@ -238,64 +261,10 @@ namespace Assembler
     
   public:
     InstructionLD_NN(Reg dst, Value8 value) : Instruction(LENGTH_3_BYTES), dst(dst), value(value) { }
-
-    std::string mnemonic() const override { return fmt::sprintf("LD %s, %.2Xh", Opcodes::reg8(dst), value.value); }
     
-    void assemble(u8* dest) const override
-    {
-      dest[0] = (OPCODE_LD_NN << 3) | dst;
-      dest[1] = ALU_TRANSFER_B8;
-      dest[2] = value.value;
-    }
-    
-    const std::string& getLabel() { return value.label; }
-    bool mustBeSolved() { return value.type != Value8::Type::VALUE; }
-    void solve(u8 value) { this->value.value = value; this->value.type = Value8::Type::VALUE; }
-    
+    std::string mnemonic() const override;
+    void assemble(u8* dest) const override;
     Result solve(const Environment& env) override;
-  };
-  
-  class InstructionSingleReg : public Instruction
-  {
-  protected:
-    Opcode opcode;
-    Reg reg;
-
-    InstructionSingleReg(Opcode opcode, Reg reg) : Instruction(LENGTH_1_BYTES), opcode(opcode), reg(reg) { }
-    
-  public:
-    void assemble(u8* dest) const override
-    {
-      dest[0] = (opcode << 3) | reg;
-    }
-
-  };
-  
-  class InstructionSEXT : public InstructionSingleReg
-  {
-  private:
-
-  public:
-    InstructionSEXT(Reg reg) : InstructionSingleReg(OPCODE_SEXT, reg) { }
-    std::string mnemonic() const { return fmt::sprintf("SEXT %s", Opcodes::reg8(reg)); }
-  };
-  
-  class InstructionPUSH16 : public InstructionSingleReg
-  {
-  private:
-    
-  public:
-    InstructionPUSH16(Reg reg) : InstructionSingleReg(OPCODE_PUSH16, reg) { }
-    std::string mnemonic() const { return fmt::sprintf("PUSH %s", Opcodes::reg16(reg)); }
-  };
-  
-  class InstructionPOP16 : public InstructionSingleReg
-  {
-  private:
-    
-  public:
-    InstructionPOP16(Reg reg) : InstructionSingleReg(OPCODE_POP16, reg) { }
-    std::string mnemonic() const { return fmt::sprintf("POP %s", Opcodes::reg16(reg)); }
   };
   
   class InstructionLD_NNNN : public Instruction
@@ -327,13 +296,56 @@ namespace Assembler
     void solve(u16 value) { this->value.value = value; this->value.type = Value16::Type::VALUE; }
   };
   
+  class InstructionSingleReg : public Instruction
+  {
+  protected:
+    Opcode opcode;
+    Reg reg;
+    
+    InstructionSingleReg(Opcode opcode, Reg reg) : Instruction(LENGTH_1_BYTES), opcode(opcode), reg(reg) { }
+    
+  public:
+    void assemble(u8* dest) const override
+    {
+      dest[0] = (opcode << 3) | reg;
+    }
+    
+  };
+  
+  class InstructionSEXT : public InstructionSingleReg
+  {
+  private:
+    
+  public:
+    InstructionSEXT(Reg reg) : InstructionSingleReg(OPCODE_SEXT, reg) { }
+    std::string mnemonic() const { return fmt::sprintf("SEXT %s", Opcodes::reg8(reg)); }
+  };
+  
+  class InstructionPUSH16 : public InstructionSingleReg
+  {
+  private:
+    
+  public:
+    InstructionPUSH16(Reg reg) : InstructionSingleReg(OPCODE_PUSH16, reg) { }
+    std::string mnemonic() const { return fmt::sprintf("PUSH %s", Opcodes::reg16(reg)); }
+  };
+  
+  class InstructionPOP16 : public InstructionSingleReg
+  {
+  private:
+    
+  public:
+    InstructionPOP16(Reg reg) : InstructionSingleReg(OPCODE_POP16, reg) { }
+    std::string mnemonic() const { return fmt::sprintf("POP %s", Opcodes::reg16(reg)); }
+  };
+  
   class InstructionAddressable : public Instruction
   {
   protected:
     Address address;
+    InstructionAddressable(InstructionLength length, Address address) : Instruction(length), address(address) { }
     
   public:
-    InstructionAddressable(InstructionLength length, Address address) : Instruction(length), address(address) { }
     
     const InterruptIndex getIntIndex() const { return address.interrupt; }
     const std::string& getLabel() const { return address.label; }

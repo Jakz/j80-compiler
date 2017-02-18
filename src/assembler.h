@@ -112,15 +112,6 @@ class J80Assembler
       position += i->getLength();
       instructions.push_back(std::unique_ptr<Instruction>(i));
     }
-  
-    void assembleLD_RSH_LSH(Reg dst, Reg src, AluOp opcode, bool extended)
-    {
-      Instruction* i = preamble(LENGTH_2_BYTES);
-      if (extended) opcode = static_cast<AluOp>(opcode | 0b1);
-      i->data[0] = (OPCODE_LD_RSH_LSH << 3) | dst;
-      i->data[1] = (src << 5) | opcode;
-      postamble(i);
-    }
 
     void assembleLD_PTR_NNNN(Reg dst, u16 address, const std::string& label = std::string(), s8 offset = 0)
     {

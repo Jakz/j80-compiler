@@ -128,10 +128,10 @@ instructions:
 
 instruction:
   
-  LD REG8 COMMA REG8 { assembler.assembleLD_RSH_LSH($2, $4, ALU_TRANSFER_A8, false); }
+  LD REG8 COMMA REG8 { assembler.add(new InstructionLD_LSH_RSH($2, $4, ALU_TRANSFER_A8, false)); }
 | LD REG8 COMMA value8 { assembler.add(new InstructionLD_NN($2, $4)); }
 
-| LD REG16 COMMA REG16 { assembler.assembleLD_RSH_LSH($2, $4, ALU_TRANSFER_A16, true); }
+| LD REG16 COMMA REG16 { assembler.add(new InstructionLD_LSH_RSH($2, $4, ALU_TRANSFER_A16, true)); }
 
 | LD REG8 COMMA LBRACK U16 RBRACK { assembler.assembleLD_PTR_NNNN($2, $5); }
 | LD REG8 COMMA LBRACK STRING RBRACK { assembler.assembleLD_PTR_NNNN($2, 0, $5, 0); }
@@ -164,14 +164,14 @@ instruction:
 | ALU REG8 COMMA REG8 COMMA U16 { assembler.assembleALU_NN($2, $4, $1, $6); }
 | ALU REG16 COMMA REG16 COMMA U16 { assembler.assembleALU_NNNN($2, $4, $1, $6); }
 
-| LSH REG8 COMMA REG8 { assembler.assembleLD_RSH_LSH($2, $4, ALU_LSH8, false); }
-| RSH REG8 COMMA REG8 { assembler.assembleLD_RSH_LSH((Reg)$2, $4, ALU_RSH8, false); }
-| LSH REG8 { assembler.assembleLD_RSH_LSH((Reg)$2, $2, ALU_LSH8, false); }
-| RSH REG8 { assembler.assembleLD_RSH_LSH((Reg)$2, $2, ALU_RSH8, false); }
-| LSH REG16 COMMA REG16 { assembler.assembleLD_RSH_LSH($2, (Reg)$4, ALU_LSH16, false); }
-| RSH REG16 COMMA REG16 { assembler.assembleLD_RSH_LSH($2, (Reg)$4, ALU_RSH16, false); }
-| LSH REG16 { assembler.assembleLD_RSH_LSH($2, $2, ALU_LSH16, false); }
-| RSH REG16 { assembler.assembleLD_RSH_LSH($2, $2, ALU_RSH16, false); }
+| LSH REG8 COMMA REG8 { assembler.add(new InstructionLD_LSH_RSH($2, $4, ALU_LSH8, false)); }
+| RSH REG8 COMMA REG8 { assembler.add(new InstructionLD_LSH_RSH((Reg)$2, $4, ALU_RSH8, false)); }
+| LSH REG8 { assembler.add(new InstructionLD_LSH_RSH((Reg)$2, $2, ALU_LSH8, false)); }
+| RSH REG8 { assembler.add(new InstructionLD_LSH_RSH((Reg)$2, $2, ALU_RSH8, false)); }
+| LSH REG16 COMMA REG16 { assembler.add(new InstructionLD_LSH_RSH($2, (Reg)$4, ALU_LSH16, false)); }
+| RSH REG16 COMMA REG16 { assembler.add(new InstructionLD_LSH_RSH($2, (Reg)$4, ALU_RSH16, false)); }
+| LSH REG16 { assembler.add(new InstructionLD_LSH_RSH($2, $2, ALU_LSH16, false)); }
+| RSH REG16 { assembler.add(new InstructionLD_LSH_RSH($2, $2, ALU_RSH16, false)); }
 
 | SEXT REG8 {
   if ($2 != REG_A || $2 != REG_D || $2 != REG_F || $2 != REG_X)
