@@ -3,6 +3,7 @@
 
 #include <unordered_map>
 #include <vector>
+#include <list>
 
 #include "format.h"
 #include "opcodes.h"
@@ -42,6 +43,21 @@ namespace Assembler
         length = ascii.length() + 1;
       }
     }
+    
+    DataSegmentEntry(const std::list<u8>& data) : data(new u8[data.size()]), length(data.size()), offset(0)
+    {
+      std::copy(data.begin(), data.end(), this->data);
+    }
+    
+    DataSegmentEntry(const std::list<u16>& data) : data(new u8[data.size()*2]), length(data.size()*2), offset(0)
+    {
+      size_t index = 0;
+      std::for_each(data.begin(), data.end(), [&index, this] (u16 value) {
+        this->data[index++] = value & 0xFF;
+        this->data[index++] = (value & 0xFF00) >> 8;
+      });
+    }
+    
     DataSegmentEntry(u16 size) { offset = 0x0000; data = new u8[size](); length = size; }
     ~DataSegmentEntry() { /* TODO: can't release because it's copy constructed by STL*/ }
   };

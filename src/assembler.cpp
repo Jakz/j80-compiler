@@ -56,7 +56,7 @@ bool J80Assembler::parse(const std::string &filename)
 
   file = filename;
   
-  bool shouldGenerateTrace = true;
+  bool shouldGenerateTrace = false;
   
   ifstream is;
   is.open(filename);

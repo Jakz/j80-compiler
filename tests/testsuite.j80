@@ -4,6 +4,9 @@
 .asciiz fail "fail"
 .asciiz test_sf "SF R"
 .asciiz test_lf "LF R"
+.asciiz test_sext "SEXT R"
+.asciiz test_cmp_r_s "CMP R, S"
+
 .asciiz test_add_nn "ADD NN"
 .asciiz test_add_nnnn "ADD NNNN"
 .asciiz test_ld_nn "LD NN"
@@ -16,6 +19,8 @@
 
 LD SP, 8000h
 
+CALL cmp_r_s
+CALL sext_r
 CALL sf_r
 CALL lf_r
 CALL add_nn
@@ -630,3 +635,63 @@ RET
 sf_r_test_fail:
 LD Y, 0
 JMP sf_r_test_end
+
+##############################
+# SEXT R
+##############################
+sext_r:
+
+LD A, -1
+SEXT A
+CMP BA, -1
+LD C, 0
+JMPNZ sext_r_test_fail
+LD D, 0
+SEXT D
+CMP CD, 0
+LD C, 1
+JMPNZ sext_r_test_fail
+LD F, 50
+SEXT F
+CMP EF, 50
+LD C, 2
+JMPNZ sext_r_test_fail
+LD Y, -30
+SEXT Y
+CMP XY, -30
+LD C, 3
+JMPNZ sext_r_test_fail
+
+LD Y, 1
+sext_r_test_end:
+LD BA, test_sext
+CALL printTestResult
+RET
+sext_r_test_fail:
+LD Y, 0
+JMP sext_r_test_end
+
+##############################
+# CMP R, S
+##############################
+cmp_r_s:
+# 1 <=> 1 only zero set
+LD A, 1
+LD B, 1
+CMP A, B
+SF D
+CMP D, 0b0010
+LD C, 0
+JMPNZ cmp_r_s_fail
+
+LD Y, 1
+cmp_r_s_end:
+LD BA, test_cmp_r_s
+CALL printTestResult
+RET
+cmp_r_s_fail:
+LD Y, 0
+JMP cmp_r_s_end
+
+
+

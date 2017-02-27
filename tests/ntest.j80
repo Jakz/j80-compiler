@@ -1,3 +1,7 @@
+.bytes test [-10, 10h, 20h, 1, 2, 3, 4, 50h, 5, 6, 7]
+.words test2 [1234h, 5678h]
+.words test3 [FEDCh]
+
 .ascii hello "Hello"
 main:
 LD BA, hello

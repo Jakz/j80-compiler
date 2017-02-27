@@ -101,7 +101,8 @@
   DATA_ASCIIZ ".asciiz"
   DATA_CONST ".const"
   DATA_RESERVE ".reserve"
-  DATA_RAW ".raw"
+  DATA_BYTES ".bytes"
+  DATA_WORDS ".words"
   DATA_LENGTH "LENGTH"
   ENTRY ".entry"
   INTERRUPT ".interrupt"
@@ -109,10 +110,17 @@
 ;
 
 %type<Value8> value8
+%type<Value16> value16
+%type<std::list<u8>> u8_array
+%type<std::list<u16>> u16_array
 
 
 %printer { yyoutput << $$; } <*>
 %printer { yyoutput << ""; } <Value8>
+%printer { yyoutput << ""; } <std::list<u8>>
+%printer { yyoutput << ""; } <Value16>
+%printer { yyoutput << ""; } <std::list<u16>>
+
 
 %%
 
@@ -209,10 +217,14 @@ instruction:
 | CMP REG8 { assembler.assembleCMP_NN($2, 0); }
 | CMP REG16 { assembler.assembleCMP_NNNN($2, 0); }
 
-| DATA_ASCII STRING LITERAL { assembler.addAsciiData($2,$3,false); }
-| DATA_ASCIIZ STRING LITERAL { assembler.addAsciiData($2,$3,true); }
-| DATA_RESERVE STRING U16 { assembler.addEmptyData($2,$3); }
 | DATA_CONST STRING U16 { assembler.addConstValue($2, $3); }
+
+| DATA_ASCII STRING LITERAL { assembler.addData($2, DataSegmentEntry($3,false)); }
+| DATA_ASCIIZ STRING LITERAL { assembler.addData($2, DataSegmentEntry($3,false)); }
+| DATA_RESERVE STRING U16 { assembler.addData($2, DataSegmentEntry($3)); }
+| DATA_BYTES STRING LBRACK u8_array RBRACK { assembler.addData($2, $4); }
+| DATA_WORDS STRING LBRACK u16_array RBRACK { assembler.addData($2, $4); }
+
 
 | ENTRY U16 { if (!assembler.setEntryPoint($2)) { error(@1, "entry point specified more than once"); YYERROR; } }
 
@@ -256,6 +268,15 @@ U16 {
 }
 | DATA_LENGTH LPAREN STRING RPAREN { $$ = Value8(Value8::Type::DATA_LENGTH, $3); }
 | STRING { $$ = Value8(Value8::Type::CONST, $1); }
+
+u8_array:
+U16 { $$ = std::list<u8>(); $$.push_front($1); }
+| u8_array COMMA U16 { $1.push_back($3); $$ = $1; }
+
+u16_array:
+U16 { $$ = std::list<u16>(); $$.push_front($1); }
+| u16_array COMMA U16 { $1.push_back($3); $$ = $1; }
+
 
 /*
 label:

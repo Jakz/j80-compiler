@@ -128,7 +128,8 @@
 ".ASCIIZ"|".asciiz" { return Parser::make_DATA_ASCIIZ(loc); }
 ".CONST"|".const" { return Parser::make_DATA_CONST(loc); }
 ".RESERVE"|".reserve" { return Parser::make_DATA_RESERVE(loc); }
-".RAW"|".raw" { return Parser::make_DATA_RAW(loc); }
+".BYTES"|".bytes" { return Parser::make_DATA_BYTES(loc); }
+".WORDS"|".words" { return Parser::make_DATA_WORDS(loc); }
 ".ENTRY"|".entry" { return Parser::make_ENTRY(loc); }
 ".INTERRUPT"|".interrupt" { return Parser::make_INTERRUPT(loc); }
 ".STACKBASE"|".stackbase" { return Parser::make_STACK_BASE(loc); }
