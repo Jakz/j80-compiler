@@ -125,6 +125,10 @@ namespace Assembler
     assembler& assembler;
     data_map& data;
     const_map& consts;
+    u16 dataSegmentBase;
+    
+    Environment(J80Assembler& assemb, data_map& data, const_map& consts, u16 dataSegmentBase) :
+      assembler(assemb), data(data), consts(consts), dataSegmentBase(dataSegmentBase) { }
   };
   
   class Instruction
@@ -217,13 +221,13 @@ namespace Assembler
     std::string label;
     InterruptIndex interrupt;
     
+    Address() : type(ABSOLUTE), address(0) { }
     Address(u16 address) : type(ABSOLUTE), address(address) { }
     Address(const std::string& label) : type(LABEL), label(label) { }
     Address(InterruptIndex interrupt) : type(INTERRUPT), interrupt(interrupt) { }
   };
   
-  template<typename T>
-  struct Value
+  struct Value8
   {
     enum Type
     {
@@ -232,18 +236,41 @@ namespace Assembler
       CONST
     } type;
     
-    T value;
+    u8 value;
     std::string label;
     
-    Value() = default;
-    Value(T value) : type(VALUE), value(value) { }
-    Value(Type type, const std::string& label) : type(type), label(label) { }
-    
-    using type_t = T;
+    Value8() = default;
+    Value8(u8 value) : type(VALUE), value(value) { }
+    Value8(Type type, const std::string& label) : type(type), label(label) { }
   };
   
-  using Value8 = Value<u8>;
-  using Value16 = Value<u16>;
+  struct Value16
+  {
+    enum Type
+    {
+      VALUE,
+      DATA_LENGTH,
+      CONST,
+      LABEL_ADDRESS
+    } type;
+    
+    u16 value;
+    std::string label;
+    s8 offset;
+    
+    Value16() = default;
+    Value16(u16 value) : type(VALUE), value(value) { }
+    Value16(Type type, const std::string& label, s8 offset) : type(type), label(label), offset(offset) { }
+    Value16(Type type, const std::string& label) : Value16(type, label, 0) { }
+  };
+
+  
+#pragma mark LD/LSH/RSH R, S, Q
+  /*************
+   * LD R, S, Q
+   * LSH R, S, Q
+   * RSH R, S, Q
+   *************/
   
   class InstructionLD_LSH_RSH : public Instruction
   {
@@ -268,6 +295,8 @@ namespace Assembler
     
   };
   
+  
+#pragma mark LD R, NN - CMP R,NN
   /*************
    * LD R, NN
    * CMP R, NN
@@ -287,11 +316,6 @@ namespace Assembler
 
   class InstructionLD_NN : public InstructionXXX_NN
   {
-  private:
-    using dest_t = u8;
-    Reg dst;
-    Value8 value;
-    
   public:
     InstructionLD_NN(Reg dst, Value8 value) : InstructionXXX_NN(dst, value) { }
     
@@ -301,11 +325,6 @@ namespace Assembler
   
   class InstructionCMP_NN : public InstructionXXX_NN
   {
-  private:
-    using dest_t = u8;
-    Reg dst;
-    Value8 value;
-    
   public:
     InstructionCMP_NN(Reg dst, Value8 value) : InstructionXXX_NN(dst, value) { }
     
@@ -313,34 +332,46 @@ namespace Assembler
     void assemble(u8* dest) const override;
   };
   
-  class InstructionLD_NNNN : public Instruction
+  
+#pragma mark LD P, NNNN
+  /*************
+   * LD P, NNNN
+   * CMP P, NNNN
+   *************/
+  class InstructionXXX_NNNN : public Instruction
   {
-  private:
+  protected:
     Reg dst;
     Value16 value;
     
   public:
-    InstructionLD_NNNN(Reg dst, u16 value) : Instruction(LENGTH_3_BYTES), dst(dst), value(Value16(value)) { }
-    InstructionLD_NNNN(Reg dst, const std::string& label) : Instruction(LENGTH_3_BYTES), dst(dst), value(Value16::Type::DATA_LENGTH, label) { }
-    
-    std::string mnemonic() const override {
-      if (value.label.empty())
-        return fmt::sprintf("LD %s, %.4Xh", Opcodes::reg16(dst), value.value);
-      else
-        return fmt::sprintf("LD %s, %.4Xh (%s)", Opcodes::reg16(dst), value.value, value.label.c_str());
-    }
-    
-    void assemble(u8* dest) const override
-    {
-      dest[0] = (OPCODE_LD_NNNN << 3) | dst;
-      dest[1] = (value.value >> 8) & 0xFF;
-      dest[2] = value.value & 0xFF;
-    }
-    
-    const std::string& getLabel() { return value.label; }
-    bool mustBeSolved() { return value.type != Value16::Type::VALUE; }
-    void solve(u16 value) { this->value.value = value; this->value.type = Value16::Type::VALUE; }
+    InstructionXXX_NNNN(InstructionLength length, Reg dst, Value16 value) : Instruction(length), dst(dst), value(value) { }
+    Result solve(const Environment& env) override final;
   };
+  
+  class InstructionLD_NNNN : public InstructionXXX_NNNN
+  {
+  public:
+    InstructionLD_NNNN(Reg dst, Value16 value) : InstructionXXX_NNNN(LENGTH_3_BYTES, dst, value) { }
+    
+    std::string mnemonic() const override;
+    void assemble(u8* dest) const override;
+  };
+  
+  class InstructionCMP_NNNN : public InstructionXXX_NNNN
+  {
+  private:
+    Reg dst;
+    
+  public:
+    InstructionCMP_NNNN(Reg dst, Value16 value) : InstructionXXX_NNNN(LENGTH_4_BYTES, dst, value) { }
+    
+    std::string mnemonic() const override;
+    void assemble(u8* dest) const override;
+  };
+  
+  
+  
   
   class InstructionSingleReg : public Instruction
   {
@@ -406,11 +437,8 @@ namespace Assembler
     JumpCondition condition;
     
   public:
-    InstructionJMP_NNNN(JumpCondition condition, u16 address) : InstructionAddressable(LENGTH_3_BYTES, Address(address)), condition(condition) { }
-    InstructionJMP_NNNN(JumpCondition condition, const std::string& label) : InstructionAddressable(LENGTH_3_BYTES, Address(label)), condition(condition) { }
-    InstructionJMP_NNNN(JumpCondition condition, InterruptIndex interrupt) : InstructionAddressable(LENGTH_3_BYTES, Address(interrupt)), condition(condition) { }
+    InstructionJMP_NNNN(JumpCondition condition, Address address) : InstructionAddressable(LENGTH_3_BYTES, address), condition(condition) { }
 
-    
     std::string mnemonic() const override {
       if (address.label.empty())
         return fmt::sprintf("JMP%s %.4Xh", Opcodes::condName(condition), address.address);
@@ -432,8 +460,7 @@ namespace Assembler
     JumpCondition condition;
     
   public:
-    InstructionCALL_NNNN(JumpCondition condition, u16 address) : InstructionAddressable(LENGTH_3_BYTES, Address(address)), condition(condition) { }
-    InstructionCALL_NNNN(JumpCondition condition, const std::string& label) : InstructionAddressable(LENGTH_3_BYTES, Address(label)), condition(condition) { }
+    InstructionCALL_NNNN(JumpCondition condition, Address address) : InstructionAddressable(LENGTH_3_BYTES, address), condition(condition) { }
     
     std::string mnemonic() const override {
       if (address.label.empty())

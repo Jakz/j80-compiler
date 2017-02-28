@@ -266,7 +266,7 @@ void J80Assembler::prepareSource()
     for (int i = 0; i < INTERRUPT_VECTOR_BASE - 3; ++i)
       instructions.push_front(unique_ptr<Instruction>(new InstructionNOP()));
     
-    instructions.push_front(unique_ptr<Instruction>(new InstructionJMP_NNNN(COND_UNCOND, "main")));
+    instructions.push_front(unique_ptr<Instruction>(new InstructionJMP_NNNN(COND_UNCOND, Address("main"))));
   }
 }
 
@@ -352,7 +352,7 @@ Result J80Assembler::solveDataReferences()
 
   log(Log::INFO, true, "Solving data references. Base data segment offset: %04Xh.", base);
   
-  Environment env{ *this, data, consts };
+  Environment env{ *this, data, consts, base };
   
   for (const auto& i : instructions)
   {
@@ -360,19 +360,6 @@ Result J80Assembler::solveDataReferences()
     
     if (!result)
       return result;
-
-    InstructionLD_NNNN* vi16 = dynamic_cast<InstructionLD_NNNN*>(i.get());
-    
-    if (vi16 && vi16->mustBeSolved())
-    {
-      std::unordered_map<std::string, DataSegmentEntry>::const_iterator it = data.map.find(vi16->getLabel());
-
-      if (it != data.map.end())
-      {
-        vi16->solve(base + it->second.offset);
-        log(Log::INFO, true, "  > Data '%s' at %.4Xh", vi16->getLabel().c_str(), base + it->second.offset);
-      }
-    }
   }
   
   return Result();

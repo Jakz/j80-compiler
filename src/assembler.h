@@ -236,16 +236,6 @@ namespace Assembler
       i->data[1] = (src1 << 5) | opcode;
       postamble(i);
     }
-
-    void assembleCMP_NNNN(Reg dst, u16 value)
-    {
-      Instruction *i = preamble(LENGTH_4_BYTES);
-      i->data[0] = (OPCODE_CMP_NNNN << 3) | dst;
-      i->data[1] = ALU_SUB16;
-      i->data[2] = value & 0xFF;
-      i->data[3] = (value >> 8) & 0xFF;
-      postamble(i);
-    }
     
     void addData(const std::string& label, const DataSegmentEntry& entry)
     {

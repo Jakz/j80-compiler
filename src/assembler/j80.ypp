@@ -58,8 +58,7 @@
   LPAREN "("
   RPAREN ")"
   QUOTE "\""
-  RBRACK "["
-  LBRACK "]"
+  RBRACK "[" LBRACK "]"
 ;
 
 %token <std::string>
@@ -113,14 +112,15 @@
 
 %type<Value8> value8
 %type<Value16> value16
+%type<Address> address
 %type<std::list<u8>> u8_array
 %type<std::list<u16>> u16_array
 
-
 %printer { yyoutput << $$; } <*>
+%printer { yyoutput << ""; } <Address>
 %printer { yyoutput << ""; } <Value8>
-%printer { yyoutput << ""; } <std::list<u8>>
 %printer { yyoutput << ""; } <Value16>
+%printer { yyoutput << ""; } <std::list<u8>>
 %printer { yyoutput << ""; } <std::list<u16>>
 
 
@@ -150,9 +150,7 @@ instruction:
 | LD REG8 COMMA LBRACK REG16 U16 RBRACK { assembler.assembleLD_PTR_PP($2, $5, (s8)$6); }
 | LD REG8 COMMA LBRACK REG16 RBRACK { assembler.assembleLD_PTR_PP($2, $5, 0); }
 
-| LD REG16 COMMA U16 { assembler.add(new InstructionLD_NNNN($2, $4)); }
-| LD REG16 COMMA STRING { assembler.add(new InstructionLD_NNNN($2, $4)); }
-| LD REG16 COMMA DATA_LENGTH LPAREN STRING RPAREN { assembler.add(new InstructionLD_NNNN($2, $6)); }
+| LD REG16 COMMA value16 { assembler.add(new InstructionLD_NNNN($2, $4)); }
 
 | ST LBRACK U16 RBRACK COMMA REG8 { assembler.assembleSD_PTR_NNNN($6, $3); }
 | ST LBRACK STRING RBRACK COMMA REG8 { assembler.assembleSD_PTR_NNNN($6, 0, $3, 0); }
@@ -192,11 +190,9 @@ instruction:
   assembler.add(new InstructionSEXT($2));
 }
 
-| JMP STRING { assembler.add(new InstructionJMP_NNNN($1, $2)); }
-| JMP U16 { assembler.add(new InstructionJMP_NNNN($1, $2)); }
+| JMP address { assembler.add(new InstructionJMP_NNNN($1, $2)); }
 | JMP REG16 { assembler.assembleJMP_PP($1, (Reg)$2); }
-| CALL STRING { assembler.add(new InstructionCALL_NNNN($1, $2)); }
-| CALL U16 { assembler.add(new InstructionCALL_NNNN($1, $2)); }
+| CALL address { assembler.add(new InstructionCALL_NNNN($1, $2)); }
 | RET { assembler.add(new InstructionRET($1)); }
 
 | PUSH REG8 { assembler.assembleShortWithReg(OPCODE_PUSH, $2); }
@@ -214,18 +210,20 @@ instruction:
 
 /* CMP 8 bit */
 | CMP REG8 COMMA REG8 { assembler.assembleCMP_REG($2, $4, false); }
+| CMP REG8 { assembler.add(new InstructionCMP_NN($2, Value8(0))); }
+
 | CMP REG8 COMMA value8 { assembler.add(new InstructionCMP_NN($2, $4)); }
-| CMP REG8 { assembler.add(new InstructionCMP_NN($2, 0)); }
 
 /* CMP 16 bit */
+| CMP REG16 COMMA value16 { assembler.add(new InstructionCMP_NNNN($2, $4)); }
+| CMP REG16 { assembler.add(new InstructionCMP_NNNN($2, Value16(0))); }
 | CMP REG16 COMMA REG16 { assembler.assembleCMP_REG($2, $4, true); }
-| CMP REG16 COMMA U16 { assembler.assembleCMP_NNNN($2, $4); }
-| CMP REG16 { assembler.assembleCMP_NNNN($2, 0); }
+
 
 | DATA_CONST STRING U16 { assembler.addConstValue($2, $3); }
 
-| DATA_ASCII STRING LITERAL { assembler.addData($2, DataSegmentEntry($3,false)); }
-| DATA_ASCIIZ STRING LITERAL { assembler.addData($2, DataSegmentEntry($3,false)); }
+| DATA_ASCII STRING LITERAL { assembler.addData($2, DataSegmentEntry($3, false)); }
+| DATA_ASCIIZ STRING LITERAL { assembler.addData($2, DataSegmentEntry($3, true)); }
 | DATA_RESERVE STRING U16 { assembler.addData($2, DataSegmentEntry($3)); }
 | DATA_BYTES STRING LBRACK u8_array RBRACK { assembler.addData($2, $4); }
 | DATA_WORDS STRING LBRACK u16_array RBRACK { assembler.addData($2, $4); }
@@ -263,6 +261,10 @@ instruction:
 
 ;
 
+address:
+U16 { $$ = Address($1); }
+| STRING { $$ = Address($1); }
+
 value8:
 U16 {
   if (!valueFitsType<u8>($1)) {
@@ -273,6 +275,11 @@ U16 {
 }
 | DATA_LENGTH LPAREN STRING RPAREN { $$ = Value8(Value8::Type::DATA_LENGTH, $3); }
 | STRING { $$ = Value8(Value8::Type::CONST, $1); }
+
+value16:
+U16 { $$ = Value16($1); }
+| DATA_LENGTH LPAREN STRING RPAREN { $$ = Value16(Value16::Type::DATA_LENGTH, $3); }
+| STRING { $$ = Value16(Value16::Type::LABEL_ADDRESS, $1); }
 
 u8_array:
 U16 { $$ = std::list<u8>(); $$.push_front($1); }
