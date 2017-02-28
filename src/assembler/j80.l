@@ -29,7 +29,7 @@
 
 
 %{
-  # define YY_USER_ACTION  loc.columns((int)yyleng);
+  #define YY_USER_ACTION  loc.columns((int)yyleng);
 %}
 
 
@@ -153,12 +153,11 @@
 
 [a-zA-Z_][a-zA-Z0-9_]* { return Parser::make_STRING(yytext,loc); }
 
-"#"[^\n]*\n{1,1} { Parser::make_EOL(loc); loc.lines((int)yyleng); }
+"#"[^\n]*\n{1,1} { loc.lines(1); }
 
-
-\n|"\r\n" { Parser::make_EOL(loc); loc.lines((int)yyleng); }
-[ \t] { loc.step(); /* ignore whitespace */ }
-. { assembler.error(loc, "Unrecognized character."); }
+[\n]+ { Parser::make_EOL(loc); loc.lines(yyleng); }
+[ \t] { /* ignore whitespace */ }
+. { assembler.error(loc, fmt::sprintf("Unrecognized character: %s", yytext)); }
 
 <<EOF>> { return yyterminate(); }
 

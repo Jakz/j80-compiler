@@ -11,7 +11,7 @@
 
 #include "assembler/j80lexer.h"
 #include "assembler/j80parser.hpp"
-#include "assembler/location.hh"
+#include "assembler/location.h"
 
 #include "format.h"
 
@@ -236,16 +236,7 @@ namespace Assembler
       i->data[1] = (src1 << 5) | opcode;
       postamble(i);
     }
-    
-    void assembleCMP_NN(Reg dst, u8 value)
-    {
-      Instruction *i = preamble(LENGTH_3_BYTES);
-      i->data[0] = (OPCODE_CMP_NN << 3) | dst;
-      i->data[1] = ALU_SUB8;
-      i->data[2] = value;
-      postamble(i);
-    }
-    
+
     void assembleCMP_NNNN(Reg dst, u16 value)
     {
       Instruction *i = preamble(LENGTH_4_BYTES);

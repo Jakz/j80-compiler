@@ -12,6 +12,7 @@
 %code requires {
   #include "opcodes.h"
   #include "instruction.h"
+  #include "location.h"
 
   namespace Assembler
   {
@@ -26,6 +27,7 @@
 %parse-param { Assembler::J80Assembler &assembler }
 
 %locations
+%define api.location.type { Assembler::location }
 %initial-action
 {
   @$.begin.filename = @$.end.filename = &assembler.file;
@@ -210,11 +212,14 @@ instruction:
 | DI { assembler.assembleShort(OPCODE_DI); }
 | NOP { assembler.add(new InstructionNOP()); }
 
+/* CMP 8 bit */
 | CMP REG8 COMMA REG8 { assembler.assembleCMP_REG($2, $4, false); }
+| CMP REG8 COMMA value8 { assembler.add(new InstructionCMP_NN($2, $4)); }
+| CMP REG8 { assembler.add(new InstructionCMP_NN($2, 0)); }
+
+/* CMP 16 bit */
 | CMP REG16 COMMA REG16 { assembler.assembleCMP_REG($2, $4, true); }
-| CMP REG8 COMMA U16 { assembler.assembleCMP_NN($2, (u8)$4); }
 | CMP REG16 COMMA U16 { assembler.assembleCMP_NNNN($2, $4); }
-| CMP REG8 { assembler.assembleCMP_NN($2, 0); }
 | CMP REG16 { assembler.assembleCMP_NNNN($2, 0); }
 
 | DATA_CONST STRING U16 { assembler.addConstValue($2, $3); }

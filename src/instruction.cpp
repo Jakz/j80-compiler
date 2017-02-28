@@ -86,16 +86,9 @@ std::string InstructionLD_LSH_RSH::mnemonic() const
 
 
 /****************************
- * LD R, NN
+ * XXX R, NN
  ****************************/
-void InstructionLD_NN::assemble(u8* dest) const
-{
-  dest[0] = (OPCODE_LD_NN << 3) | dst;
-  dest[1] = ALU_TRANSFER_B8;
-  dest[2] = value.value;
-}
-
-Result InstructionLD_NN::solve(const Environment& env)
+Result InstructionXXX_NN::solve(const Environment& env)
 {
   switch (value.type)
   {
@@ -133,11 +126,36 @@ Result InstructionLD_NN::solve(const Environment& env)
       break;
     }
   }
-      
+  
   return Result();
+}
+
+/****************************
+ * LD R, NN
+ ****************************/
+void InstructionLD_NN::assemble(u8* dest) const
+{
+  dest[0] = (OPCODE_LD_NN << 3) | dst;
+  dest[1] = ALU_TRANSFER_B8;
+  dest[2] = value.value;
 }
 
 std::string InstructionLD_NN::mnemonic() const
 {
   return fmt::sprintf("%s %s, %.2Xh", m[N_LD], Opcodes::reg8(dst), value.value);
+}
+
+/****************************
+ * CMP R, NN
+ ****************************/
+void InstructionCMP_NN::assemble(u8 *dest) const
+{
+  dest[0] = (OPCODE_CMP_NN << 3) | dst;
+  dest[1] = ALU_SUB8;
+  dest[2] = value.value;
+}
+
+std::string InstructionCMP_NN::mnemonic() const
+{
+  return fmt::sprintf("%s %s, %.2Xh", m[N_CMP], Opcodes::reg8(dst), value.value);
 }

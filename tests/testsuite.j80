@@ -508,7 +508,7 @@ LD XY, 1000
 ADD XY, 500
 LD C, 0
 JMPC add_nnnn_test_fail
-CMP X, 1500
+CMP XY, 1500
 JMPNZ add_nnnn_test_fail
 
 # x = 40000, x += 40000, assert(carry && x == 0x2C)
@@ -624,7 +624,7 @@ SF Y
 CMP X, Y
 JMPNZ sf_r_test_fail
 ADD X, 1
-JMP sf_r_loop;
+JMP sf_r_loop
 
 sf_r_loop_end:
 LD Y, 1
@@ -674,16 +674,29 @@ JMP sext_r_test_end
 ##############################
 # CMP R, S
 ##############################
+.bytes cmp_r_s_operand_a [ 1 ]
+.bytes cmp_r_s_operand_b [ 1 ]
+.bytes cmp_r_s_expected_flags [ 0b0010 ]
+
 cmp_r_s:
-# 1 <=> 1 only zero set
-LD A, 1
-LD B, 1
-CMP A, B
-SF D
-CMP D, 0b0010
 LD C, 0
+CMP C, length(cmp_r_operand_a)
+JMPZ cmp_r_s_test_success
+LD IX, cmp_r_operand_a
+ADD IX, C
+LD IY, cmp_r_operand_b
+ADD IY, C
+LD EF, cmp_r_expected_flags
+ADD EF, C
+LD E, EF
+LD A, [IX]
+LD B, [IY]
+CMP A, B
+SF F
+CMP E, F
 JMPNZ cmp_r_s_fail
 
+cmp_r_s_test_success:
 LD Y, 1
 cmp_r_s_end:
 LD BA, test_cmp_r_s

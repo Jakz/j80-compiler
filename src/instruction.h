@@ -267,8 +267,25 @@ namespace Assembler
     }
     
   };
+  
+  /*************
+   * LD R, NN
+   * CMP R, NN
+   *************/
+  class InstructionXXX_NN : public Instruction
+  {
+  protected:
+    using dest_t = u8;
+    Reg dst;
+    Value8 value;
+    
+  public:
+    InstructionXXX_NN(Reg dst, Value8 value) : Instruction(LENGTH_3_BYTES), dst(dst), value(value) { }
+    
+    Result solve(const Environment& env) override final;
+  };
 
-  class InstructionLD_NN : public Instruction
+  class InstructionLD_NN : public InstructionXXX_NN
   {
   private:
     using dest_t = u8;
@@ -276,11 +293,24 @@ namespace Assembler
     Value8 value;
     
   public:
-    InstructionLD_NN(Reg dst, Value8 value) : Instruction(LENGTH_3_BYTES), dst(dst), value(value) { }
+    InstructionLD_NN(Reg dst, Value8 value) : InstructionXXX_NN(dst, value) { }
     
     std::string mnemonic() const override;
     void assemble(u8* dest) const override;
-    Result solve(const Environment& env) override;
+  };
+  
+  class InstructionCMP_NN : public InstructionXXX_NN
+  {
+  private:
+    using dest_t = u8;
+    Reg dst;
+    Value8 value;
+    
+  public:
+    InstructionCMP_NN(Reg dst, Value8 value) : InstructionXXX_NN(dst, value) { }
+    
+    std::string mnemonic() const override;
+    void assemble(u8* dest) const override;
   };
   
   class InstructionLD_NNNN : public Instruction
