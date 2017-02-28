@@ -5,7 +5,7 @@
   #include "assembler.h"
   #include <string>
   
-  typedef Assembler::Parser::token token;
+  using token = Assembler::Parser::token;
   
   #define yyterminate() Assembler::Parser::make_END(loc);
 
@@ -144,9 +144,9 @@
 
 \" { buffer.clear(); BEGIN(sstring); }
 
-<sstring>\" { BEGIN(INITIAL); return Parser::make_LITERAL(buffer.c_str(), loc); }
+<sstring>\" { BEGIN(INITIAL); return Parser::make_LITERAL(buffer, loc); }
 <sstring>\\n { buffer += '\n'; }
-<sstring>\\0 { buffer += '\0'; printf(">>>>>>>> ANTANI!\n"); }
+<sstring>\\0 { buffer += '\0'; }
 <sstring>\\(.|\n) { buffer += yytext[1]; }
 <sstring>[^\\\n\"]+ { char *ptr = yytext; while (*ptr) buffer += *ptr++; }
 
