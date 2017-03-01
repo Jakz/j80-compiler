@@ -17,10 +17,6 @@
 .asciiz test_ld_pp "LD R, [PP+SS]"
 .asciiz test_recursion "Recursion"
 
-.bytes cmp_r_s_operand_a [ 1 ]
-.bytes cmp_r_s_operand_b [ 1 ]
-.bytes cmp_r_s_expected_flags [ 0b0010 ]
-
 LD SP, 8000h
 
 CALL cmp_r_s
@@ -678,6 +674,11 @@ JMP sext_r_test_end
 ##############################
 # CMP R, S
 ##############################
+#FLAGS: 
+.bytes cmp_r_s_operand_a [ 1, 5, 4 ]
+.bytes cmp_r_s_operand_b [ 1, 4, 5 ]
+.bytes cmp_r_s_expected_flags [ 2h, 0h, 1h ]
+
 cmp_r_s:
 LD CD, 0
 CMP CD, length(cmp_r_s_operand_a)

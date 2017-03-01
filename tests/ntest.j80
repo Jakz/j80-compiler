@@ -1,1 +1,7 @@
-CMP BA, 1234h
+.asciiz antani "antani"
+.const foti 1234h
+ST [foti], X
+ST [antani], Y
+ST [antani-1], Y
+ST [5678h], C
+ST [foti+2], X

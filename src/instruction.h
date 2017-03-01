@@ -336,6 +336,7 @@ namespace Assembler
 #pragma mark LD P, NNNN
   /*************
    * LD P, NNNN
+   * ST [NNNN], P
    * CMP P, NNNN
    *************/
   class InstructionXXX_NNNN : public Instruction
@@ -358,11 +359,17 @@ namespace Assembler
     void assemble(u8* dest) const override;
   };
   
+  class InstructionST_NNNN : public InstructionXXX_NNNN
+  {
+  public:
+    InstructionST_NNNN(Reg src, Value16 value) : InstructionXXX_NNNN(LENGTH_3_BYTES, src, value) { }
+    
+    std::string mnemonic() const override;
+    void assemble(u8* dest) const override;
+  };
+  
   class InstructionCMP_NNNN : public InstructionXXX_NNNN
   {
-  private:
-    Reg dst;
-    
   public:
     InstructionCMP_NNNN(Reg dst, Value16 value) : InstructionXXX_NNNN(LENGTH_4_BYTES, dst, value) { }
     

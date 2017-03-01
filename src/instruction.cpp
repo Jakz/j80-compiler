@@ -199,11 +199,22 @@ Result InstructionXXX_NNNN::solve(const Environment &env)
     {
       auto it = env.data.map.find(value.label);
       
-      if (it == env.data.map.end())
-        return Result(fmt::sprintf("reference to missing data label '%s'.", value.label.c_str()));
-      
-      env.assembler.log(Log::INFO, true, "  > Data address referenced '%s' (%04X+%d) value", value.label.c_str(), it->second.offset + env.dataSegmentBase, value.offset);
-      value.value = it->second.offset + env.dataSegmentBase + value.offset;
+      if (it != env.data.map.end())
+      {
+        env.assembler.log(Log::INFO, true, "  > Data address referenced '%s' (%04X+%d) value", value.label.c_str(), it->second.offset + env.dataSegmentBase, value.offset);
+        value.value = it->second.offset + env.dataSegmentBase + value.offset;
+      }
+      else
+      {
+        auto it = env.consts.find(value.label);
+        
+        if (it == env.consts.end())
+          return Result(fmt::sprintf("reference to missing label '%s'.", value.label.c_str()));
+        
+        env.assembler.log(Log::INFO, true, "  > Data const referenced '%s' value", value.label.c_str());
+        value.value = it->second + value.offset;
+      }
+
       break;
     }
   }
@@ -227,6 +238,25 @@ std::string InstructionLD_NNNN::mnemonic() const
 void InstructionLD_NNNN::assemble(u8* dest) const
 {
   dest[0] = (OPCODE_LD_NNNN << 3) | dst;
+  dest[1] = (value.value >> 8) & 0xFF;
+  dest[2] = value.value & 0xFF;
+}
+
+#pragma mark ST [NNNN], R
+/****************************
+ * ST [NNNN], R
+ ****************************/
+std::string InstructionST_NNNN::mnemonic() const
+{
+  if (value.label.empty())
+    return fmt::sprintf("%s %s, %.4Xh", m[N_ST], Opcodes::reg8(dst), value.value);
+  else
+    return fmt::sprintf("%s %s, %.4Xh (%s)", m[N_ST], Opcodes::reg8(dst), value.value, value.label.c_str());
+}
+
+void InstructionST_NNNN::assemble(u8* dest) const
+{
+  dest[0] = (OPCODE_SD_PTR_NNNN << 3) | dst;
   dest[1] = (value.value >> 8) & 0xFF;
   dest[2] = value.value & 0xFF;
 }
