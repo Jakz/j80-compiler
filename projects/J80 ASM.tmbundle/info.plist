@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>contactEmailRot13</key>
+	<string>wnpx@cvkovgf.pbz</string>
+	<key>contactName</key>
+	<string>Jack</string>
+	<key>description</key>
+	<string>J80 Assembly Sytnax Highlighting</string>
+	<key>name</key>
+	<string>J80 ASM</string>
+	<key>uuid</key>
+	<string>D1BE8E03-FE86-4DBF-AB39-B562ECA3CC7A</string>
+</dict>
+</plist>

@@ -251,7 +251,16 @@ instruction:
   
 }
 
-| STRING COLON { assembler.add(new Label($1)); }
+/* label */
+| STRING COLON {
+  if ($1.size() >= 2 && $1[0] == '_' && $1[1] == '_')
+  {
+    error(@1, fmt::sprintf("label '%s': names starting with '__' are reserved named", $1));
+    YYERROR;
+  }
+  
+  assembler.add(new Label($1));
+}
 
 /*  | JUMP STRING EOL { ASSEMBLER->asmJump($2, false); }
   | JUMPC STRING EOL { ASSEMBLER->asmJump($2, true); }*/
