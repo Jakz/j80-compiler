@@ -17,6 +17,8 @@
 .asciiz test_ld_pp "LD R, [PP+SS]"
 .asciiz test_recursion "Recursion"
 
+.const stdout ffffh
+
 LD SP, 8000h
 
 CALL cmp_r_s
@@ -58,9 +60,9 @@ SUB A, 10
 JMP printDecimal4
 printDecimal5:
 ADD Y, '0'
-ST [FFFFh], Y
+ST [stdout], Y
 ADD A, '0'
-ST [FFFFh], A
+ST [stdout], A
 RET
 
 # prints string
@@ -69,7 +71,7 @@ printString:
 LD Y, [BA]
 CMP Y, 0
 RETZ
-ST [FFFFh], Y
+ST [stdout], Y
 ADD BA, 1
 JMP printString
 
@@ -90,30 +92,30 @@ POP BA
 PUSH Y
 CALL printString
 LD X, ':'
-ST [FFFFh], X
+ST [stdout], X
 LD X, ' '
-ST [FFFFh], X
+ST [stdout], X
 POP Y
 CMP Y
 JMPZ printTestResult2
 LD BA, success
 CALL printString
 LD X, 0Ah
-ST [FFFFh], X
+ST [stdout], X
 RET
 printTestResult2:
 LD BA, fail
 CALL printString
 LD X, ' '
-ST [FFFFh], X
+ST [stdout], X
 LD X, '('
-ST [FFFFh], X
+ST [stdout], X
 LD X, C
 CALL printDecimal
 LD X, ')'
-ST [FFFFh], X
+ST [stdout], X
 LD X, 0Ah
-ST [FFFFh], X
+ST [stdout], X
 RET
 
 # test LSH R8
@@ -248,6 +250,7 @@ JMPC lsh_r_test_fail
 
 # sign flag set after shifting 1 to last bit
 LD C, 9
+# TODO
 JMPNN lsh_r_test_fail
 
 #sign flag reset after shifting 0 to last bit

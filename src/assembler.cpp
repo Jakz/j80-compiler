@@ -174,7 +174,8 @@ void J80Assembler::buildDataSegment()
    */
   for (auto &entry : data)
   {
-    memcpy(&dataSegment.data[totalSize], entry->second.data, entry->second.length);
+    const auto* data = entry->second.getData();
+    std::copy(data, data + entry->second.length, &dataSegment.data[totalSize]);
     entry->second.offset = totalSize;
     
     log(Log::VERBOSE_INFO, true, "  > Data %s (%u bytes) at offset %.4Xh", entry->first.c_str(), entry->second.length, entry->second.offset);

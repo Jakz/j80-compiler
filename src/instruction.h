@@ -24,32 +24,52 @@ namespace Assembler
   
   struct DataSegmentEntry
   {
-    u8 *data;
+    std::unique_ptr<u8[]> data;
     u16 length;
     u16 offset;
     
-    DataSegmentEntry() : data(nullptr), length(0), offset(0) { }
-    DataSegmentEntry(const std::string& ascii, bool includeNul) {
-      offset = 0x0000;
-      if (!includeNul)
-      {
-        data = reinterpret_cast<u8*>(strdup(ascii.c_str()));
-        length = ascii.length();
-      }
-      else
-      {
-        data = new u8[ascii.length()+1];
-        strcpy((char*)data, ascii.c_str());
-        length = ascii.length() + 1;
-      }
-    }
-    
-    DataSegmentEntry(const std::list<u8>& data) : data(new u8[data.size()]), length(data.size()), offset(0)
+    DataSegmentEntry(DataSegmentEntry&& other) : data(std::move(other.data)), length(other.length), offset(other.offset)
     {
-      std::copy(data.begin(), data.end(), this->data);
+      
     }
     
-    DataSegmentEntry(const std::list<u16>& data) : data(new u8[data.size()*2]), length(data.size()*2), offset(0)
+    DataSegmentEntry(const DataSegmentEntry& other) : DataSegmentEntry(other.length, other.offset)
+    {
+      std::copy(other.data.get(), other.data.get()+length, data.get());
+    }
+    
+    DataSegmentEntry() : data(nullptr), length(0), offset(0) { }
+    
+    DataSegmentEntry& operator=(const DataSegmentEntry& other)
+    {
+      this->data = std::unique_ptr<u8[]>(new u8[other.length]);
+      this->length = other.length;
+      this->offset = other.offset;
+      std::copy(other.data.get(), other.data.get()+length, data.get());
+      return *this;
+    }
+    
+    DataSegmentEntry& operator=(DataSegmentEntry&& other)
+    {
+      this->data = std::move(other.data);
+      this->length = other.length;
+      this->offset = other.offset;
+      return *this;
+    }
+    
+    DataSegmentEntry(const std::string& ascii, bool includeNul) :
+    DataSegmentEntry(includeNul ? ascii.length()+1 : ascii.length())
+    {
+      data.get()[length] = '\0';
+      std::copy(ascii.begin(), ascii.end(), data.get());
+    }
+    
+    DataSegmentEntry(const std::list<u8>& data) : DataSegmentEntry(data.size())
+    {
+      std::copy(data.begin(), data.end(), this->data.get());
+    }
+    
+    DataSegmentEntry(const std::list<u16>& data) : DataSegmentEntry(data.size()*2)
     {
       size_t index = 0;
       std::for_each(data.begin(), data.end(), [&index, this] (u16 value) {
@@ -58,8 +78,9 @@ namespace Assembler
       });
     }
     
-    DataSegmentEntry(u16 size) { offset = 0x0000; data = new u8[size](); length = size; }
-    ~DataSegmentEntry() { /* TODO: can't release because it's copy constructed by STL*/ }
+    DataSegmentEntry(u16 size, u16 offset = 0) : data(new u8[size]), length(size), offset(offset) { }
+    
+    const u8* getData() const { return this->data.get(); }
   };
   
   class DataSegment
