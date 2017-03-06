@@ -13,7 +13,7 @@
 #include "assembler/j80parser.hpp"
 #include "assembler/location.h"
 
-#include "format.h"
+#include "support/format.h"
 
 #include "instruction.h"
 #include "opcodes.h"
@@ -196,14 +196,7 @@ namespace Assembler
       i->data[0] = (opcode << 3) | reg;
       postamble(i);
     }
-    
-    void assembleRET(JumpCondition cond)
-    {
-      Instruction* i = preamble(LENGTH_1_BYTES);
-      i->data[0] = (OPCODE_RETC << 3) | cond;
-      postamble(i);
-    }
-    
+
     void assembleCMP_REG(Reg dst, Reg src1, bool extended)
     {
       Instruction *i = preamble(LENGTH_2_BYTES);

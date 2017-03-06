@@ -1,53 +1,65 @@
 .PHONY: all clean opt 
   
 TARGET := j80
+TARGET_TEST := j80-test
 
 CC  := clang
 CXX := clang++
+STRIP := strip
 
 # using brew flex/bison which are up to date compared to OSX versions
 BISON := /usr/local/opt/bison/bin/bison
 FLEX := /usr/local/opt/flex/bin/flex
 
+STD_LFAGS := -std=c++11 -stdlib=libc++ -Wno-deprecated-register
+OPT_FLAGS := -O3 -ffast-math
+
 # added to use newest flex/bison
 INCLUDE = -I/usr/local/opt/flex/include
 
-CFLAGS = $(INCLUDE) -g -std=c++11 -stdlib=libc++ -Wno-deprecated-register
-opt: CFLAGS = $(INCLUDE) -O3 -ffast-math -pipe -std=c++11 -stdlib=libc++ -Wno-deprecated-register
-
-CXXFLAGS = $(CFLAGS)
+CXXFLAGS = $(INCLUDE) $(STD_LFAGS)
+opt: CXXFLAGS +=  $(OPT_FLAGS)
 
 # added to use newest flex/bison
 LDFLAGS = -L/usr/local/opt/bison/lib -L/usr/local/opt/flex/lib -lncurses -lpanel
 
-# Find all source files
 BUILD = ./build
 
 BASESRC = ./src
-ASSEMBLER = $(BASESRC)/assembler
-COMPILER = $(BASESRC)/compiler
+ASSEMBLER := $(BASESRC)/assembler
+COMPILER := $(BASESRC)/compiler
 
 
 
-SOURCE = $(BASESRC) $(ASSEMBLER) $(COMPILER) $(BASESRC)/vm
-VPATH = ./src
+SOURCE := $(BASESRC) $(ASSEMBLER) $(COMPILER) $(BASESRC)/vm $(BASESRC)/support
 
 INCLUDE += -I./src
 
-SRC_CPP = $(patsubst $(BASESRC)/%, %, $(foreach dir, $(SOURCE), $(wildcard $(dir)/*.cpp)))
+# Find all source files
+SRC_CPP := $(patsubst $(BASESRC)/%, %, $(foreach dir, $(SOURCE), $(wildcard $(dir)/*.cpp)))
 SRC_CPP += assembler/j80parser.cpp assembler/j80lexer.cpp
 SRC_CPP += compiler/nanocparser.cpp compiler/nanoclexer.cpp
+
+ifeq ($(MAKECMDGOALS), test)
+SRC_CPP := $(filter-out main.cpp, $(SRC_CPP))
+SRC_CPP += support/tests.cpp
+endif
+
 #SRC_C   = $(foreach dir, $(SOURCE), $(wildcard $(dir)/*.c))  # lex.nanocyy.cpp
-OBJ_CPP = $(patsubst %.cpp, %.o, $(SRC_CPP))
+OBJ_CPP := $(patsubst %.cpp, %.o, $(SRC_CPP))
 #OBJ_C   = $(patsubst $(BASESRC)%, $(BUILD)%, $(patsubst %.c, %.o, $(SRC_C)))
-OBJS    =  $(OBJ_CPP) #$(OBJ_C)
+OBJS    :=  $(OBJ_CPP) #$(OBJ_C)
+
+
+
+$(info $$SRC_CPP is [${SRC_CPP}])
 	
 all: $(TARGET)
-	
 opt: $(TARGET)
-	
-#flex --prefix j80yy --header-file=lex.yy.c j80.l
-#bison -pj80yy -d -v j80.ypp
+test: $(TARGET_TEST)
+
+strip: opt
+	$(STRIP) $(TARGET)
 
 $(COMPILER)/nanoclexer.cpp: $(COMPILER)/nanoc.l
 	$(FLEX) -c++ --outfile=$@ $<
@@ -63,13 +75,18 @@ $(ASSEMBLER)/j80parser.cpp: $(ASSEMBLER)/j80.ypp $(ASSEMBLER)/j80lexer.cpp
 
 $(TARGET) : $(addprefix $(BUILD)/, $(OBJS))
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
-	
+		
 $(BUILD)/%.o: $(BASESRC)/%.c | $(ASSEMBLER)/j80parser.cpp $(COMPILER)/nanocparser.cpp
 	$(CC) -x c++ $(CFLAGS) -c $< -o $@
 
 $(BUILD)/%.o: $(BASESRC)/%.cpp | $(ASSEMBLER)/j80parser.cpp $(COMPILER)/nanocparser.cpp
 	@test -d $(@D) || mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+	
+$(TARGET_TEST) : $(addprefix $(BUILD)/, $(OBJS))
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+	
+.phony: all opt strip test
 
 clean:
 	rm -rf $(TARGET)

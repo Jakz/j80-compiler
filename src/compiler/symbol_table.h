@@ -9,9 +9,9 @@
 #include "structs.h"
 #include "compiler_exceptions.h"
 
-#include "../format.h"
-#include "../ast_visitor.h"
-#include "../utils.h"
+#include "support/format.h"
+#include "ast_visitor.h"
+#include "utils.h"
 
 namespace nanoc
 {

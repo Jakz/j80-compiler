@@ -1,6 +1,6 @@
 #include "instruction.h"
 
-#include "ostream.h"
+#include "support/ostream.h"
 
 #include "assembler.h"
 

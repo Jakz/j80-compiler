@@ -5,7 +5,7 @@
 #include <vector>
 #include <list>
 
-#include "format.h"
+#include "support/format.h"
 #include "opcodes.h"
 
 namespace Assembler
@@ -303,6 +303,15 @@ namespace Assembler
     void assemble(u8* dest) const override { dest[0] = (opcode << 3) | reg; }
   };
   
+  template<Opcode OPCODE>
+  class InstructionSimple : public Instruction
+  {
+  public:
+    InstructionSimple() : Instruction(LENGTH_1_BYTES) { }
+    std::string mnemonic() const override final { return fmt::sprintf("%s", Opcodes::opcodeName(OPCODE)); }
+    void assemble(u8* dest) const override { dest[0] = OPCODE << 3; }
+  };
+  
   class Label : public Instruction
   {
   private:
@@ -553,18 +562,15 @@ namespace Assembler
     std::string mnemonic() const override { return fmt::sprintf("%s%s", Opcodes::opcodeName(OPCODE_RETC), Opcodes::condName(condition)); }
     void assemble(u8* dest) const override { dest[0] = (OPCODE_RETC << 3) | condition;; }
   };
-  
-#pragma mark NOP
-  class InstructionNOP : public Instruction
-  {
-  public:
-    InstructionNOP() : Instruction(LENGTH_1_BYTES) { }
-    
-    std::string mnemonic() const override { return Opcodes::opcodeName(OPCODE_NOP); }
-    void assemble(u8* dest) const override { dest[0] = OPCODE_NOP; }
-  };
+
+#pragma mark EI / DI / NOP
+  using InstructionNOP = InstructionSimple<OPCODE_NOP>;
+  using InstructionEI = InstructionSimple<OPCODE_EI>;
+  using InstructionDI = InstructionSimple<OPCODE_DI>;
 }
 
+#pragma Helpers for mnemonics
+      
 inline std::ostream& operator<<(std::ostream& os, Assembler::Value16 value)
 {
   if (value.label.empty())

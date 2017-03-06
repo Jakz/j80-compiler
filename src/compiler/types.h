@@ -1,8 +1,8 @@
 #ifndef __TYPES_H__
 #define __TYPES_H__
 
-#include "../utils.h"
-#include "../format.h"
+#include "utils.h"
+#include "support/format.h"
 
 namespace nanoc {
   class SymbolTable;

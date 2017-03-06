@@ -4,7 +4,7 @@
 #include <string>
 
 #include "location.hh"
-#include "../format.h"
+#include "support/format.h"
 
 namespace nanoc
 {

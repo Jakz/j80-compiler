@@ -6,7 +6,7 @@
 #include <list>
 #include <string>
 
-#include "format.h"
+#include "support/format.h"
 #include "utils.h"
 #include "ast_visitor.h"
 #include "compiler/types.h"

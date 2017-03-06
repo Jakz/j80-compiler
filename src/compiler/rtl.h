@@ -1,10 +1,10 @@
 #ifndef __RTL_H__
 #define __RTL_H__
 
-#include "../utils.h"
-#include "../format.h"
+#include "utils.h"
+#include "support/format.h"
 
-#include "../ast_visitor.h"
+#include "ast_visitor.h"
 
 #include <string>
 #include <vector>

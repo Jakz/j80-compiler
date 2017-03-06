@@ -207,8 +207,8 @@ instruction:
 | LF REG8 { assembler.assembleShortWithReg(OPCODE_LF, $2); }
 | SF REG8 { assembler.assembleShortWithReg(OPCODE_SF, $2); }
 
-| EI { assembler.assembleShort(OPCODE_EI); }
-| DI { assembler.assembleShort(OPCODE_DI); }
+| EI { assembler.add(new InstructionEI()); }
+| DI { assembler.add(new InstructionDI()); }
 | NOP { assembler.add(new InstructionNOP()); }
 
 /* CMP 8 bit */
