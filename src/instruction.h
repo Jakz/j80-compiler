@@ -156,10 +156,10 @@ namespace Assembler
   {
   public:
     u8 data[4];
+    u16 address;
     InstructionLength length;
     
   public:
-    Instruction() : data{0}, length(LENGTH_2_BYTES) { }
     Instruction(InstructionLength length) : data{0}, length(length) { }
     
     virtual const u16 getLength() const { return length; }
@@ -399,7 +399,10 @@ namespace Assembler
   };
   
   
-  
+#pragma mark ALU R, S, Q
+  /*************
+   * ALU R, S, Q
+   *************/
   
   class InstructionSingleReg : public Instruction
   {

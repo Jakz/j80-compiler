@@ -134,18 +134,6 @@ namespace Assembler
       postamble(i);
     }
     
-    void assembleSD_PTR_NNNN(Reg src, u16 address, const std::string& label = std::string(), s8 offset = 0)
-    {
-      if (!label.empty())
-        dataReferences.push_back(std::make_pair(position, DataReference(label,offset)));
-      
-      Instruction* i = preamble(LENGTH_3_BYTES);
-      i->data[0] = (OPCODE_SD_PTR_NNNN << 3) | src;
-      i->data[2] = address & 0xFF;
-      i->data[1] = (address >> 8) & 0xFF;
-      postamble(i);
-    }
-    
     void assembleSD_PTR_PP(Reg src, Reg raddr, s8 value)
     {
       Instruction* i = preamble(LENGTH_3_BYTES);

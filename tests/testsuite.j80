@@ -6,6 +6,8 @@
 .asciiz test_lf "LF R"
 .asciiz test_sext "SEXT R"
 .asciiz test_cmp_r_s "CMP R, S"
+.asciiz test_xor8_r_s "XOR R, S"
+.asciiz test_xor16_p_q "XOR P, Q"
 
 .asciiz test_add_nn "ADD NN"
 .asciiz test_add_nnnn "ADD NNNN"
@@ -21,6 +23,8 @@
 
 LD SP, 8000h
 
+CALL xor_r_s
+CALL xor_p_q
 CALL cmp_r_s
 CALL sext_r
 CALL sf_r
@@ -711,5 +715,25 @@ cmp_r_s_fail:
 LD Y, 0
 JMP cmp_r_s_end
 
+##############################
+# XOR R, S
+##############################
+xor_r_s:
+LD X, 0
+LD Y, 5
+XOR X, Y
+CMP X, Y
+LD Y, 0
+JMPNZ xor_r_s_fail
+
+
+LD Y, 1
+xor_r_s_end:
+LD BA, test_xor8_r_s
+CALL printTestResult
+RET
+xor_r_s_fail:
+LD Y, 0
+JMP xor_r_s_end
 
 

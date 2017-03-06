@@ -15,6 +15,7 @@
 		044B95B31E4C0DF900FA2891 /* libpanel.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 044B95B21E4C0DF900FA2891 /* libpanel.tbd */; };
 		044B95B51E4C0DFF00FA2891 /* libcurses.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 044B95B41E4C0DFF00FA2891 /* libcurses.tbd */; };
 		045A5CCE1A59AF0A0017D759 /* rtl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 045A5CCC1A59AF0A0017D759 /* rtl.cpp */; };
+		0468DA1C1E6B29AC0041CDC5 /* disassembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0468DA1A1E6B29AC0041CDC5 /* disassembler.cpp */; };
 		049875BF1A491AD70006938C /* ast_visitor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 049875BD1A491AD70006938C /* ast_visitor.cpp */; };
 		04AEE8CA1C1F9DBB00A620A4 /* ui.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 04207F611A4C9223005BA78B /* ui.cpp */; };
 		04AFDC9C1A3F86070004F585 /* j80lexer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 04A9453B1A3F7887004FA90F /* j80lexer.cpp */; };
@@ -75,6 +76,8 @@
 		045A5CCC1A59AF0A0017D759 /* rtl.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = rtl.cpp; sourceTree = "<group>"; };
 		045A5CCD1A59AF0A0017D759 /* rtl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rtl.h; sourceTree = "<group>"; };
 		046115E31A5108E700074282 /* enums.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = enums.h; sourceTree = "<group>"; };
+		0468DA1A1E6B29AC0041CDC5 /* disassembler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = disassembler.cpp; sourceTree = "<group>"; };
+		0468DA1B1E6B29AC0041CDC5 /* disassembler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = disassembler.h; sourceTree = "<group>"; };
 		0477E0D71C26BE8B00144D70 /* compiler_exceptions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = compiler_exceptions.h; sourceTree = "<group>"; };
 		048E641C1A4EF707002BFB9F /* types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = types.h; sourceTree = "<group>"; };
 		049875BD1A491AD70006938C /* ast_visitor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ast_visitor.cpp; sourceTree = "<group>"; };
@@ -187,6 +190,8 @@
 				040E828F1A407615004070ED /* compiler */,
 				040E82931A407615004070ED /* compiler.cpp */,
 				040E82941A407615004070ED /* compiler.h */,
+				0468DA1A1E6B29AC0041CDC5 /* disassembler.cpp */,
+				0468DA1B1E6B29AC0041CDC5 /* disassembler.h */,
 				04A945401A3F7887004FA90F /* assembler.cpp */,
 				04A945411A3F7887004FA90F /* assembler.h */,
 				04A945421A3F7887004FA90F /* ast.cpp */,
@@ -295,6 +300,7 @@
 				040E82971A407615004070ED /* compiler.cpp in Sources */,
 				040E829B1A407633004070ED /* nanoclexer.cpp in Sources */,
 				04C4ED9C1E50F1C8004B2309 /* instruction.cpp in Sources */,
+				0468DA1C1E6B29AC0041CDC5 /* disassembler.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
