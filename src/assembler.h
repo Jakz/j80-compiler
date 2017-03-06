@@ -28,6 +28,29 @@ enum class Log
 
 namespace Assembler
 {
+  class DataSegment
+  {
+  public:
+    u16 offset;
+    u8 *data;
+    u16 length;
+    
+    DataSegment() : offset(0), data(nullptr), length(0) { }
+    void alloc(u16 length) { if (data) delete[] data; data = new u8[length](); this->length = length;}
+    ~DataSegment() { delete [] data; }
+  };
+  
+  class CodeSegment
+  {
+  public:
+    u16 offset;
+    u8 *data;
+    u16 length;
+    
+    CodeSegment() : offset(0), data(nullptr), length(0) { }
+    void alloc(u16 length) { delete[] data; data = new u8[length](); this->length = length;}
+    ~CodeSegment() { delete [] data; }
+  };
   
   template<typename T>
   struct Optional
@@ -129,7 +152,7 @@ namespace Assembler
     {
       Instruction* i = preamble(LENGTH_3_BYTES);
       i->data[0] = (OPCODE_LD_PTR_PP << 3) | dst;
-      i->data[1] = (src << 5) | ALU_ADD_NO_FLAGS;
+      i->data[1] = (src << 5) | Alu::ADD_NO_FLAGS;
       i->data[2] = value;
       postamble(i);
     }
@@ -138,30 +161,8 @@ namespace Assembler
     {
       Instruction* i = preamble(LENGTH_3_BYTES);
       i->data[0] = (OPCODE_SD_PTR_PP << 3) | src;
-      i->data[1] = (raddr << 5) | ALU_ADD_NO_FLAGS;
+      i->data[1] = (raddr << 5) | Alu::ADD_NO_FLAGS;
       i->data[2] = value;
-      postamble(i);
-    }
-
-    void assembleALU_NN(Reg dst, Reg src1, AluOp opcode, u8 value)
-    {
-      Instruction* i = preamble(LENGTH_3_BYTES);
-      
-      i->data[0] = (OPCODE_ALU_NN << 3) | dst;
-      i->data[1] = (src1 << 5) | opcode;
-      i->data[2] = value;
-      postamble(i);
-    }
-    
-    void assembleALU_NNNN(Reg dst, Reg src1, AluOp opcode, u16 value)
-    {
-      Instruction* i = preamble(LENGTH_4_BYTES);
-      opcode = static_cast<AluOp>(opcode | 0b1);
-      
-      i->data[0] = (OPCODE_ALU_NNNN << 3) | dst;
-      i->data[1] = (src1 << 5) | opcode;
-      i->data[2] = value & 0xFF;
-      i->data[3] = (value >> 8) & 0xFF;
       postamble(i);
     }
     
@@ -170,7 +171,7 @@ namespace Assembler
       Instruction* i = preamble(LENGTH_2_BYTES);
       
       i->data[0] = (OPCODE_JMPC_PP << 3) | cond;
-      i->data[1] = (reg << 5) | ALU_TRANSFER_B16;
+      i->data[1] = (reg << 5) | Alu::TRANSFER_B16;
       
       postamble(i);
     }
@@ -206,8 +207,8 @@ namespace Assembler
     void assembleCMP_REG(Reg dst, Reg src1, bool extended)
     {
       Instruction *i = preamble(LENGTH_2_BYTES);
-      AluOp opcode = ALU_SUB8;
-      if (extended) opcode = ALU_SUB16;
+      Alu opcode = Alu::SUB8;
+      if (extended) opcode = Alu::SUB16;
       
       i->data[0] = (OPCODE_CMP_REG << 3) | dst;
       i->data[1] = (src1 << 5) | opcode;

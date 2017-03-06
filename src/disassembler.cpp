@@ -29,7 +29,7 @@ public:
   Reg reg2() const { return static_cast<Reg>((data[1] >> REG2_SHIFT) & REG_MASK); }
   Reg reg3() const { return static_cast<Reg>((data[2] >> REG3_SHIFT) & REG_MASK); }
   JumpCondition condition() const { return static_cast<JumpCondition>((data[0] >> CONDITION_SHIFT) & CONDITION_MASK); }
-  AluOp alu() const { return static_cast<AluOp>((data[1] >> ALU_SHIFT) & ALU_MASK); }
+  Alu alu() const { return static_cast<Alu>((data[1] >> ALU_SHIFT) & ALU_MASK); }
   
   u8 uint8() const { return data[2]; }
   s8 sint8() const { return uint8(); }

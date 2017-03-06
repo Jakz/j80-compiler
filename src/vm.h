@@ -84,7 +84,7 @@ class VM
     template <typename W> void adc(const W& op1, const W& op2, W& dest, bool flags = true);
     template <typename W> void sub(const W& op1, const W& op2, W& dest, bool flags = true);
     template <typename W> void sbc(const W& op1, const W& op2, W& dest, bool flags = true);
-    template <typename W> void alu(AluOp op, const W& op1, const W& op2, W& dest, bool flags = true);
+    template <typename W> void alu(Alu op, const W& op1, const W& op2, W& dest, bool flags = true);
     template <typename W> void aluFlagsArithmetic(const W& op1, const W& op2, const W& dest);
   
     template <typename W> bool isNegative(W& value) { return (value & (1 << (sizeof(W)*8-1))) != 0; }

@@ -5,28 +5,28 @@
 u8& VM::reg8(Reg r)
 {
   switch (r) {
-    case REG_A: return regs.A;
-    case REG_B: return regs.B;
-    case REG_C: return regs.C;
-    case REG_D: return regs.D;
-    case REG_E: return regs.E;
-    case REG_F: return regs.F;
-    case REG_X: return regs.X;
-    case REG_Y: return regs.Y;
+    case Reg::A: return regs.A;
+    case Reg::B: return regs.B;
+    case Reg::C: return regs.C;
+    case Reg::D: return regs.D;
+    case Reg::E: return regs.E;
+    case Reg::F: return regs.F;
+    case Reg::X: return regs.X;
+    case Reg::Y: return regs.Y;
   }
 }
 
 u16& VM::reg16(Reg r)
 {
   switch (r) {
-    case REG_BA: return regs.BA;
-    case REG_CD: return regs.CD;
-    case REG_EF: return regs.EF;
-    case REG_XY: return regs.XY;
-    case REG_SP: return regs.SP;
-    case REG_FP: return regs.FP;
-    case REG_IX: return regs.IX;
-    case REG_IY: return regs.IY;
+    case Reg::BA: return regs.BA;
+    case Reg::CD: return regs.CD;
+    case Reg::EF: return regs.EF;
+    case Reg::XY: return regs.XY;
+    case Reg::SP: return regs.SP;
+    case Reg::FP: return regs.FP;
+    case Reg::IX: return regs.IX;
+    case Reg::IY: return regs.IY;
   }
 }
 
@@ -87,36 +87,36 @@ template <typename W> void VM::sbc(const W& op1, const W& op2, W& dest, bool fla
   
 }
 
-template <typename W> void VM::alu(AluOp op, const W &op1, const W &op2, W &dest, bool flags)
+template <typename W> void VM::alu(Alu op, const W &op1, const W &op2, W &dest, bool flags)
 {
   bool setArithmeticFlags = false;
   s32 result = 0;
   
   switch (op) {
-    case ALU_TRANSFER_A8:
-    case ALU_TRANSFER_A16:
+    case Alu::TRANSFER_A8:
+    case Alu::TRANSFER_A16:
     {
       dest = op2;
       return;
     }
     
-    case ALU_TRANSFER_B8:
-    case ALU_TRANSFER_B16:
+    case Alu::TRANSFER_B8:
+    case Alu::TRANSFER_B16:
     {
       dest = op2;
       return;
     }
       
-    case ALU_ADD8:
-    case ALU_ADD16:
+    case Alu::ADD8:
+    case Alu::ADD16:
     {
       result = op1 + op2;
       setArithmeticFlags = true;
       setFlag(FLAG_CARRY, result > std::numeric_limits<W>::max());
       break;
     }
-    case ALU_ADC8:
-    case ALU_ADC16:
+    case Alu::ADC8:
+    case Alu::ADC16:
     {
       result = op1 + op2 + (isFlagSet(FLAG_CARRY) ? 1 : 0);
       dest = result;
@@ -124,49 +124,49 @@ template <typename W> void VM::alu(AluOp op, const W &op1, const W &op2, W &dest
       setArithmeticFlags = true;
       break;
     }
-    case ALU_SUB8:
-    case ALU_SUB16:
+    case Alu::SUB8:
+    case Alu::SUB16:
     {
       result = op1 - op2;
       setFlag(FLAG_CARRY, result < 0);
       setArithmeticFlags = true;
       break;
     }
-    case ALU_SBC8:
-    case ALU_SBC16:
+    case Alu::SBC8:
+    case Alu::SBC16:
     {
       result = op1 - op2 - (isFlagSet(FLAG_CARRY) ? 1 : 0);
       setFlag(FLAG_CARRY, result < 0);
       setArithmeticFlags = true;
       break;
     }
-    case ALU_AND8:
-    case ALU_AND16:
+    case Alu::AND8:
+    case Alu::AND16:
       dest = op1 & op2;
       break;
-    case ALU_OR8:
-    case ALU_OR16:
+    case Alu::OR8:
+    case Alu::OR16:
       dest = op1 | op2;
       break;
-    case ALU_XOR8:
-    case ALU_XOR16:
+    case Alu::XOR8:
+    case Alu::XOR16:
       dest = op1 ^ op2;
       break;
-    case ALU_NOT8:
-    case ALU_NOT16:
+    case Alu::NOT8:
+    case Alu::NOT16:
       dest = ~op1;
       break;
     
-    case ALU_LSH16:
-    case ALU_LSH8:
+    case Alu::LSH16:
+    case Alu::LSH8:
     {
       setFlag(FLAG_CARRY, isNegative(op1));
       dest = op1 << 1;
       break;
     }
       
-    case ALU_RSH16:
-    case ALU_RSH8:
+    case Alu::RSH16:
+    case Alu::RSH8:
     {
       setFlag(FLAG_CARRY, op1 & 0x01);
       dest = op1 >> 1;
@@ -199,24 +199,24 @@ void VM::executeInstruction()
   s8 signed8 = (s8)d[2];
   u16 short1 = d[2] | (d[1]<<8);
   u16 short2 = d[2] | (d[3]<<8);
-  AluOp aluop = static_cast<AluOp>(d[1] & 0b11111);
+  Alu aluop = static_cast<Alu>(d[1] & 0b11111);
   JumpCondition cond = static_cast<JumpCondition>(d[0] & 0b1111);
   
   bool saveFlags = true;
   
   if (opcode == OPCODE_CMP_NN)
   {
-    aluop = ALU_SUB8;
+    aluop = Alu::SUB8;
     saveFlags = false;
   }
   else if (opcode == OPCODE_CMP_NNNN)
   {
-    aluop = ALU_SUB16;
+    aluop = Alu::SUB16;
     saveFlags = false;
   }
   else if (opcode == OPCODE_CMP_REG)
   {
-    aluop = aluop & 0x1 ? ALU_SUB8 : ALU_SUB16;
+    aluop = (aluop & 0x1) == Alu::EXTENDED_BIT ? Alu::SUB8 : Alu::SUB16;
     saveFlags = false;
   }
   
@@ -226,7 +226,7 @@ void VM::executeInstruction()
     // R8 <- R8, R16 <- R16, RSH/LSH R8, RSH/LSH R16
     case OPCODE_LD_RSH_LSH:
     {
-      if (aluop & 0x1)
+      if ((aluop & 0x1) == Alu::EXTENDED_BIT)
         alu<u16>(aluop, reg16(reg1), reg16(reg2), reg16(reg1), saveFlags);
       else
         alu<u8>(aluop, reg8(reg1), reg8(reg2), reg8(reg1), saveFlags);
@@ -256,7 +256,7 @@ void VM::executeInstruction()
     case OPCODE_CMP_REG:
     case OPCODE_ALU_REG:
     {
-      if (aluop & 0x1)
+      if ((aluop & 0x1) == Alu::EXTENDED_BIT)
         alu<u16>(aluop, reg16(reg2), reg16(reg3), reg16(reg1), saveFlags);
       else
         alu<u8>(aluop, reg8(reg2), reg8(reg3), reg8(reg1), saveFlags);
@@ -371,7 +371,7 @@ void VM::executeInstruction()
     case OPCODE_PUSH:
     {
       u8& r = reg8(reg1);
-      u16& sp = reg16(REG_SP);
+      u16& sp = reg16(Reg::SP);
       --sp;
       ramWrite(sp, r);
       
@@ -382,7 +382,7 @@ void VM::executeInstruction()
     case OPCODE_PUSH16:
     {
       u16& r = reg16(reg1);
-      u16& sp = reg16(REG_SP);
+      u16& sp = reg16(Reg::SP);
       --sp;
       ramWrite(sp, r & 0xFF);
       --sp;
@@ -395,7 +395,7 @@ void VM::executeInstruction()
     case OPCODE_POP:
     {
       u8& r = reg8(reg1);
-      u16& sp = reg16(REG_SP);
+      u16& sp = reg16(Reg::SP);
       r = ramRead(sp);
       ++sp;
       
@@ -406,7 +406,7 @@ void VM::executeInstruction()
     case OPCODE_POP16:
     {
       u16& r = reg16(reg1);
-      u16& sp = reg16(REG_SP);
+      u16& sp = reg16(Reg::SP);
       u8 high = ramRead(sp);
       ++sp;
       u8 low = ramRead(sp);
@@ -422,7 +422,7 @@ void VM::executeInstruction()
     {
       if (isConditionTrue(cond))
       {
-        u16& sp = reg16(REG_SP);
+        u16& sp = reg16(Reg::SP);
         u8 high = ramRead(sp);
         ++sp;
         u8 low = ramRead(sp);
@@ -441,7 +441,7 @@ void VM::executeInstruction()
       if (isConditionTrue(cond))
       {
         u16 address = regs.PC+3;
-        u16& sp = reg16(REG_SP);
+        u16& sp = reg16(Reg::SP);
         --sp;
         ramWrite(sp, address & 0xFF);
         --sp;

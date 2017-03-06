@@ -3,67 +3,74 @@
 
 #include "utils.h"
 
-enum Reg : u8
+enum class Reg : u8
 {
-  REG_NONE = 0b000,
+  A = 0b000,
+  D = 0b001,
+  F = 0b010,
+  Y = 0b011,
+  B = 0b100,
+  C = 0b101,
+  E = 0b110,
+  X = 0b111,
   
-  REG_A = 0b000,
-  REG_D = 0b001,
-  REG_F = 0b010,
-  REG_Y = 0b011,
-  REG_B = 0b100,
-  REG_C = 0b101,
-  REG_E = 0b110,
-  REG_X = 0b111,
-  
-  REG_BA = 0b000,
-  REG_CD = 0b001,
-  REG_EF = 0b010,
-  REG_XY = 0b011,
-  REG_SP = 0b100,
-  REG_FP = 0b101,
-  REG_IX = 0b110,
-  REG_IY = 0b111
+  BA = 0b000,
+  CD = 0b001,
+  EF = 0b010,
+  XY = 0b011,
+  SP = 0b100,
+  FP = 0b101,
+  IX = 0b110,
+  IY = 0b111
 };
 
-enum AluOp : u8
+template<typename T, typename std::enable_if<std::is_integral<T>::value, int>::type = 0> inline T operator|(const T& t, const Reg& o) { return t | static_cast<T>(o); }
+template<typename T, typename std::enable_if<std::is_integral<T>::value, int>::type = 0> inline T operator|(const Reg& o, const T& t) { return t | static_cast<T>(o); }
+template<typename T, typename std::enable_if<std::is_integral<T>::value, int>::type = 0> inline T operator<<(const Reg& o, const T& t) { return static_cast<T>(o) << t; }
+
+enum class Alu : u8
 {
-  ALU_ADD8 = 0b10000,
-  ALU_ADD16 = 0b10001,
-  ALU_ADC8 = 0b10010,
-  ALU_ADC16 = 0b10011,
-  ALU_SUB8 = 0b10100,
-  ALU_SUB16 = 0b10101,
-  ALU_SBC8 = 0b10110,
-  ALU_SBC16 = 0b101111,
+  ADD8 = 0b10000,
+  ADD16 = 0b10001,
+  ADC8 = 0b10010,
+  ADC16 = 0b10011,
+  SUB8 = 0b10100,
+  SUB16 = 0b10101,
+  SBC8 = 0b10110,
+  SBC16 = 0b101111,
   
-  ALU_AND8 = 0b11000,
-  ALU_AND16 = 0b11001,
-  ALU_OR8 = 0b11010,
-  ALU_OR16 = 0b11011,
-  ALU_XOR8 = 0b11100,
-  ALU_XOR16 = 0b11101,
-  ALU_NOT8 = 0b11110,
-  ALU_NOT16 = 0b11111,
+  AND8 = 0b11000,
+  AND16 = 0b11001,
+  OR8 = 0b11010,
+  OR16 = 0b11011,
+  XOR8 = 0b11100,
+  XOR16 = 0b11101,
+  NOT8 = 0b11110,
+  NOT16 = 0b11111,
   
-  ALU_TRANSFER_A8 = 0b00010,
-  ALU_TRANSFER_A16 = 0b00011,
+  TRANSFER_A8 = 0b00010,
+  TRANSFER_A16 = 0b00011,
   
-  ALU_TRANSFER_B8 = 0b00100,
-  ALU_TRANSFER_B16 = 0b00101,
+  TRANSFER_B8 = 0b00100,
+  TRANSFER_B16 = 0b00101,
   
-  ALU_ADD_NO_FLAGS = 0b00111,
+  ADD_NO_FLAGS = 0b00111,
   
-  ALU_LSH8 = 0b01100,
-  ALU_LSH16 = 0b01101,
-  ALU_RSH8 = 0b01110,
-  ALU_RSH16 = 0b01111,
+  LSH8 = 0b01100,
+  LSH16 = 0b01101,
+  RSH8 = 0b01110,
+  RSH16 = 0b01111,
   
-  ALU_SF = 0b01010,
-  ALU_LF = 0b01000,
+  SF = 0b01010,
+  LF = 0b01000,
+  
+  EXTENDED_BIT = 0b00001
 };
 
-inline AluOp operator|(const AluOp& alu, const int& v) { return static_cast<AluOp>(static_cast<int>(alu) | v); }
+template<typename T, typename std::enable_if<std::is_integral<T>::value, int>::type = 0> inline T operator|(const T& t, const Alu& o) { return t | static_cast<T>(o); }
+inline Alu operator|(const Alu& alu, const int& v) { return static_cast<Alu>(static_cast<int>(alu) | v); }
+inline Alu operator&(const Alu& alu, const int& v) { return static_cast<Alu>(static_cast<int>(alu) & v); }
+
 
 const u8 BASE_OPCODE = 0b00001;
 
@@ -144,9 +151,11 @@ class Opcodes
     static MnemonicInfo printInstruction(const u8 *data);
     //static void printInstruction(Instruction &i);
   
-  static const char* reg8(u8 reg);
-  static const char* reg16(u8 reg);
-  static const char* aluName(AluOp alu);
+  static const char* opcodeName(Opcode opcode);
+  static const char* reg(Reg reg, bool extended) { return extended ? reg16(reg) : reg8(reg); }
+  static const char* reg8(Reg reg);
+  static const char* reg16(Reg reg);
+  static const char* aluName(Alu alu);
   static const char* condName(JumpCondition cond);
 };
 

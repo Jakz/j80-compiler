@@ -22,6 +22,7 @@ namespace Assembler
     LENGTH_4_BYTES = 4
   };
   
+#pragma mark Environment
   struct DataSegmentEntry
   {
     std::unique_ptr<u8[]> data;
@@ -83,30 +84,6 @@ namespace Assembler
     const u8* getData() const { return this->data.get(); }
   };
   
-  class DataSegment
-  {
-  public:
-    u16 offset;
-    u8 *data;
-    u16 length;
-    
-    DataSegment() : offset(0), data(nullptr), length(0) { }
-    void alloc(u16 length) { if (data) delete[] data; data = new u8[length](); this->length = length;}
-    ~DataSegment() { delete [] data; }
-  };
-  
-  class CodeSegment
-  {
-  public:
-    u16 offset;
-    u8 *data;
-    u16 length;
-    
-    CodeSegment() : offset(0), data(nullptr), length(0) { }
-    void alloc(u16 length) { delete[] data; data = new u8[length](); this->length = length;}
-    ~CodeSegment() { delete [] data; }
-  };
-  
   struct DataReference
   {
     enum class Type
@@ -149,9 +126,82 @@ namespace Assembler
     u16 dataSegmentBase;
     
     Environment(J80Assembler& assemb, data_map& data, const_map& consts, u16 dataSegmentBase) :
-      assembler(assemb), data(data), consts(consts), dataSegmentBase(dataSegmentBase) { }
+    assembler(assemb), data(data), consts(consts), dataSegmentBase(dataSegmentBase) { }
   };
   
+#pragma mark Support Types
+  struct Address
+  {
+    enum Type
+    {
+      ABSOLUTE,
+      LABEL,
+      INTERRUPT
+    } type;
+    
+    u16 address;
+    std::string label;
+    InterruptIndex interrupt;
+    
+    Address() : type(ABSOLUTE), address(0) { }
+    Address(u16 address) : type(ABSOLUTE), address(address) { }
+    Address(const std::string& label) : type(LABEL), label(label) { }
+    Address(InterruptIndex interrupt) : type(INTERRUPT), interrupt(interrupt) { }
+  };
+  
+  struct Value8
+  {
+    enum Type
+    {
+      VALUE,
+      DATA_LENGTH,
+      CONST
+    } type;
+    
+    mutable u8 value;
+    std::string label;
+    
+    Value8() = default;
+    Value8(u8 value) : type(VALUE), value(value) { }
+    Value8(Type type, const std::string& label) : type(type), label(label) { }
+  };
+  
+  struct Value16
+  {
+    enum Type
+    {
+      VALUE,
+      DATA_LENGTH,
+      CONST,
+      LABEL_ADDRESS
+    } type;
+    
+    mutable u16 value;
+    std::string label;
+    s8 offset;
+    
+    Value16() = default;
+    Value16(u16 value) : type(VALUE), value(value) { }
+    Value16(Type type, const std::string& label, s8 offset) : type(type), label(label), offset(offset) { }
+    Value16(Type type, const std::string& label) : Value16(type, label, 0) { }
+  };
+  
+  struct Reg16
+  {
+    const Reg reg;
+    Reg16(Reg reg) : reg(reg) { }
+    operator u8() const { return static_cast<u8>(reg); }
+  };
+  
+  struct Reg8
+  {
+    const Reg reg;
+    Reg8(Reg reg) : reg(reg) { }
+    operator u8() const { return static_cast<u8>(reg); }
+
+  };
+  
+#pragma mark Support Instructions
   class Instruction
   {
   public:
@@ -174,7 +224,7 @@ namespace Assembler
     
     virtual Result solve(const Environment& env) { return Result(); }
   };
-  
+
   class Padding : public Instruction
   {
   private:
@@ -192,6 +242,65 @@ namespace Assembler
       for (int i = 0; i < ilength; ++i)
         dest[i] = OPCODE_NOP;
     }
+  };
+  
+  class InstructionXXX_NN : public Instruction
+  {
+  protected:
+    using dest_t = u8;
+    const Opcode opcode;
+    const Reg8 dst;
+    const Value8 value;
+    
+  public:
+    InstructionXXX_NN(Opcode opcode, Reg8 dst, Value8 value) : Instruction(LENGTH_3_BYTES), opcode(opcode), dst(dst), value(value) { }
+    
+    std::string mnemonic() const override;
+    Result solve(const Environment& env) override final;
+  };
+
+  
+  class InstructionAddressable : public Instruction
+  {
+  protected:
+    Address address;
+    InstructionAddressable(InstructionLength length, Address address) : Instruction(length), address(address) { }
+    
+  public:
+    
+    const InterruptIndex getIntIndex() const { return address.interrupt; }
+    const std::string& getLabel() const { return address.label; }
+    bool mustBeSolved() const { return address.type != Address::Type::ABSOLUTE; }
+    Address::Type getType() const { return address.type; }
+    void solve(u16 address) { this->address.address = address; this->address.type = Address::Type::ABSOLUTE; }
+  };
+  
+  template<typename RegType>
+  class InstructionXXX_NNNN : public Instruction
+  {
+  protected:
+    const Opcode opcode;
+    const RegType dst;
+    const Value16 value;
+    
+  public:
+    InstructionXXX_NNNN(InstructionLength length, Opcode opcode, RegType dst, Value16 value) : Instruction(length), opcode(opcode), dst(dst), value(value) { }
+    Result solve(const Environment& env) override final;
+    std::string mnemonic() const override;
+  };
+  
+  class InstructionSingleReg : public Instruction
+  {
+  protected:
+    Opcode opcode;
+    Reg reg;
+    bool extended;
+    
+    InstructionSingleReg(Opcode opcode, Reg reg, bool extended) : Instruction(LENGTH_1_BYTES), opcode(opcode), reg(reg), extended(extended) { }
+    std::string mnemonic() const override final { return fmt::sprintf("%s %s", Opcodes::opcodeName(opcode), Opcodes::reg(reg, extended)); }
+    
+  public:
+    void assemble(u8* dest) const override { dest[0] = (opcode << 3) | reg; }
   };
   
   class Label : public Instruction
@@ -229,63 +338,6 @@ namespace Assembler
     void solve(u16 address) { this->address = address; }
   };
   
-  struct Address
-  {
-    enum Type
-    {
-      ABSOLUTE,
-      LABEL,
-      INTERRUPT
-    } type;
-    
-    u16 address;
-    std::string label;
-    InterruptIndex interrupt;
-    
-    Address() : type(ABSOLUTE), address(0) { }
-    Address(u16 address) : type(ABSOLUTE), address(address) { }
-    Address(const std::string& label) : type(LABEL), label(label) { }
-    Address(InterruptIndex interrupt) : type(INTERRUPT), interrupt(interrupt) { }
-  };
-  
-  struct Value8
-  {
-    enum Type
-    {
-      VALUE,
-      DATA_LENGTH,
-      CONST
-    } type;
-    
-    u8 value;
-    std::string label;
-    
-    Value8() = default;
-    Value8(u8 value) : type(VALUE), value(value) { }
-    Value8(Type type, const std::string& label) : type(type), label(label) { }
-  };
-  
-  struct Value16
-  {
-    enum Type
-    {
-      VALUE,
-      DATA_LENGTH,
-      CONST,
-      LABEL_ADDRESS
-    } type;
-    
-    u16 value;
-    std::string label;
-    s8 offset;
-    
-    Value16() = default;
-    Value16(u16 value) : type(VALUE), value(value) { }
-    Value16(Type type, const std::string& label, s8 offset) : type(type), label(label), offset(offset) { }
-    Value16(Type type, const std::string& label) : Value16(type, label, 0) { }
-  };
-
-  
 #pragma mark LD/LSH/RSH R, S, Q
   /*************
    * LD R, S, Q
@@ -296,24 +348,17 @@ namespace Assembler
   class InstructionLD_LSH_RSH : public Instruction
   {
   private:
-    Reg dst;
-    Reg src;
-    AluOp alu;
+    const Reg dst;
+    const Reg src;
+    const Alu alu;
     
   public:
-    InstructionLD_LSH_RSH(Reg dst, Reg src, AluOp alu, bool extended) : Instruction(LENGTH_2_BYTES),
-      dst(dst), src(src), alu(static_cast<AluOp>(alu | (extended ? 0b1 : 0)))
+    InstructionLD_LSH_RSH(Reg dst, Reg src, Alu alu, bool extended) : Instruction(LENGTH_2_BYTES),
+      dst(dst), src(src), alu(static_cast<Alu>(alu | (extended ? 0b1 : 0)))
     { }
     
     std::string mnemonic() const override;
-    
-    /* 10000RRR SSSAAAAA */
-    void assemble(u8* dest) const override
-    {
-      dest[0] = (OPCODE_LD_RSH_LSH << 3) | dst;
-      dest[1] = alu | (src << 5);
-    }
-    
+    void assemble(u8* dest) const override;    
   };
   
   
@@ -322,163 +367,133 @@ namespace Assembler
    * LD R, NN
    * CMP R, NN
    *************/
-  class InstructionXXX_NN : public Instruction
-  {
-  protected:
-    using dest_t = u8;
-    Reg dst;
-    Value8 value;
-    
-  public:
-    InstructionXXX_NN(Reg dst, Value8 value) : Instruction(LENGTH_3_BYTES), dst(dst), value(value) { }
-    
-    Result solve(const Environment& env) override final;
-  };
-
   class InstructionLD_NN : public InstructionXXX_NN
   {
   public:
-    InstructionLD_NN(Reg dst, Value8 value) : InstructionXXX_NN(dst, value) { }
-    
-    std::string mnemonic() const override;
+    InstructionLD_NN(Reg dst, Value8 value) : InstructionXXX_NN(OPCODE_LD_NN, dst, value) { }
     void assemble(u8* dest) const override;
   };
   
   class InstructionCMP_NN : public InstructionXXX_NN
   {
   public:
-    InstructionCMP_NN(Reg dst, Value8 value) : InstructionXXX_NN(dst, value) { }
-    
-    std::string mnemonic() const override;
+    InstructionCMP_NN(Reg dst, Value8 value) : InstructionXXX_NN(OPCODE_CMP_NN, dst, value) { }
     void assemble(u8* dest) const override;
   };
   
   
-#pragma mark LD P, NNNN
   /*************
    * LD P, NNNN
-   * ST [NNNN], P
+   * ST [NNNN], R
    * CMP P, NNNN
    *************/
-  class InstructionXXX_NNNN : public Instruction
+#pragma mark LD P, NNNN
+  class InstructionLD_NNNN : public InstructionXXX_NNNN<Reg16>
   {
-  protected:
-    Reg dst;
-    Value16 value;
-    
   public:
-    InstructionXXX_NNNN(InstructionLength length, Reg dst, Value16 value) : Instruction(length), dst(dst), value(value) { }
-    Result solve(const Environment& env) override final;
+    InstructionLD_NNNN(Reg16 dst, Value16 value) : InstructionXXX_NNNN(LENGTH_3_BYTES, OPCODE_LD_NNNN, dst, value) { }
+    void assemble(u8* dest) const override;
   };
   
-  class InstructionLD_NNNN : public InstructionXXX_NNNN
+#pragma mark ST [NNNN], R
+  class InstructionST_NNNN : public InstructionXXX_NNNN<Reg8>
   {
   public:
-    InstructionLD_NNNN(Reg dst, Value16 value) : InstructionXXX_NNNN(LENGTH_3_BYTES, dst, value) { }
-    
+    InstructionST_NNNN(Reg8 src, Value16 value) : InstructionXXX_NNNN(LENGTH_3_BYTES, OPCODE_SD_PTR_NNNN, src, value) { }
+    void assemble(u8* dest) const override;
+  };
+  
+#pragma mark CMP P, NNNN
+  class InstructionCMP_NNNN : public InstructionXXX_NNNN<Reg16>
+  {
+  public:
+    InstructionCMP_NNNN(Reg16 dst, Value16 value) : InstructionXXX_NNNN(LENGTH_4_BYTES, OPCODE_CMP_NNNN, dst, value) { }
+    void assemble(u8* dest) const override;
+  };
+  
+#pragma mark ALU P, NNNN
+  class InstructionALU_NNNN : public InstructionXXX_NNNN<Reg16>
+  {
+  private:
+    const Reg16 src;
+    const Alu alu;
+  public:
+    InstructionALU_NNNN(Reg16 dst, Reg16 src, Alu alu, Value16 value) : InstructionXXX_NNNN(LENGTH_4_BYTES, OPCODE_ALU_NNNN, dst, value), src(src), alu(alu) { }
     std::string mnemonic() const override;
     void assemble(u8* dest) const override;
   };
   
-  class InstructionST_NNNN : public InstructionXXX_NNNN
-  {
-  public:
-    InstructionST_NNNN(Reg src, Value16 value) : InstructionXXX_NNNN(LENGTH_3_BYTES, src, value) { }
-    
-    std::string mnemonic() const override;
-    void assemble(u8* dest) const override;
-  };
-  
-  class InstructionCMP_NNNN : public InstructionXXX_NNNN
-  {
-  public:
-    InstructionCMP_NNNN(Reg dst, Value16 value) : InstructionXXX_NNNN(LENGTH_4_BYTES, dst, value) { }
-    
-    std::string mnemonic() const override;
-    void assemble(u8* dest) const override;
-  };
-  
-  
-#pragma mark ALU R, S, Q
   /*************
    * ALU R, S, Q
    *************/
+#pragma mark ALU R, S, Q
   class InstructionALU_R : public Instruction
   {
   public:
-    AluOp alu;
-    Reg dst;
-    Reg src1;
-    Reg src2;
+    const Alu alu;
+    const Reg dst;
+    const Reg src1;
+    const Reg src2;
     
   public:
-    InstructionALU_R(Reg dst, Reg src1, Reg src2, AluOp alu, bool extended) :
+    InstructionALU_R(Reg dst, Reg src1, Reg src2, Alu alu, bool extended) :
     InstructionALU_R(dst, src1, src2, alu | (extended ? 0b1 : 0b0)) { }
     
-    InstructionALU_R(Reg dst, Reg src1, Reg src2, AluOp alu) : Instruction(LENGTH_3_BYTES),
+    InstructionALU_R(Reg dst, Reg src1, Reg src2, Alu alu) : Instruction(LENGTH_3_BYTES),
     alu(alu), dst(dst), src1(src1), src2(src2) { }
     
     std::string mnemonic() const override;
     void assemble(byte* dest) const override;
   };
   
-  class InstructionSingleReg : public Instruction
-  {
-  protected:
-    Opcode opcode;
-    Reg reg;
-    
-    InstructionSingleReg(Opcode opcode, Reg reg) : Instruction(LENGTH_1_BYTES), opcode(opcode), reg(reg) { }
-    
-  public:
-    void assemble(u8* dest) const override { dest[0] = (opcode << 3) | reg; }
-  };
-  
-  class InstructionSEXT : public InstructionSingleReg
+#pragma mark ALU R, NN
+  class InstructionALU_R_NN : public InstructionXXX_NN
   {
   private:
+    const Alu alu;
+    const Reg8 src;
     
   public:
-    InstructionSEXT(Reg reg) : InstructionSingleReg(OPCODE_SEXT, reg) { }
-    std::string mnemonic() const { return fmt::sprintf("SEXT %s", Opcodes::reg8(reg)); }
+    InstructionALU_R_NN(Reg dst, Reg8 src, Alu alu, Value8 value) : InstructionXXX_NN(OPCODE_ALU_NN, dst, value), alu(alu), src(src) { }
+    std::string mnemonic() const override;
+    void assemble(byte* dest) const override;
+  };
+  
+#pragma marg SEXT
+  class InstructionSEXT : public InstructionSingleReg
+  {
+  public:
+    InstructionSEXT(Reg reg) : InstructionSingleReg(OPCODE_SEXT, reg, false) { }
   };
   
 #pragma mark PUSH P
   class InstructionPUSH16 : public InstructionSingleReg
   {
-  private:
-    
   public:
-    InstructionPUSH16(Reg reg) : InstructionSingleReg(OPCODE_PUSH16, reg) { }
-    std::string mnemonic() const { return fmt::sprintf("PUSH %s", Opcodes::reg16(reg)); }
+    InstructionPUSH16(Reg reg) : InstructionSingleReg(OPCODE_PUSH16, reg, true) { }
   };
+  
+  class InstructionPUSH8 : public InstructionSingleReg
+  {
+  public:
+    InstructionPUSH8(Reg reg) : InstructionSingleReg(OPCODE_PUSH, reg, false) { }
+  };
+  
   
 #pragma mark POP P
+  class InstructionPOP8 : public InstructionSingleReg
+  {
+  public:
+    InstructionPOP8(Reg reg) : InstructionSingleReg(OPCODE_POP, reg, false) { }
+  };
+  
   class InstructionPOP16 : public InstructionSingleReg
   {
-  private:
-    
   public:
-    InstructionPOP16(Reg reg) : InstructionSingleReg(OPCODE_POP16, reg) { }
-    std::string mnemonic() const { return fmt::sprintf("POP %s", Opcodes::reg16(reg)); }
+    InstructionPOP16(Reg reg) : InstructionSingleReg(OPCODE_POP16, reg, true) { }
   };
   
-#pragma mark InstructionAddressable
-  class InstructionAddressable : public Instruction
-  {
-  protected:
-    Address address;
-    InstructionAddressable(InstructionLength length, Address address) : Instruction(length), address(address) { }
-    
-  public:
-    
-    const InterruptIndex getIntIndex() const { return address.interrupt; }
-    const std::string& getLabel() const { return address.label; }
-    bool mustBeSolved() const { return address.type != Address::Type::ABSOLUTE; }
-    Address::Type getType() const { return address.type; }
-    void solve(u16 address) { this->address.address = address; this->address.type = Address::Type::ABSOLUTE; }
-  };
-  
+#pragma mark JMP NNNN
   class InstructionJMP_NNNN : public InstructionAddressable
   {
   private:
@@ -489,9 +504,9 @@ namespace Assembler
 
     std::string mnemonic() const override {
       if (address.label.empty())
-        return fmt::sprintf("JMP%s %.4Xh", Opcodes::condName(condition), address.address);
+        return fmt::sprintf("%s%s %.4Xh", Opcodes::opcodeName(OPCODE_JMPC_NNNN), Opcodes::condName(condition), address.address);
       else
-        return fmt::sprintf("JMP%s %.4Xh (%s)", Opcodes::condName(condition), address.address, address.label.c_str());
+        return fmt::sprintf("%s%s %.4Xh (%s)", Opcodes::opcodeName(OPCODE_JMPC_NNNN), Opcodes::condName(condition), address.address, address.label.c_str());
     }
     
     void assemble(u8* dest) const override
@@ -502,6 +517,7 @@ namespace Assembler
     }
   };
   
+#pragma mark CALL NNNN
   class InstructionCALL_NNNN : public InstructionAddressable
   {
   private:
@@ -512,9 +528,9 @@ namespace Assembler
     
     std::string mnemonic() const override {
       if (address.label.empty())
-        return fmt::sprintf("CALL%s %.4Xh", Opcodes::condName(condition), address.address);
+        return fmt::sprintf("%s%s %.4Xh", Opcodes::opcodeName(OPCODE_CALLC), Opcodes::condName(condition), address.address);
       else
-        return fmt::sprintf("CALL%s %.4Xh (%s)", Opcodes::condName(condition), address.address, address.label.c_str());
+        return fmt::sprintf("%s%s %.4Xh (%s)", Opcodes::opcodeName(OPCODE_CALLC), Opcodes::condName(condition), address.address, address.label.c_str());
     }
     
     void assemble(u8* dest) const override
@@ -525,6 +541,7 @@ namespace Assembler
     }
   };
   
+#pragma mark RET
   class InstructionRET : public Instruction
   {
   private:
@@ -533,18 +550,53 @@ namespace Assembler
   public:
     InstructionRET(JumpCondition condition) : Instruction(LENGTH_1_BYTES), condition(condition) { }
     
-    std::string mnemonic() const override { return fmt::sprintf("RET%s", Opcodes::condName(condition)); }
+    std::string mnemonic() const override { return fmt::sprintf("%s%s", Opcodes::opcodeName(OPCODE_RETC), Opcodes::condName(condition)); }
     void assemble(u8* dest) const override { dest[0] = (OPCODE_RETC << 3) | condition;; }
   };
   
+#pragma mark NOP
   class InstructionNOP : public Instruction
   {
   public:
     InstructionNOP() : Instruction(LENGTH_1_BYTES) { }
     
-    std::string mnemonic() const override { return "NOP"; }
+    std::string mnemonic() const override { return Opcodes::opcodeName(OPCODE_NOP); }
     void assemble(u8* dest) const override { dest[0] = OPCODE_NOP; }
   };
+}
+
+inline std::ostream& operator<<(std::ostream& os, Assembler::Value16 value)
+{
+  if (value.label.empty())
+    os << fmt::sprintf("%.4Xh", value.value);
+  else
+    os << fmt::sprintf("%.4Xh (%s)", value.value, value.label);
+  
+  return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, Assembler::Value8 value)
+{
+  os << fmt::sprintf("%.2Xh", value.value);
+  return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, Alu alu)
+{
+  os << fmt::sprintf("%s", Opcodes::aluName(alu));
+  return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, Assembler::Reg16 reg)
+{
+  os << fmt::sprintf("%s", Opcodes::reg16(reg.reg));
+  return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, Assembler::Reg8 reg)
+{
+  os << fmt::sprintf("%s", Opcodes::reg8(reg.reg));
+  return os;
 }
 
 #endif

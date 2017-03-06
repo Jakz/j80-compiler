@@ -245,7 +245,7 @@ void J80Assembler::prepareSource()
   /* if program specifies a stack base then add a LD SP, NNNN instruction */
   /* TODO: this is not language agnostic */
   if (stackBase.isSet())
-    instructions.insert(++iteratorToMainLabel, unique_ptr<Instruction>(new InstructionLD_NNNN(REG_SP, stackBase.get())));
+    instructions.insert(++iteratorToMainLabel, unique_ptr<Instruction>(new InstructionLD_NNNN(Reg::SP, stackBase.get())));
   
   /* if program has at least one interrupt we need to place a jump at the beginning to entry point
      and setup interrupt vector table */

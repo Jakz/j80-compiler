@@ -62,15 +62,15 @@ void UI::updateRegisters()
   box(wRegisters, 0, 0);
   mvwprintw(wRegisters, 0, 1, "[Registers]");
   
-  mvwprintw(wRegisters, 1, 2, "BA: %04Xh", vm.reg16(REG_BA));
-  mvwprintw(wRegisters, 2, 2, "CD: %04Xh", vm.reg16(REG_CD));
-  mvwprintw(wRegisters, 3, 2, "EF: %04Xh", vm.reg16(REG_EF));
-  mvwprintw(wRegisters, 4, 2, "XY: %04Xh", vm.reg16(REG_XY));
+  mvwprintw(wRegisters, 1, 2, "BA: %04Xh", vm.reg16(Reg::BA));
+  mvwprintw(wRegisters, 2, 2, "CD: %04Xh", vm.reg16(Reg::CD));
+  mvwprintw(wRegisters, 3, 2, "EF: %04Xh", vm.reg16(Reg::EF));
+  mvwprintw(wRegisters, 4, 2, "XY: %04Xh", vm.reg16(Reg::XY));
   
-  mvwprintw(wRegisters, 1, 2+14, "SP: %04Xh", vm.reg16(REG_SP));
-  mvwprintw(wRegisters, 2, 2+14, "FP: %04Xh", vm.reg16(REG_FP));
-  mvwprintw(wRegisters, 3, 2+14, "IX: %04Xh", vm.reg16(REG_IX));
-  mvwprintw(wRegisters, 4, 2+14, "IY: %04Xh", vm.reg16(REG_IY));
+  mvwprintw(wRegisters, 1, 2+14, "SP: %04Xh", vm.reg16(Reg::SP));
+  mvwprintw(wRegisters, 2, 2+14, "FP: %04Xh", vm.reg16(Reg::FP));
+  mvwprintw(wRegisters, 3, 2+14, "IX: %04Xh", vm.reg16(Reg::IX));
+  mvwprintw(wRegisters, 4, 2+14, "IY: %04Xh", vm.reg16(Reg::IY));
   
   mvwprintw(wRegisters, 6, 2, "PC: %04Xh", vm.pc());
   mvwprintw(wRegisters, 5, 2, "C%c Z%c S%c V%c",
@@ -94,7 +94,7 @@ void UI::updateStack()
   u32 MIN_VALUE = 0x0000, MAX_VALUE = 0x10000 - BYTES_PER_ROW;
   
   s32 delta = CENTER*BYTES_PER_ROW;
-  s32 baseOffset = (vm.reg16(REG_SP)/BYTES_PER_ROW) * BYTES_PER_ROW;
+  s32 baseOffset = (vm.reg16(Reg::SP)/BYTES_PER_ROW) * BYTES_PER_ROW;
   
   for (int i = 0; i < ROWS; ++i)
   {
@@ -109,9 +109,9 @@ void UI::updateStack()
         u32 address = current + j;
         mvwprintw(wStack, 1+i, 7+j*3 + 1, "%02X", vm.ramRead(address));
         
-        if (address == vm.reg16(REG_SP))
+        if (address == vm.reg16(Reg::SP))
           mvwprintw(wStack, 1+i, 7+j*3, ">", vm.ramRead(address));
-        if (address == vm.reg16(REG_FP))
+        if (address == vm.reg16(Reg::FP))
           mvwprintw(wStack, 1+i, 7+j*3+3, "<", vm.ramRead(address));
       }
     }

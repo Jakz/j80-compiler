@@ -47,32 +47,32 @@
 "[" { return Parser::make_LBRACK(loc); }
 "]" { return Parser::make_RBRACK(loc); }
 
-(?i:"a") { return Parser::make_REG8(REG_A, loc); }
-(?i:"b") { return Parser::make_REG8(REG_B, loc); }
-(?i:"x") { return Parser::make_REG8(REG_X, loc); }
-(?i:"y") { return Parser::make_REG8(REG_Y, loc); }
-(?i:"c") { return Parser::make_REG8(REG_C, loc); }
-(?i:"d") { return Parser::make_REG8(REG_D, loc); }
-(?i:"e") { return Parser::make_REG8(REG_E, loc); }
-(?i:"f") { return Parser::make_REG8(REG_F, loc); }
+(?i:"a") { return Parser::make_REG8(Reg::A, loc); }
+(?i:"b") { return Parser::make_REG8(Reg::B, loc); }
+(?i:"x") { return Parser::make_REG8(Reg::X, loc); }
+(?i:"y") { return Parser::make_REG8(Reg::Y, loc); }
+(?i:"c") { return Parser::make_REG8(Reg::C, loc); }
+(?i:"d") { return Parser::make_REG8(Reg::D, loc); }
+(?i:"e") { return Parser::make_REG8(Reg::E, loc); }
+(?i:"f") { return Parser::make_REG8(Reg::F, loc); }
 
-(?i:"ba") { return Parser::make_REG16(REG_BA, loc); }
-(?i:"xy") { return Parser::make_REG16(REG_XY, loc); }
-(?i:"sp") { return Parser::make_REG16(REG_SP, loc); }
-(?i:"fp") { return Parser::make_REG16(REG_FP, loc); }
-(?i:"cd") { return Parser::make_REG16(REG_CD, loc); }
-(?i:"ef") { return Parser::make_REG16(REG_EF, loc); }
-(?i:"ix") { return Parser::make_REG16(REG_IX, loc); }
-(?i:"iy") { return Parser::make_REG16(REG_IY, loc); }
+(?i:"ba") { return Parser::make_REG16(Reg::BA, loc); }
+(?i:"xy") { return Parser::make_REG16(Reg::XY, loc); }
+(?i:"sp") { return Parser::make_REG16(Reg::SP, loc); }
+(?i:"fp") { return Parser::make_REG16(Reg::FP, loc); }
+(?i:"cd") { return Parser::make_REG16(Reg::CD, loc); }
+(?i:"ef") { return Parser::make_REG16(Reg::EF, loc); }
+(?i:"ix") { return Parser::make_REG16(Reg::IX, loc); }
+(?i:"iy") { return Parser::make_REG16(Reg::IY, loc); }
 
-(?i:"add") { return Parser::make_ALU(ALU_ADD8, loc); }
-(?i:"adc") { return Parser::make_ALU(ALU_ADC8, loc); }
-(?i:"sub") { return Parser::make_ALU(ALU_SUB8, loc); }
-(?i:"sbc") { return Parser::make_ALU(ALU_SBC8, loc); }
-(?i:"and") { return Parser::make_ALU(ALU_AND8, loc); }
-(?i:"xor") { return Parser::make_ALU(ALU_XOR8, loc); }
-(?i:"or") { return Parser::make_ALU(ALU_OR8, loc); }
-(?i:"not") { return Parser::make_ALU(ALU_NOT8, loc); }
+(?i:"add") { return Parser::make_ALU(Alu::ADD8, loc); }
+(?i:"adc") { return Parser::make_ALU(Alu::ADC8, loc); }
+(?i:"sub") { return Parser::make_ALU(Alu::SUB8, loc); }
+(?i:"sbc") { return Parser::make_ALU(Alu::SBC8, loc); }
+(?i:"and") { return Parser::make_ALU(Alu::AND8, loc); }
+(?i:"xor") { return Parser::make_ALU(Alu::XOR8, loc); }
+(?i:"or") { return Parser::make_ALU(Alu::OR8, loc); }
+(?i:"not") { return Parser::make_ALU(Alu::NOT8, loc); }
 
 (?i:"jmp") { return Parser::make_JMP(COND_UNCOND, loc); }
 (?i:"jmpc") { return Parser::make_JMP(COND_CARRY, loc); }
