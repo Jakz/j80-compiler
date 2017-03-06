@@ -63,6 +63,8 @@ enum AluOp : u8
   ALU_LF = 0b01000,
 };
 
+inline AluOp operator|(const AluOp& alu, const int& v) { return static_cast<AluOp>(static_cast<int>(alu) | v); }
+
 const u8 BASE_OPCODE = 0b00001;
 
 enum Opcode : u8
@@ -127,8 +129,6 @@ enum JumpCondition : u8
   COND_NOVERFLOW = 0b111
 };
   
-
-struct Instruction;
 
 struct MnemonicInfo
 {

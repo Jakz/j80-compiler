@@ -12,6 +12,7 @@
 #include <string>
 
 #include "assembler.h"
+#include "disassembler.h"
 #include "compiler.h"
 
 #include "ast.h"
@@ -90,14 +91,13 @@ void runWithArgs(const vector<string>& args, Assembler::J80Assembler& assembler,
 }
 
 int main(int argc, const char * argv[])
-{
-
+{  
   VM vm;
   
   Assembler::J80Assembler assembler;
   nanoc::Compiler compiler;
   
-  runWithArgs({"j80", "tests/testsuite.j80"}, assembler, compiler);
+  runWithArgs({"j80", "tests/ntest.j80"}, assembler, compiler);
   return 0;
   
   

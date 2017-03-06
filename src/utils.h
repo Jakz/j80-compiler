@@ -15,6 +15,7 @@ typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned int u32;
 typedef uint64_t u64;
+using byte = u8;
 
 typedef signed char s8;
 typedef signed short s16;

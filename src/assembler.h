@@ -142,18 +142,7 @@ namespace Assembler
       i->data[2] = value;
       postamble(i);
     }
-    
-    void assembleALU_REG(Reg dst, Reg src1, Reg src2, AluOp opcode, bool extended)
-    {
-      Instruction* i = preamble(LENGTH_3_BYTES);
-      if (extended) opcode = static_cast<AluOp>(opcode | 0b1);
-      
-      i->data[0] = (OPCODE_ALU_REG << 3) | dst;
-      i->data[1] = (src1 << 5) | opcode;
-      i->data[2] = (src2 << 5);
-      postamble(i);
-    }
-    
+
     void assembleALU_NN(Reg dst, Reg src1, AluOp opcode, u8 value)
     {
       Instruction* i = preamble(LENGTH_3_BYTES);

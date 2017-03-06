@@ -157,13 +157,13 @@ instruction:
 | ST LBRACK REG16 RBRACK COMMA REG8 { assembler.assembleSD_PTR_PP($6, $3, 0); }
 
 
-| ALU REG8 COMMA REG8 COMMA REG8 { assembler.assembleALU_REG($2, $4, $6, $1, false); }
-| ALU REG8 COMMA REG8 { assembler.assembleALU_REG($2, $2, $4, $1, false); }
-| ALU REG8 { assembler.assembleALU_REG($2, $2, $2, $1, false); }
+| ALU REG8 COMMA REG8 COMMA REG8 { assembler.add(new InstructionALU_R($2, $4, $6, $1, false)); }
+| ALU REG8 COMMA REG8 { assembler.add(new InstructionALU_R($2, $2, $4, $1, false)); }
+| ALU REG8 { assembler.add(new InstructionALU_R($2, $2, $2, $1, false)); }
 
-| ALU REG16 COMMA REG16 COMMA REG16 { assembler.assembleALU_REG($2, $4, $6, $1, true); }
-| ALU REG16 COMMA REG16 { assembler.assembleALU_REG($2, $2, $4, $1, true); }
-| ALU REG16 { assembler.assembleALU_REG($2, $2, $2, $1, true); }
+| ALU REG16 COMMA REG16 COMMA REG16 { assembler.add(new InstructionALU_R($2, $4, $6, $1, true)); }
+| ALU REG16 COMMA REG16 { assembler.add(new InstructionALU_R($2, $2, $4, $1, true)); }
+| ALU REG16 { assembler.add(new InstructionALU_R($2, $2, $2, $1, true)); }
 
 | ALU REG8 COMMA U16 { assembler.assembleALU_NN($2, $2, $1, (u8)$4); }
 | ALU REG16 COMMA U16 { assembler.assembleALU_NNNN($2, $2, $1, $4); }

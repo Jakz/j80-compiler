@@ -403,6 +403,24 @@ namespace Assembler
   /*************
    * ALU R, S, Q
    *************/
+  class InstructionALU_R : public Instruction
+  {
+  public:
+    AluOp alu;
+    Reg dst;
+    Reg src1;
+    Reg src2;
+    
+  public:
+    InstructionALU_R(Reg dst, Reg src1, Reg src2, AluOp alu, bool extended) :
+    InstructionALU_R(dst, src1, src2, alu | (extended ? 0b1 : 0b0)) { }
+    
+    InstructionALU_R(Reg dst, Reg src1, Reg src2, AluOp alu) : Instruction(LENGTH_3_BYTES),
+    alu(alu), dst(dst), src1(src1), src2(src2) { }
+    
+    std::string mnemonic() const override;
+    void assemble(byte* dest) const override;
+  };
   
   class InstructionSingleReg : public Instruction
   {
@@ -413,11 +431,7 @@ namespace Assembler
     InstructionSingleReg(Opcode opcode, Reg reg) : Instruction(LENGTH_1_BYTES), opcode(opcode), reg(reg) { }
     
   public:
-    void assemble(u8* dest) const override
-    {
-      dest[0] = (opcode << 3) | reg;
-    }
-    
+    void assemble(u8* dest) const override { dest[0] = (opcode << 3) | reg; }
   };
   
   class InstructionSEXT : public InstructionSingleReg
@@ -429,6 +443,7 @@ namespace Assembler
     std::string mnemonic() const { return fmt::sprintf("SEXT %s", Opcodes::reg8(reg)); }
   };
   
+#pragma mark PUSH P
   class InstructionPUSH16 : public InstructionSingleReg
   {
   private:
@@ -438,6 +453,7 @@ namespace Assembler
     std::string mnemonic() const { return fmt::sprintf("PUSH %s", Opcodes::reg16(reg)); }
   };
   
+#pragma mark POP P
   class InstructionPOP16 : public InstructionSingleReg
   {
   private:
@@ -447,6 +463,7 @@ namespace Assembler
     std::string mnemonic() const { return fmt::sprintf("POP %s", Opcodes::reg16(reg)); }
   };
   
+#pragma mark InstructionAddressable
   class InstructionAddressable : public Instruction
   {
   protected:

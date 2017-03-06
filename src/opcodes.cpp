@@ -150,24 +150,6 @@ MnemonicInfo Opcodes::printInstruction(const u8 *data)
   MnemonicInfo info = {"N/A", 0};
   
   switch (opcode) {
-    case OPCODE_LD_RSH_LSH:
-    {
-      if (alu == ALU_TRANSFER_A8)
-        info.value = fmt::sprintf("%s %s, %s", m[N_LD], reg8(reg1), reg8(reg2) );
-      else if (alu == ALU_TRANSFER_A16)
-        info.value = fmt::sprintf("%s %s, %s", m[N_LD], reg16(reg1), reg16(reg2) );
-      else if (alu == ALU_LSH8)
-        info.value = fmt::sprintf("%s %s", m[N_LSH], reg8(reg1));
-      else if (alu == ALU_RSH8)
-        info.value = fmt::sprintf("%s %s", m[N_RSH], reg8(reg1));
-      else if (alu == ALU_LSH16)
-        info.value = fmt::sprintf("%s %s", m[N_LSH], reg16(reg1));
-      else if (alu == ALU_RSH16)
-        info.value = fmt::sprintf("%s %s", m[N_RSH], reg16(reg1));
-
-      info.length = 2;
-      break;
-    }
       
     case OPCODE_LD_NN: { info = {fmt::sprintf("%s %s, %.2Xh", m[N_LD], reg8(reg1), unsigned8), 3}; break; }
     case OPCODE_LD_NNNN: { info = {fmt::sprintf("%s %s, %.4Xh", m[N_LD], reg16(reg1), short1), 3}; break; }
@@ -177,19 +159,6 @@ MnemonicInfo Opcodes::printInstruction(const u8 *data)
     case OPCODE_SD_PTR_NNNN: { info = {fmt::sprintf("%s [%.4Xh], %s ", m[N_ST], short1, reg8(reg1)), 3}; break; }
     case OPCODE_SD_PTR_PP: { info = {fmt::sprintf("%s [%s%+d], %s ", m[N_ST], reg16(reg2), signed8, reg8(reg1)), 3}; break; }
 
-    case OPCODE_ALU_REG:
-    {
-      bool extended = (alu & 0b1) != 0;
-      
-      if (extended)
-        info.value = fmt::sprintf("%s %s, %s, %s", aluName((AluOp)(alu & 0b11110)), reg16(reg1), reg16(reg2), reg16(reg3));
-      else
-        info.value = fmt::sprintf("%s %s, %s, %s", aluName(alu), reg8(reg1), reg8(reg2), reg8(reg3));
-      
-      info.length = 3;
-      break;
-    }
-      
     case OPCODE_ALU_NN: { info = {fmt::sprintf("%s %s, %s, %.2Xh", aluName(alu), reg8(reg1), reg8(reg2), unsigned8), 3}; break;}
     case OPCODE_ALU_NNNN: { info = {fmt::sprintf("%s %s, %s, %.4Xh", aluName((AluOp)(alu & 0b11110)), reg16(reg1), reg16(reg2), short2), 4}; break; }
 

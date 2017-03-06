@@ -60,7 +60,6 @@ enum OpNames
   N_SEXT
 };
 
-
 /****************************
  * LD/LSH/RSH R8, S8
  * LD/LSH/RSH R16, R16
@@ -279,4 +278,26 @@ void InstructionCMP_NNNN::assemble(u8 *dest) const
   dest[1] = ALU_SUB16;
   dest[2] = value.value & 0xFF;
   dest[3] = (value.value >> 8) & 0xFF;
+}
+
+#pragma mark ALU R, S, U
+/****************************
+ * ALU R, S, U
+ * ALU P, Q, O
+ ****************************/
+std::string InstructionALU_R::mnemonic() const
+{
+  bool extended = (alu & 0b1) != 0;
+  
+  if (extended)
+    return fmt::sprintf("%s %s, %s, %s", Opcodes::aluName((AluOp)(alu & 0b11110)), Opcodes::reg16(dst), Opcodes::reg16(src1), Opcodes::reg16(src2));
+  else
+    return fmt::sprintf("%s %s, %s, %s", Opcodes::aluName(alu), Opcodes::reg8(dst), Opcodes::reg8(src1), Opcodes::reg8(src2));
+}
+
+void InstructionALU_R::assemble(byte *dest) const
+{
+  dest[0] = (OPCODE_ALU_REG << 3) | dst;
+  dest[1] = (src1 << 5) | alu;
+  dest[2] = (src2 << 5);
 }

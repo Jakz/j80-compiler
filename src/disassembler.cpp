@@ -2,8 +2,44 @@
 
 using namespace Assembler;
 
-constexpr u8 OPCODE_MASK = 0x1F;
-constexpr u8 OPCODE_SHIFT = 3;
+struct op
+{
+private:
+  const byte data[4];
+  
+  static constexpr u8 OPCODE_MASK = 0x1F;
+  static constexpr u8 OPCODE_SHIFT = 3;
+  
+  static constexpr u8 REG_MASK = 0x07;
+  static constexpr u8 REG1_SHIFT = 0;
+  static constexpr u8 REG2_SHIFT = 5;
+  static constexpr u8 REG3_SHIFT = 5;
+
+  
+  static constexpr u8 CONDITION_MASK = 0x07;
+  static constexpr u8 CONDITION_SHIFT = 0;
+  
+  static constexpr u8 ALU_MASK = 0x1F;
+  static constexpr u8 ALU_SHIFT = 0;
+  
+public:
+  
+  Opcode opcode() const { return static_cast<Opcode>((data[0] >> OPCODE_SHIFT) & OPCODE_MASK); }
+  Reg reg1() const { return static_cast<Reg>((data[0] >> REG1_SHIFT) & REG_MASK); }
+  Reg reg2() const { return static_cast<Reg>((data[1] >> REG2_SHIFT) & REG_MASK); }
+  Reg reg3() const { return static_cast<Reg>((data[2] >> REG3_SHIFT) & REG_MASK); }
+  JumpCondition condition() const { return static_cast<JumpCondition>((data[0] >> CONDITION_SHIFT) & CONDITION_MASK); }
+  AluOp alu() const { return static_cast<AluOp>((data[1] >> ALU_SHIFT) & ALU_MASK); }
+  
+  u8 uint8() const { return data[2]; }
+  s8 sint8() const { return uint8(); }
+  
+  u16 uint16() const { return (data[1] << 8) | data[2]; }
+  s16 sint16() const { return uint16(); }
+  
+  u16 uint16h() const { return (data[3] << 8) | data[2]; }
+  s16 sint16h() const { return uint16(); }
+};
 
 const InstructionLength lengths[] = {
   LENGTH_1_BYTES, // 00000 NOP
@@ -40,14 +76,21 @@ const InstructionLength lengths[] = {
   LENGTH_3_BYTES, // 11111 CALL NNNN
 };
 
-constexpr Opcode fetchOpcode(u8 op)
+Instruction* J80Disassembler::disassemble(const byte* current)
 {
-  return static_cast<Opcode>((op >> OPCODE_SHIFT) | OPCODE_MASK);
-}
-
-InstructionLength J80Disassembler::disassemble(u8 *current)
-{
-  u8 opcode = current[0];
+  const op* data = reinterpret_cast<const op*>(current);
+  InstructionLength length = lengths[data->opcode()];
   
-  return LENGTH_1_BYTES;
+  switch (data->opcode())
+  {
+    case OPCODE_NOP: return new InstructionNOP();
+    case OPCODE_ALU_REG:
+    {
+      return new InstructionALU_R(data->reg1(), data->reg2(), data->reg3(), data->alu());
+    }
+    
+  }
+  
+  
+  return nullptr;
 }

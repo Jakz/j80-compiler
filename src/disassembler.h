@@ -10,6 +10,6 @@ namespace Assembler
   private:
     
   public:
-    InstructionLength disassemble(u8* current);
+    Instruction* disassemble(const byte* current);
   };
 }
