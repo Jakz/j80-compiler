@@ -148,14 +148,17 @@ instruction:
 | LD REG8 COMMA LBRACK value16 RBRACK { assembler.add(new InstructionLD_PTR_NNNN($2, $5)); }
 
 /* LD R, [PP+SS] */
-| LD REG8 COMMA LBRACK REG16 U16 RBRACK { assembler.assembleLD_PTR_PP($2, $5, (s8)$6); }
-| LD REG8 COMMA LBRACK REG16 RBRACK { assembler.assembleLD_PTR_PP($2, $5, 0); }
-
+| LD REG8 COMMA LBRACK REG16 value8 RBRACK { assembler.add(new InstructionLD_PTR_PP($2, $5, $6)); }
+| LD REG8 COMMA LBRACK REG16 RBRACK { assembler.add(new InstructionLD_PTR_PP($2, $5, 0)); }
+/* LD P, NNNN */
 | LD REG16 COMMA value16 { assembler.add(new InstructionLD_NNNN($2, $4)); }
 
+/* ST [NNNN], R */
 | ST LBRACK value16 RBRACK COMMA REG8 { assembler.add(new InstructionST_PTR_NNNN($6, $3)); }
-| ST LBRACK REG16 U16 RBRACK COMMA REG8 { assembler.assembleSD_PTR_PP($7, $3, (s8)$4); }
-| ST LBRACK REG16 RBRACK COMMA REG8 { assembler.assembleSD_PTR_PP($6, $3, 0); }
+  
+/* ST [PP+SS], R */
+| ST LBRACK REG16 U16 RBRACK COMMA REG8 { assembler.add(new InstructionST_PTR_PP($7, $3, $4)); }
+| ST LBRACK REG16 RBRACK COMMA REG8 { assembler.add(new InstructionST_PTR_PP($6, $3, 0)); }
 
 
 /* ALU R, S, U */

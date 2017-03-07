@@ -457,7 +457,46 @@ namespace Assembler
     std::string mnemonic() const override;
     void assemble(u8* dest) const override;
   };
+      
+      
+  /*************
+   * LD R, [PP+SS]
+   * ST [PP+SS], R
+   *************/
+#pragma mark LD R, [PP+SS]
+  class InstructionXXX_PTR_PP : public InstructionXXX_NN
+  {
+  protected:
+    Reg16 raddr;
+    
+  protected:
+    InstructionXXX_PTR_PP(Opcode opcode, Reg8 reg, Reg16 raddr, Value8 offset) :
+      InstructionXXX_NN(opcode, reg, offset), raddr(raddr) { }
+    
+    void assemble(u8* dest) const override;
+  };
+      
+  class InstructionLD_PTR_PP : public InstructionXXX_PTR_PP
+  {
+    
+  public:
+    InstructionLD_PTR_PP(Reg8 reg, Reg16 raddr, Value8 offset) :
+      InstructionXXX_PTR_PP(OPCODE_LD_PTR_PP, reg, raddr, offset) { }
+    
+    std::string mnemonic() const override;
+  };
   
+  class InstructionST_PTR_PP : public InstructionXXX_PTR_PP
+  {
+    
+  public:
+    InstructionST_PTR_PP(Reg8 reg, Reg16 raddr, Value8 offset) :
+      InstructionXXX_PTR_PP(OPCODE_SD_PTR_PP, reg, raddr, offset) { }
+    
+    std::string mnemonic() const override;
+  };
+      
+
   /*************
    * ALU R, S, Q
    *************/
@@ -613,13 +652,13 @@ namespace Assembler
 inline std::ostream& operator<<(std::ostream& os, const Assembler::Value16& value)
 {
   if (value.label.empty())
-    os << fmt::sprintf("%.4Xh", value.value);
+    os << fmt::format("{:Xh}", value.value);
   else
   {
     if (value.offset != 0)
-      os << fmt::sprintf("%.4Xh (%s%+d)", value.value, value.label, value.offset);
+      os << fmt::format("{:X}h ({}{:+})", value.value, value.label, (s8)value.offset);
     else
-      os << fmt::sprintf("%.4Xh (%s)", value.value, value.label);
+      os << fmt::format("{:X}h ({})", value.value, value.label);
   }
   
   return os;

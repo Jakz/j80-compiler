@@ -29,15 +29,9 @@ void InstructionXXX_R_S::assemble(u8* dest) const
  ***************************/
 std::string InstructionLD_LSH_RSH::mnemonic() const
 {
-  const char* opName = Opcodes::aluName(alu);
   const char* srcName = (alu & 0b1) == Alu::EXTENDED_BIT ? Opcodes::reg16(reg1) : Opcodes::reg8(reg1);
   const char* dstName = (alu & 0b1) == Alu::EXTENDED_BIT ? Opcodes::reg16(reg2) : Opcodes::reg8(reg2);
-  bool noArg = alu == Alu::LSH8 || alu == Alu::LSH16 || alu == Alu::RSH8 || alu == Alu::RSH16;
-  
-  if (noArg)
-    return fmt::sprintf("%s %s", opName, srcName);
-  else
-    return fmt::sprintf("%s %s, %s", opName, srcName, dstName);
+  return fmt::format("{} {}, {}", Opcodes::aluName(alu), srcName, dstName);
 }
 
 /****************************
@@ -49,9 +43,9 @@ std::string InstructionCMP_R_S::mnemonic() const
   bool isExtended = (alu & 0b1) == Alu::EXTENDED_BIT;
   
   if (isExtended)
-    return fmt::sprintf("%s %s, %s", Opcodes::opcodeName(opcode), Opcodes::reg16(reg1), Opcodes::reg16(reg2));
+    return fmt::format("{} {}, {}", Opcodes::opcodeName(opcode), Opcodes::reg16(reg1), Opcodes::reg16(reg2));
   else
-    return fmt::sprintf("%s %s, %s", Opcodes::opcodeName(opcode), Opcodes::reg8(reg1), Opcodes::reg8(reg2));
+    return fmt::format("{} {}, {}", Opcodes::opcodeName(opcode), Opcodes::reg8(reg1), Opcodes::reg8(reg2));
 }
 
 /****************************
@@ -166,7 +160,7 @@ Result InstructionXXX_NNNN<RegType>::solve(const Environment &env)
       
       if (it != env.data.map.end())
       {
-        env.assembler.log(Log::INFO, true, "  > Data address referenced '%s' (%04X+%d) value", value.label.c_str(), it->second.offset + env.dataSegmentBase, value.offset);
+        env.assembler.log(Log::INFO, true, "  > Data address referenced '%s' (%04X%+d) value", value.label.c_str(), it->second.offset + env.dataSegmentBase, value.offset);
         value.value = it->second.offset + env.dataSegmentBase + value.offset;
       }
       else
@@ -302,3 +296,34 @@ void InstructionALU_R_NN::assemble(byte* dest) const
   dest[1] = (src.reg << 5) | alu;
   dest[2] = value.value;
 }
+
+#pragma mark XXX R, [PP]
+void InstructionXXX_PTR_PP::assemble(u8* dest) const
+{
+  dest[0] = (opcode << 3) | dst.reg;
+  dest[1] = (raddr.reg << 5) | Alu::ADD_NO_FLAGS;
+  dest[2] = value.value;
+}
+
+/****************************
+ * LD R, [PP+SS]
+ * ST [PP+SS], R
+ ****************************/
+#pragma mark
+
+std::string InstructionLD_PTR_PP::mnemonic() const
+{
+  if (value.value == 0)
+    return fmt::format("{} {}, [{}]", Opcodes::opcodeName(opcode), dst, raddr);
+  else
+    return fmt::format("{} {}, [{}{:+}]", Opcodes::opcodeName(opcode), dst, raddr, (s8)value.value);
+}
+
+std::string InstructionST_PTR_PP::mnemonic() const
+{
+  if (value.value == 0)
+    return fmt::format("{} [{}], {}", Opcodes::opcodeName(opcode), raddr, dst);
+  else
+    return fmt::format("{} [{}{}], {}", Opcodes::opcodeName(opcode), raddr, (s8)value.value, dst);
+}
+

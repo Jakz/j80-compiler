@@ -135,25 +135,7 @@ namespace Assembler
       position += i->getLength();
       instructions.push_back(std::unique_ptr<Instruction>(i));
     }
-    
-    void assembleLD_PTR_PP(Reg dst, Reg src, s8 value)
-    {
-      Instruction* i = preamble(LENGTH_3_BYTES);
-      i->data[0] = (OPCODE_LD_PTR_PP << 3) | dst;
-      i->data[1] = (src << 5) | Alu::ADD_NO_FLAGS;
-      i->data[2] = value;
-      postamble(i);
-    }
-    
-    void assembleSD_PTR_PP(Reg src, Reg raddr, s8 value)
-    {
-      Instruction* i = preamble(LENGTH_3_BYTES);
-      i->data[0] = (OPCODE_SD_PTR_PP << 3) | src;
-      i->data[1] = (raddr << 5) | Alu::ADD_NO_FLAGS;
-      i->data[2] = value;
-      postamble(i);
-    }
-    
+
     void assembleJMP_PP(JumpCondition cond, Reg reg)
     {
       Instruction* i = preamble(LENGTH_2_BYTES);
