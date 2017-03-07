@@ -144,16 +144,16 @@ instruction:
 
 | LD REG16 COMMA REG16 { assembler.add(new InstructionLD_LSH_RSH($2, $4, Alu::TRANSFER_A16, true)); }
 
-| LD REG8 COMMA LBRACK U16 RBRACK { assembler.assembleLD_PTR_NNNN($2, $5); }
-| LD REG8 COMMA LBRACK STRING RBRACK { assembler.assembleLD_PTR_NNNN($2, 0, $5, 0); }
-| LD REG8 COMMA LBRACK STRING U16 RBRACK { assembler.assembleLD_PTR_NNNN($2, 0, $5, (s8)$6); }
+/* LD R, [NNNN] */
+| LD REG8 COMMA LBRACK value16 RBRACK { assembler.add(new InstructionLD_PTR_NNNN($2, $5)); }
 
+/* LD R, [PP+SS] */
 | LD REG8 COMMA LBRACK REG16 U16 RBRACK { assembler.assembleLD_PTR_PP($2, $5, (s8)$6); }
 | LD REG8 COMMA LBRACK REG16 RBRACK { assembler.assembleLD_PTR_PP($2, $5, 0); }
 
 | LD REG16 COMMA value16 { assembler.add(new InstructionLD_NNNN($2, $4)); }
 
-| ST LBRACK value16 RBRACK COMMA REG8 { assembler.add(new InstructionST_NNNN($6, $3)); }
+| ST LBRACK value16 RBRACK COMMA REG8 { assembler.add(new InstructionST_PTR_NNNN($6, $3)); }
 | ST LBRACK REG16 U16 RBRACK COMMA REG8 { assembler.assembleSD_PTR_PP($7, $3, (s8)$4); }
 | ST LBRACK REG16 RBRACK COMMA REG8 { assembler.assembleSD_PTR_PP($6, $3, 0); }
 
@@ -204,22 +204,22 @@ instruction:
 | PUSH REG16 { assembler.add(new InstructionPUSH16($2)); }
 | POP REG16 { assembler.add(new InstructionPOP16($2)); }
 
-| LF REG8 { assembler.assembleShortWithReg(OPCODE_LF, $2); }
-| SF REG8 { assembler.assembleShortWithReg(OPCODE_SF, $2); }
+| LF REG8 { assembler.add(new InstructionLF($2)); }
+| SF REG8 { assembler.add(new InstructionSF($2)); }
 
 | EI { assembler.add(new InstructionEI()); }
 | DI { assembler.add(new InstructionDI()); }
 | NOP { assembler.add(new InstructionNOP()); }
 
 /* CMP 8 bit */
-| CMP REG8 COMMA REG8 { assembler.assembleCMP_REG($2, $4, false); }
+| CMP REG8 COMMA REG8 { assembler.add(new InstructionCMP_R_S($2, $4, false)); }
 | CMP REG8 { assembler.add(new InstructionCMP_NN($2, Value8(0))); }
 | CMP REG8 COMMA value8 { assembler.add(new InstructionCMP_NN($2, $4)); }
 
 /* CMP 16 bit */
 | CMP REG16 COMMA value16 { assembler.add(new InstructionCMP_NNNN($2, $4)); }
 | CMP REG16 { assembler.add(new InstructionCMP_NNNN($2, Value16(0))); }
-| CMP REG16 COMMA REG16 { assembler.assembleCMP_REG($2, $4, true); }
+| CMP REG16 COMMA REG16 { assembler.add(new InstructionCMP_R_S($2, $4, true)); }
 
 
 | DATA_CONST STRING U16 { assembler.addConstValue($2, $3); }

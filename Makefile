@@ -42,17 +42,14 @@ SRC_CPP += compiler/nanocparser.cpp compiler/nanoclexer.cpp
 
 ifeq ($(MAKECMDGOALS), test)
 SRC_CPP := $(filter-out main.cpp, $(SRC_CPP))
-SRC_CPP += support/tests.cpp
+else
+SRC_CPP := $(filter-out support/tests.cpp, $(SRC_CPP))
 endif
 
 #SRC_C   = $(foreach dir, $(SOURCE), $(wildcard $(dir)/*.c))  # lex.nanocyy.cpp
 OBJ_CPP := $(patsubst %.cpp, %.o, $(SRC_CPP))
 #OBJ_C   = $(patsubst $(BASESRC)%, $(BUILD)%, $(patsubst %.c, %.o, $(SRC_C)))
 OBJS    :=  $(OBJ_CPP) #$(OBJ_C)
-
-
-
-$(info $$SRC_CPP is [${SRC_CPP}])
 	
 all: $(TARGET)
 opt: $(TARGET)

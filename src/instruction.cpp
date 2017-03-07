@@ -6,16 +6,32 @@
 
 using namespace Assembler;
 
+#pragma mark InstructionSingleReg
+template<typename RegType>
+std::string InstructionSingleReg<RegType>::mnemonic() const
+{
+  return fmt::format("{} {}", Opcodes::opcodeName(opcode), reg);
+}
+
+template class Assembler::InstructionSingleReg<Reg8>;
+template class Assembler::InstructionSingleReg<Reg16>;
+
+#pragma mark XXX R, S
+void InstructionXXX_R_S::assemble(u8* dest) const
+{
+  dest[0] = (opcode << 3) | reg1;
+  dest[1] = (reg2 << 5) | alu;
+}
+
 /****************************
  * LD/LSH/RSH R8, S8
  * LD/LSH/RSH R16, R16
  ***************************/
-
 std::string InstructionLD_LSH_RSH::mnemonic() const
 {
   const char* opName = Opcodes::aluName(alu);
-  const char* srcName = (alu & 0b1) == Alu::EXTENDED_BIT ? Opcodes::reg16(src) : Opcodes::reg8(src);
-  const char* dstName = (alu & 0b1) == Alu::EXTENDED_BIT ? Opcodes::reg16(src) : Opcodes::reg8(src);
+  const char* srcName = (alu & 0b1) == Alu::EXTENDED_BIT ? Opcodes::reg16(reg1) : Opcodes::reg8(reg1);
+  const char* dstName = (alu & 0b1) == Alu::EXTENDED_BIT ? Opcodes::reg16(reg2) : Opcodes::reg8(reg2);
   bool noArg = alu == Alu::LSH8 || alu == Alu::LSH16 || alu == Alu::RSH8 || alu == Alu::RSH16;
   
   if (noArg)
@@ -24,13 +40,19 @@ std::string InstructionLD_LSH_RSH::mnemonic() const
     return fmt::sprintf("%s %s, %s", opName, srcName, dstName);
 }
 
-/* 10000RRR SSSAAAAA */
-void InstructionLD_LSH_RSH::assemble(u8* dest) const
+/****************************
+ * CMP R, S
+ * CMP P, Q
+ ***************************/
+std::string InstructionCMP_R_S::mnemonic() const
 {
-  dest[0] = (OPCODE_LD_RSH_LSH << 3) | dst;
-  dest[1] = (src << 5) | alu;
+  bool isExtended = (alu & 0b1) == Alu::EXTENDED_BIT;
+  
+  if (isExtended)
+    return fmt::sprintf("%s %s, %s", Opcodes::opcodeName(opcode), Opcodes::reg16(reg1), Opcodes::reg16(reg2));
+  else
+    return fmt::sprintf("%s %s, %s", Opcodes::opcodeName(opcode), Opcodes::reg8(reg1), Opcodes::reg8(reg2));
 }
-
 
 /****************************
  * XXX R, NN
@@ -82,13 +104,12 @@ std::string InstructionXXX_NN::mnemonic() const
   return fmt::format("{} {}, {}", Opcodes::opcodeName(opcode), dst, value);
 }
 
-
 /****************************
  * LD R, NN
  ****************************/
 void InstructionLD_NN::assemble(u8* dest) const
 {
-  dest[0] = (opcode << 3) | dst;
+  dest[0] = (opcode << 3) | dst.reg;
   dest[1] = static_cast<byte>(Alu::TRANSFER_B8);
   dest[2] = value.value;
 }
@@ -98,7 +119,7 @@ void InstructionLD_NN::assemble(u8* dest) const
  ****************************/
 void InstructionCMP_NN::assemble(u8 *dest) const
 {
-  dest[0] = (opcode << 3) | dst;
+  dest[0] = (opcode << 3) | dst.reg;
   dest[1] = static_cast<byte>(Alu::SUB8);
   dest[2] = value.value;
 }
@@ -181,7 +202,7 @@ template class Assembler::InstructionXXX_NNNN<Reg16>;
  ****************************/
 void InstructionLD_NNNN::assemble(u8* dest) const
 {
-  dest[0] = (OPCODE_LD_NNNN << 3) | dst;
+  dest[0] = (OPCODE_LD_NNNN << 3) | dst.reg;
   dest[1] = (value.value >> 8) & 0xFF;
   dest[2] = value.value & 0xFF;
 }
@@ -190,11 +211,29 @@ void InstructionLD_NNNN::assemble(u8* dest) const
 /****************************
  * ST [NNNN], R
  ****************************/
-void InstructionST_NNNN::assemble(u8* dest) const
+void InstructionST_PTR_NNNN::assemble(u8* dest) const
 {
-  dest[0] = (OPCODE_SD_PTR_NNNN << 3) | dst;
+  dest[0] = (OPCODE_SD_PTR_NNNN << 3) | dst.reg;
   dest[1] = (value.value >> 8) & 0xFF;
   dest[2] = value.value & 0xFF;
+}
+
+std::string InstructionST_PTR_NNNN::mnemonic() const
+{
+  return fmt::format("{} [{}], {}", Opcodes::opcodeName(opcode), value, dst);
+}
+
+#pragma mark LD R, [NNNN]
+void InstructionLD_PTR_NNNN::assemble(u8* dest) const
+{
+  dest[0] = (OPCODE_LD_PTR_NNNN << 3) | dst.reg;
+  dest[1] = (value.value >> 8) & 0xFF;
+  dest[2] = value.value & 0xFF;
+}
+
+std::string InstructionLD_PTR_NNNN::mnemonic() const
+{
+  return fmt::format("{} {}, [{}]", Opcodes::opcodeName(opcode), dst, value);
 }
 
 #pragma mark CMP P, NNNN
@@ -203,7 +242,7 @@ void InstructionST_NNNN::assemble(u8* dest) const
  ****************************/
 void InstructionCMP_NNNN::assemble(u8 *dest) const
 {
-  dest[0] = (OPCODE_CMP_NNNN << 3) | dst;
+  dest[0] = (OPCODE_CMP_NNNN << 3) | dst.reg;
   dest[1] = static_cast<byte>(Alu::SUB16);
   dest[2] = value.value & 0xFF;
   dest[3] = (value.value >> 8) & 0xFF;
@@ -220,8 +259,8 @@ std::string InstructionALU_NNNN::mnemonic() const
 
 void InstructionALU_NNNN::assemble(u8* dest) const
 {
-  dest[0] = (OPCODE_ALU_NNNN << 3) | dst;
-  dest[1] = (src << 5) | alu;
+  dest[0] = (OPCODE_ALU_NNNN << 3) | dst.reg;
+  dest[1] = (src.reg << 5) | alu;
   dest[2] = value.value & 0xFF;
   dest[3] = (value.value >> 8) & 0xFF;
 }
@@ -259,7 +298,7 @@ std::string InstructionALU_R_NN::mnemonic() const
 
 void InstructionALU_R_NN::assemble(byte* dest) const
 {
-  dest[0] = (opcode << 3) | dst;
-  dest[1] = (src << 5) | alu;
+  dest[0] = (opcode << 3) | dst.reg;
+  dest[1] = (src.reg << 5) | alu;
   dest[2] = value.value;
 }

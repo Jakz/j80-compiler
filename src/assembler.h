@@ -136,18 +136,6 @@ namespace Assembler
       instructions.push_back(std::unique_ptr<Instruction>(i));
     }
     
-    void assembleLD_PTR_NNNN(Reg dst, u16 address, const std::string& label = std::string(), s8 offset = 0)
-    {
-      if (!label.empty())
-        dataReferences.push_back(std::make_pair(position, DataReference(label,offset)));
-      
-      Instruction* i = preamble(LENGTH_3_BYTES);
-      i->data[0] = (OPCODE_LD_PTR_NNNN << 3) | dst;
-      i->data[2] = address & 0xFF;
-      i->data[1] = (address >> 8) & 0xFF;
-      postamble(i);
-    }
-    
     void assembleLD_PTR_PP(Reg dst, Reg src, s8 value)
     {
       Instruction* i = preamble(LENGTH_3_BYTES);
@@ -175,39 +163,7 @@ namespace Assembler
       
       postamble(i);
     }
-    
-    // CHEATED LENGTHS
-    /*
-     PUSH, POP, RET, LF, SF, EI, DI, INT
-     
-     
-     */
-    
-    void assembleShort(Opcode opcode)
-    {
-      Instruction* i = preamble(LENGTH_1_BYTES);
-      i->data[0] = opcode << 3;
-      postamble(i);
-    }
-    
-    void assembleShortWithReg(Opcode opcode, Reg reg)
-    {
-      Instruction* i = preamble(LENGTH_1_BYTES);
-      i->data[0] = (opcode << 3) | reg;
-      postamble(i);
-    }
 
-    void assembleCMP_REG(Reg dst, Reg src1, bool extended)
-    {
-      Instruction *i = preamble(LENGTH_2_BYTES);
-      Alu opcode = Alu::SUB8;
-      if (extended) opcode = Alu::SUB16;
-      
-      i->data[0] = (OPCODE_CMP_REG << 3) | dst;
-      i->data[1] = (src1 << 5) | opcode;
-      postamble(i);
-    }
-    
     void addData(const std::string& label, const DataSegmentEntry& entry)
     {
       data.lru.push_back(data.map.insert(std::make_pair(label, entry)).first);

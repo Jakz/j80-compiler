@@ -107,9 +107,6 @@ void J80Assembler::printProgram(std::ostream& out) const
     
     std::string mnemonic = i->mnemonic();
     
-    if (mnemonic.empty())
-      mnemonic = Opcodes::printInstruction(opcode).value;
-    
     out << sprintf("%s", mnemonic.c_str());
     
     if (keepLabels)

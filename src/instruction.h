@@ -190,15 +190,12 @@ namespace Assembler
   {
     const Reg reg;
     Reg16(Reg reg) : reg(reg) { }
-    operator u8() const { return static_cast<u8>(reg); }
   };
   
   struct Reg8
   {
     const Reg reg;
     Reg8(Reg reg) : reg(reg) { }
-    operator u8() const { return static_cast<u8>(reg); }
-
   };
   
 #pragma mark Support Instructions
@@ -289,18 +286,18 @@ namespace Assembler
     std::string mnemonic() const override;
   };
   
+  template<typename RegType>
   class InstructionSingleReg : public Instruction
   {
   protected:
     Opcode opcode;
-    Reg reg;
-    bool extended;
+    RegType reg;
     
-    InstructionSingleReg(Opcode opcode, Reg reg, bool extended) : Instruction(LENGTH_1_BYTES), opcode(opcode), reg(reg), extended(extended) { }
-    std::string mnemonic() const override final { return fmt::sprintf("%s %s", Opcodes::opcodeName(opcode), Opcodes::reg(reg, extended)); }
+    InstructionSingleReg(Opcode opcode, RegType reg) : Instruction(LENGTH_1_BYTES), opcode(opcode), reg(reg) { }
+    std::string mnemonic() const override final;
     
   public:
-    void assemble(u8* dest) const override { dest[0] = (opcode << 3) | reg; }
+    void assemble(u8* dest) const override { dest[0] = (opcode << 3) | reg.reg; }
   };
   
   template<Opcode OPCODE>
@@ -349,27 +346,44 @@ namespace Assembler
   
 #pragma mark LD/LSH/RSH R, S, Q
   /*************
-   * LD R, S, Q
-   * LSH R, S, Q
-   * RSH R, S, Q
+   * LD R, S
+   * LSH R, S
+   * RSH R, S
    *************/
   
-  class InstructionLD_LSH_RSH : public Instruction
+  class InstructionXXX_R_S: public Instruction
   {
-  private:
-    const Reg dst;
-    const Reg src;
+  protected:
+    const Opcode opcode;
+    const Reg reg1;
+    const Reg reg2;
     const Alu alu;
     
   public:
-    InstructionLD_LSH_RSH(Reg dst, Reg src, Alu alu, bool extended) : Instruction(LENGTH_2_BYTES),
-      dst(dst), src(src), alu(static_cast<Alu>(alu | (extended ? 0b1 : 0)))
+    InstructionXXX_R_S(Opcode opcode, Reg reg1, Reg reg2, Alu alu, bool extended) : Instruction(LENGTH_2_BYTES),
+      opcode(opcode), reg1(reg1), reg2(reg2), alu(static_cast<Alu>(alu | (extended ? 0b1 : 0)))
     { }
     
-    std::string mnemonic() const override;
     void assemble(u8* dest) const override;    
   };
-  
+      
+  class InstructionLD_LSH_RSH : public InstructionXXX_R_S
+  {
+  public:
+    InstructionLD_LSH_RSH(Reg reg1, Reg reg2, Alu alu, bool extended) :
+      InstructionXXX_R_S(OPCODE_LD_RSH_LSH, reg1, reg2, alu, extended) { }
+    
+    std::string mnemonic() const override;
+  };
+      
+  class InstructionCMP_R_S : public InstructionXXX_R_S
+  {
+  public:
+    InstructionCMP_R_S(Reg reg1, Reg reg2, bool extended) :
+    InstructionXXX_R_S(OPCODE_CMP_REG, reg1, reg2, Alu::SUB8, extended) { }
+    
+    std::string mnemonic() const override;
+  };
   
 #pragma mark LD R, NN - CMP R,NN
   /*************
@@ -394,7 +408,9 @@ namespace Assembler
   /*************
    * LD P, NNNN
    * ST [NNNN], R
+   * LD R, [NNNN]
    * CMP P, NNNN
+   * ALU P, Q, NNNN
    *************/
 #pragma mark LD P, NNNN
   class InstructionLD_NNNN : public InstructionXXX_NNNN<Reg16>
@@ -405,11 +421,21 @@ namespace Assembler
   };
   
 #pragma mark ST [NNNN], R
-  class InstructionST_NNNN : public InstructionXXX_NNNN<Reg8>
+  class InstructionST_PTR_NNNN : public InstructionXXX_NNNN<Reg8>
   {
   public:
-    InstructionST_NNNN(Reg8 src, Value16 value) : InstructionXXX_NNNN(LENGTH_3_BYTES, OPCODE_SD_PTR_NNNN, src, value) { }
+    InstructionST_PTR_NNNN(Reg8 src, Value16 value) : InstructionXXX_NNNN(LENGTH_3_BYTES, OPCODE_SD_PTR_NNNN, src, value) { }
     void assemble(u8* dest) const override;
+    std::string mnemonic() const override;
+  };
+      
+#pragma mark LD R, [NNNN]
+  class InstructionLD_PTR_NNNN : public InstructionXXX_NNNN<Reg8>
+  {
+  public:
+    InstructionLD_PTR_NNNN(Reg8 src, Value16 value) : InstructionXXX_NNNN(LENGTH_3_BYTES, OPCODE_LD_PTR_NNNN, src, value) { }
+    void assemble(u8* dest) const override;
+    std::string mnemonic() const override;
   };
   
 #pragma mark CMP P, NNNN
@@ -469,39 +495,52 @@ namespace Assembler
   };
   
 #pragma marg SEXT
-  class InstructionSEXT : public InstructionSingleReg
+  class InstructionSEXT : public InstructionSingleReg<Reg8>
   {
   public:
-    InstructionSEXT(Reg reg) : InstructionSingleReg(OPCODE_SEXT, reg, false) { }
+    InstructionSEXT(Reg8 reg) : InstructionSingleReg(OPCODE_SEXT, reg) { }
   };
   
 #pragma mark PUSH P
-  class InstructionPUSH16 : public InstructionSingleReg
+  class InstructionPUSH16 : public InstructionSingleReg<Reg16>
   {
   public:
-    InstructionPUSH16(Reg reg) : InstructionSingleReg(OPCODE_PUSH16, reg, true) { }
+    InstructionPUSH16(Reg16 reg) : InstructionSingleReg(OPCODE_PUSH16, reg) { }
   };
   
-  class InstructionPUSH8 : public InstructionSingleReg
+  class InstructionPUSH8 : public InstructionSingleReg<Reg8>
   {
   public:
-    InstructionPUSH8(Reg reg) : InstructionSingleReg(OPCODE_PUSH, reg, false) { }
+    InstructionPUSH8(Reg8 reg) : InstructionSingleReg(OPCODE_PUSH, reg) { }
   };
   
   
 #pragma mark POP P
-  class InstructionPOP8 : public InstructionSingleReg
+  class InstructionPOP8 : public InstructionSingleReg<Reg8>
   {
   public:
-    InstructionPOP8(Reg reg) : InstructionSingleReg(OPCODE_POP, reg, false) { }
+    InstructionPOP8(Reg8 reg) : InstructionSingleReg(OPCODE_POP, reg) { }
   };
   
-  class InstructionPOP16 : public InstructionSingleReg
+  class InstructionPOP16 : public InstructionSingleReg<Reg16>
   {
   public:
-    InstructionPOP16(Reg reg) : InstructionSingleReg(OPCODE_POP16, reg, true) { }
+    InstructionPOP16(Reg16 reg) : InstructionSingleReg(OPCODE_POP16, reg) { }
+  };
+      
+#pragma mark LF R / SF R
+  class InstructionLF : public InstructionSingleReg<Reg8>
+  {
+  public:
+    InstructionLF(Reg8 reg) : InstructionSingleReg(OPCODE_LF, reg) { }
   };
   
+  class InstructionSF : public InstructionSingleReg<Reg8>
+  {
+  public:
+    InstructionSF(Reg8 reg) : InstructionSingleReg(OPCODE_SF, reg) { }
+  };
+
 #pragma mark JMP NNNN
   class InstructionJMP_NNNN : public InstructionAddressable
   {
@@ -571,17 +610,22 @@ namespace Assembler
 
 #pragma Helpers for mnemonics
       
-inline std::ostream& operator<<(std::ostream& os, Assembler::Value16 value)
+inline std::ostream& operator<<(std::ostream& os, const Assembler::Value16& value)
 {
   if (value.label.empty())
     os << fmt::sprintf("%.4Xh", value.value);
   else
-    os << fmt::sprintf("%.4Xh (%s)", value.value, value.label);
+  {
+    if (value.offset != 0)
+      os << fmt::sprintf("%.4Xh (%s%+d)", value.value, value.label, value.offset);
+    else
+      os << fmt::sprintf("%.4Xh (%s)", value.value, value.label);
+  }
   
   return os;
 }
 
-inline std::ostream& operator<<(std::ostream& os, Assembler::Value8 value)
+inline std::ostream& operator<<(std::ostream& os, const Assembler::Value8& value)
 {
   os << fmt::sprintf("%.2Xh", value.value);
   return os;
