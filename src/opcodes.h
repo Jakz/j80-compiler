@@ -67,6 +67,7 @@ enum class Alu : u8
   EXTENDED_BIT = 0b00001
 };
 
+template<typename T, typename std::enable_if<std::is_integral<T>::value, int>::type = 0> inline T operator==(const T& t, const Alu& o) { return t == static_cast<T>(o); }
 template<typename T, typename std::enable_if<std::is_integral<T>::value, int>::type = 0> inline T operator|(const T& t, const Alu& o) { return t | static_cast<T>(o); }
 inline Alu operator|(const Alu& alu, const int& v) { return static_cast<Alu>(static_cast<int>(alu) | v); }
 inline Alu operator&(const Alu& alu, const int& v) { return static_cast<Alu>(static_cast<int>(alu) & v); }
