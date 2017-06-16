@@ -1,7 +1,10 @@
-.asciiz antani "antani"
-.const foti 1234h
-ST [foti], X
-ST [antani], Y
-ST [antani-1], Y
-ST [5678h], C
-ST [foti+2], X
+.asciiz foo "antani"
+LD X, [CD+10]
+LD Y, [BA-10]
+ST [IY], A
+CMP X, Y
+CMP IX, IY
+LSH X, Y
+LD A, [foo]
+ST [foo+1], B
+ST [foo-1], B

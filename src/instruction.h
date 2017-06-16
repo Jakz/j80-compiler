@@ -61,7 +61,7 @@ namespace Assembler
     DataSegmentEntry(const std::string& ascii, bool includeNul) :
     DataSegmentEntry(includeNul ? ascii.length()+1 : ascii.length())
     {
-      data.get()[length] = '\0';
+      data.get()[length-1] = '\0';
       std::copy(ascii.begin(), ascii.end(), data.get());
     }
     
@@ -652,7 +652,7 @@ namespace Assembler
 inline std::ostream& operator<<(std::ostream& os, const Assembler::Value16& value)
 {
   if (value.label.empty())
-    os << fmt::format("{:Xh}", value.value);
+    os << fmt::format("{:X}h", value.value);
   else
   {
     if (value.offset != 0)

@@ -1,5 +1,6 @@
 
 .asciiz testintro "Test "
+.asciiz testended "Tests finished"
 .asciiz success "success"
 .asciiz fail "fail"
 .asciiz test_sf "SF R"
@@ -19,12 +20,11 @@
 .asciiz test_ld_pp "LD R, [PP+SS]"
 .asciiz test_recursion "Recursion"
 
+
 .const stdout ffffh
 
 LD SP, 8000h
 
-CALL xor_r_s
-CALL xor_p_q
 CALL cmp_r_s
 CALL sext_r
 CALL sf_r
@@ -37,6 +37,8 @@ CALL ld_nn_test
 CALL ld_nnnn_test
 CALL lsh_r_test
 CALL lsh_rr_test
+LD BA, testended
+CALL printString
 
 end:
 JMP end
@@ -494,7 +496,7 @@ JMPNV add_nn_test_fail
 # x = -120, x += -10, assert(overflow)
 #FIX
 LD X, -120
-ADD X, -150
+ADD X, -120
 LD C, 4
 JMPNV add_nn_test_fail
 
