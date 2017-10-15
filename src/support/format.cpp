@@ -467,8 +467,7 @@ int fmt::internal::CharTraits<wchar_t>::format_float(
       FMT_SWPRINTF(buffer, size, format, width, precision, value);
 }
 
-template <typename T>
-const char fmt::internal::BasicData<T>::DIGITS[] =
+const char fmt::internal::Data::DIGITS[] =
     "0001020304050607080910111213141516171819"
     "2021222324252627282930313233343536373839"
     "4041424344454647484950515253545556575859"
@@ -486,13 +485,11 @@ const char fmt::internal::BasicData<T>::DIGITS[] =
   factor * 100000000, \
   factor * 1000000000
 
-template <typename T>
-const uint32_t fmt::internal::BasicData<T>::POWERS_OF_10_32[] = {
+const uint32_t fmt::internal::Data::POWERS_OF_10_32[] = {
   0, FMT_POWERS_OF_10(1)
 };
 
-template <typename T>
-const uint64_t fmt::internal::BasicData<T>::POWERS_OF_10_64[] = {
+const uint64_t fmt::internal::Data::POWERS_OF_10_64[] = {
   0,
   FMT_POWERS_OF_10(1),
   FMT_POWERS_OF_10(fmt::ULongLong(1000000000)),
@@ -891,8 +888,6 @@ FMT_FUNC int fmt::fprintf(std::FILE *f, CStringRef format, ArgList args) {
 }
 
 #ifndef FMT_HEADER_ONLY
-
-template struct fmt::internal::BasicData<void>;
 
 // Explicit instantiations for char.
 
