@@ -175,8 +175,8 @@ instruction:
 | ALU REG8 COMMA REG8 COMMA value8 { assembler.add(new InstructionALU_R_NN($2, $4, $1, $6)); }
 
 /* ALU R, NNNN */
-| ALU REG16 COMMA value16 { assembler.add(new InstructionALU_NNNN($2, $2, $1, $4)); }
-| ALU REG16 COMMA REG16 COMMA value16 { assembler.add(new InstructionALU_NNNN($2, $4, $1, $6)); }
+| ALU REG16 COMMA value16 { assembler.add(new InstructionALU_NNNN($2, $2, $1 | Alu::EXTENDED_BIT, $4)); }
+| ALU REG16 COMMA REG16 COMMA value16 { assembler.add(new InstructionALU_NNNN($2, $4, $1 | Alu::EXTENDED_BIT, $6)); }
 
 | LSH REG8 COMMA REG8 { assembler.add(new InstructionLD_LSH_RSH($2, $4, Alu::LSH8, false)); }
 | RSH REG8 COMMA REG8 { assembler.add(new InstructionLD_LSH_RSH((Reg)$2, $4, Alu::RSH8, false)); }

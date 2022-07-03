@@ -515,36 +515,38 @@ add_nnnn:
 # x = 1000, x += 500, assert(!carry && x == 15)
 LD XY, 1000
 ADD XY, 500
-LD C, 0
+LD C, 1
 JMPC add_nnnn_test_fail
 CMP XY, 1500
+LD C, 2
 JMPNZ add_nnnn_test_fail
 
 # x = 40000, x += 40000, assert(carry && x == 0x2C)
 LD XY, 40000
 ADD XY, 40000
-LD C, 1
+LD C, 3
 JMPNC add_nnnn_test_fail
 CMP XY, 3880h
+LD C, 4
 JMPNZ add_nnnn_test_fail
 
 # x = 1000 x += -100, assert(x == 900)
 LD XY, 1000
 ADD XY, -100
-LD C, 2
+LD C, 5
 CMP XY, 900
 JMPNZ add_nnnn_test_fail
 
 # x = 30000, x += 10000, assert(overflow)
 LD XY, 30000
 ADD XY, 10000
-LD C, 3
+LD C, 6
 JMPNV add_nnnn_test_fail
 
 # x = -120, x += -10, assert(overflow)
 LD XY, -30000
 ADD XY, -10000
-LD C, 4
+LD C, 7
 JMPNV add_nnnn_test_fail
 
 LD Y, 1

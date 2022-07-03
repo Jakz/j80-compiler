@@ -70,7 +70,10 @@ enum class Alu : u8
 template<typename T, typename std::enable_if<std::is_integral<T>::value, int>::type = 0> inline T operator==(const T& t, const Alu& o) { return t == static_cast<T>(o); }
 template<typename T, typename std::enable_if<std::is_integral<T>::value, int>::type = 0> inline T operator|(const T& t, const Alu& o) { return t | static_cast<T>(o); }
 inline Alu operator|(const Alu& alu, const int& v) { return static_cast<Alu>(static_cast<int>(alu) | v); }
+inline Alu operator|(const Alu& alu, const Alu& v) { return static_cast<Alu>(static_cast<int>(alu) | static_cast<int>(v)); }
+
 inline Alu operator&(const Alu& alu, const int& v) { return static_cast<Alu>(static_cast<int>(alu) & v); }
+inline bool operator&&(const Alu& alu, const Alu& f) { return ((std::underlying_type_t<Alu>)alu & (std::underlying_type_t<Alu>)f) == (std::underlying_type_t<Alu>)f; }
 
 
 const u8 BASE_OPCODE = 0b00001;
