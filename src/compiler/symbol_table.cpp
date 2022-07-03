@@ -52,7 +52,7 @@ void SymbolTable::print() const
     {
       const auto& field = s.second->getField(i);
       
-      cout << fmt::sprintf("   %s, %u bytes at %04X",field->getName(),field->getType()->getSize(this),field->getOffset()) << endl;
+      cout << fmt::format("   {}, {} bytes at {:04X}",field->getName(),field->getType()->getSize(this),field->getOffset()) << endl;
     }
   }
   

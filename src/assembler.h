@@ -8,12 +8,13 @@
 #include <unordered_map>
 #include <vector>
 #include <list>
+#include <iostream>
 
 #include "assembler/j80lexer.h"
 #include "assembler/j80parser.hpp"
 #include "assembler/location.h"
 
-#include "support/format.h"
+#include "support/format/format.h"
 
 #include "instruction.h"
 #include "opcodes.h"
@@ -75,9 +76,7 @@ namespace Assembler
   
   class J80Assembler
   {
-  private:
-    const char* sprintf(const char* fmt, ...) const;
-    
+  private:    
     u16 position;
     std::list<std::unique_ptr<Instruction>> instructions;
     
@@ -100,7 +99,14 @@ namespace Assembler
   public:
     J80Assembler();
     
-    void log(Log l, bool newline, const char* str, ...) const;
+    template<typename... Args> void log(Log l, bool newline, const std::string& format, Args... args) const
+    {
+      auto& out = l == Log::ERROR ? std::cerr : std::cout;
+      
+      out << fmt::format(format, args...);
+      if (newline)
+        out << std::endl;
+    }
     
     std::string file;
     

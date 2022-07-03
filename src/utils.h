@@ -5,7 +5,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+
+#if !_WIN32
 #include <unistd.h>
+#endif
 
 #define GB_CPU
 
@@ -107,36 +110,44 @@ class Utils
   public:
     static void switchStdout(const char *newStream)
     {
+#if !_WIN32
       fflush(stdout);
       fgetpos(stdout, &pos);
       fd = dup(fileno(stdout));
       freopen(newStream, "w", stdout);
+#endif
     }
     
     static void revertStdout()
     {
+#if !_WIN32
       fflush(stdout);
       dup2(fd, fileno(stdout));
       close(fd);
       clearerr(stdout);
       fsetpos(stdout, &pos);
+#endif
     }
   
     static void switchStdin(const char *newStream)
     {
+#if !_WIN32
       fflush(stdin);
       fgetpos(stdin, &pos);
       fd = dup(fileno(stdin));
       freopen(newStream, "r", stdin);
+#endif
     }
     
     static void revertStdin()
     {
+#if !_WIN32
       fflush(stdin);
       dup2(fd, fileno(stdin));
       close(fd);
       clearerr(stdin);
       fsetpos(stdin, &pos);
+#endif
     }
   
     static long fileLength(FILE *file)

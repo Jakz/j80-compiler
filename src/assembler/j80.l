@@ -157,7 +157,7 @@
 
 [\n]+ { Parser::make_EOL(loc); loc.lines(yyleng); }
 [ \t] { /* ignore whitespace */ }
-. { assembler.error(loc, fmt::sprintf("Unrecognized character: %s", yytext)); }
+. { assembler.error(loc, fmt::format("Unrecognized character: {}", yytext)); }
 
 <<EOF>> { return yyterminate(); }
 

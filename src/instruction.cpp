@@ -1,10 +1,60 @@
 #include "instruction.h"
 
-#include "support/ostream.h"
+#include "support/format/ostream.h"
 
 #include "assembler.h"
 
 using namespace Assembler;
+
+template<>
+struct fmt::formatter<Reg16> : fmt::formatter<std::string>
+{
+  template<typename Context>
+  auto format(const Reg16& c, Context& ctx)
+  {
+    return format_to(ctx.out(), "{}", Opcodes::reg16(c.reg));
+  }
+};
+
+template<>
+struct fmt::formatter<Reg8> : fmt::formatter<std::string>
+{
+  template<typename Context>
+  auto format(const Reg8& c, Context& ctx)
+  {
+    return format_to(ctx.out(), "{}", Opcodes::reg8(c.reg));
+  }
+};
+
+template<>
+struct fmt::formatter<Alu> : fmt::formatter<std::string>
+{
+  template<typename Context>
+  auto format(const Alu& c, Context& ctx)
+  {
+    return format_to(ctx.out(), "{}", Opcodes::aluName(c));
+  }
+};
+
+template<>
+struct fmt::formatter<Value8> : fmt::formatter<std::string>
+{
+  template<typename Context>
+  auto format(const Value8& c, Context& ctx)
+  {
+    return format_to(ctx.out(), "{}", c.label);
+  }
+};
+
+template<>
+struct fmt::formatter<Value16> : fmt::formatter<std::string>
+{
+  template<typename Context>
+  auto format(const Value16& c, Context& ctx)
+  {
+    return format_to(ctx.out(), "{}", c.label);
+  }
+};
 
 #pragma mark InstructionSingleReg
 template<typename RegType>
@@ -61,14 +111,14 @@ Result InstructionXXX_NN::solve(const Environment& env)
       auto it = env.data.map.find(value.label);
       
       if (it == env.data.map.end())
-        return Result(fmt::sprintf("reference to missing data '%s'.", value.label.c_str()));
+        return Result(fmt::format("reference to missing data '{}'.", value.label));
       
       u16 cvalue = it->second.length;
       
       if (!valueFitsType<dest_t>(cvalue))
-        return Result(fmt::sprintf("constant %s has a value too large for destination (%u).", value.label.c_str(), cvalue));
+        return Result(fmt::format("constant {} has a value too large for destination ({}).", value.label, cvalue));
       
-      env.assembler.log(Log::INFO, true, "  > Data length referenced '%s' length: %u", value.label.c_str(), it->second.length);
+      env.assembler.log(Log::INFO, true, "  > Data length referenced '{}' length: {}", value.label, it->second.length);
       value.value = it->second.length;
       break;
     }
@@ -77,14 +127,14 @@ Result InstructionXXX_NN::solve(const Environment& env)
       auto it = env.consts.find(value.label);
       
       if (it == env.consts.end())
-        return Result(fmt::sprintf("reference to missing const '%s'.", value.label.c_str()));
+        return Result(fmt::format("reference to missing const '{}'.", value.label));
       
       u16 cvalue = it->second;
       
       if (!valueFitsType<dest_t>(cvalue))
-        return Result(fmt::sprintf("constant %s has a value too large for destination (%u).", value.label.c_str(), cvalue));
+        return Result(fmt::format("constant {} has a value too large for destination ({}).", value.label, cvalue));
       
-      env.assembler.log(Log::INFO, true, "  > Data const referenced '%s' value", value.label.c_str());
+      env.assembler.log(Log::INFO, true, "  > Data const referenced '{}' value", value.label);
       value.value = it->second;
       break;
     }
@@ -132,14 +182,14 @@ Result InstructionXXX_NNNN<RegType>::solve(const Environment &env)
     case Type::DATA_LENGTH:
     {
       if (value.offset)
-        return Result(fmt::sprintf("offset specified for length type Value16 '%'", value.label));
+        return Result(fmt::format("offset specified for length type Value16 '%'", value.label));
       
       auto it = env.data.map.find(value.label);
 
       if (it == env.data.map.end())
-        return Result(fmt::sprintf("reference to missing data '%s'.", value.label.c_str()));
+        return Result(fmt::format("reference to missing data '{}'.", value.label.c_str()));
       
-      env.assembler.log(Log::INFO, true, "  > Data length referenced '%s' length: %u", value.label.c_str(), it->second.length);
+      env.assembler.log(Log::INFO, true, "  > Data length referenced '{}' length: {}", value.label.c_str(), it->second.length);
       
       value.value = it->second.length;
       break;
@@ -149,9 +199,9 @@ Result InstructionXXX_NNNN<RegType>::solve(const Environment &env)
       auto it = env.consts.find(value.label);
       
       if (it == env.consts.end())
-        return Result(fmt::sprintf("reference to missing const '%s'.", value.label.c_str()));
+        return Result(fmt::format("reference to missing const '{}'.", value.label.c_str()));
 
-      env.assembler.log(Log::INFO, true, "  > Data const referenced '%s' value", value.label.c_str());
+      env.assembler.log(Log::INFO, true, "  > Data const referenced '{}' value", value.label.c_str());
       value.value = it->second;
     }
     case Type::LABEL_ADDRESS:
@@ -160,7 +210,7 @@ Result InstructionXXX_NNNN<RegType>::solve(const Environment &env)
       
       if (it != env.data.map.end())
       {
-        env.assembler.log(Log::INFO, true, "  > Data address referenced '%s' (%04X%+d) value", value.label.c_str(), it->second.offset + env.dataSegmentBase, value.offset);
+        env.assembler.log(Log::INFO, true, "  > Data address referenced '{}' ({:04X}{:+d}) value", value.label.c_str(), it->second.offset + env.dataSegmentBase, value.offset);
         value.value = it->second.offset + env.dataSegmentBase + value.offset;
       }
       else
@@ -168,9 +218,9 @@ Result InstructionXXX_NNNN<RegType>::solve(const Environment &env)
         auto it = env.consts.find(value.label);
         
         if (it == env.consts.end())
-          return Result(fmt::sprintf("reference to missing label '%s'.", value.label.c_str()));
+          return Result(fmt::format("reference to missing label '{}'.", value.label.c_str()));
         
-        env.assembler.log(Log::INFO, true, "  > Data const referenced '%s' value", value.label.c_str());
+        env.assembler.log(Log::INFO, true, "  > Data const referenced '{}' value", value.label.c_str());
         value.value = it->second + value.offset;
       }
 

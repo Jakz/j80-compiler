@@ -2,6 +2,9 @@
 
 #include <iostream>
 #include <fstream>
+#include <cstdarg>
+
+#include "support/format/format.h"
 
 using namespace std;
 using namespace Assembler;
@@ -9,37 +12,6 @@ using namespace Assembler;
 J80Assembler::J80Assembler() : dataSegment(DataSegment()), codeSegment(CodeSegment()), position(0)
 {
   
-}
-
-static char buffer[1024];
-void J80Assembler::log(Log type, bool newline, const char* str, ...) const
-{
-  va_list arg;
-  va_start(arg, str);
-  std::vsnprintf(buffer, 1024, str, arg);
-  va_end(arg);
-  
-  switch (type)
-  {
-    case Log::ERROR:
-      cerr << buffer;
-      if (newline) cerr << endl;
-      break;
-    default:
-      cout << buffer;
-      if (newline) cout << endl;
-      break;
-  }
-}
-
-const char* J80Assembler::sprintf(const char* fmt, ...) const
-{
-  va_list arg;
-  va_start(arg, fmt);
-  std::vsnprintf(buffer, 1024, fmt, arg);
-  va_end(arg);
-
-  return buffer;
 }
 
 bool J80Assembler::parse(const std::string &filename)
@@ -70,12 +42,12 @@ bool J80Assembler::parse(const std::string &filename)
 
 void J80Assembler::error (const Assembler::location& l, const std::string& m)
 {
-  log(Log::ERROR, true, "Assembler error at %s: %u,%u : %s", file.c_str(), l.begin.line, l.begin.column, m.c_str());
+  log(Log::ERROR, true, "Assembler error at {}: {},{} : {}", file, l.begin.line, l.begin.column, m);
 }
 
 void J80Assembler::error (const std::string& m)
 {
-  log(Log::ERROR, true, "Assembler error: %s", m.c_str());
+  log(Log::ERROR, true, "Assembler error: {}", m);
 }
 
 void J80Assembler::printProgram(std::ostream& out) const
@@ -95,31 +67,31 @@ void J80Assembler::printProgram(std::ostream& out) const
       continue;
     }
     
-    out << sprintf("%04X: ", address);
+    out << fmt::format("{:04X}: ", address);
     
     const u16 length = i->getLength();
     i->assemble(opcode);
     
     for (int i = 0; i < length; ++i)
-      out << sprintf("%02X", opcode[i]);
+      out << fmt::format("{:02X}", opcode[i]);
     for (int i = length; i < LENGTH_4_BYTES+1; ++i)
-      out << sprintf("  ");
+      out << fmt::format("  ");
     
     std::string mnemonic = i->mnemonic();
     
-    out << sprintf("%s", mnemonic.c_str());
+    out << fmt::format("{}", mnemonic);
     
     if (keepLabels)
     {
       for (int x = 0; x < 40 - mnemonic.length(); ++x)
-        out << sprintf(" ");
+        out << fmt::format(" ");
       
       if (label)
-        out << sprintf("<%s>", label->getLabel().c_str());
+        out << fmt::format("<{}>", label->getLabel());
       
     }
     
-    out << sprintf("\n");
+    out << fmt::format("\n");
 
     address += length;
     
@@ -129,27 +101,27 @@ void J80Assembler::printProgram(std::ostream& out) const
   u16 dataLen = dataSegment.length;
   for (int i = 0; i < dataLen / 8 + (dataLen % 8 != 0 ? 1 : 0); ++i)
   {
-    out << sprintf("%04X: ", address + i*8);
+    out << fmt::format("{:04X}: ", address + i*8);
     
     for (int j = 0; j < 8; ++j)
     {
       if (i*8+j < dataLen)
-        out << sprintf("%02X", dataSegment.data[i*8 + j]);
+        out << fmt::format("{:02X}", dataSegment.data[i*8 + j]);
       else
-        out << sprintf("  ");
+        out << fmt::format("  ");
     }
     
-    out << sprintf(" ");
+    out << fmt::format(" ");
     
     for (int j = 0; j < 8; ++j)
     {
       if (i*8+j < dataLen &&  dataSegment.data[i*8 + j] >= 0x20 && dataSegment.data[i*8 + j] <= 0x7E)
-        out << sprintf("%c", dataSegment.data[i*8 + j]);
+        out << fmt::format("{}", (char)dataSegment.data[i*8 + j]);
       else
-        out << sprintf(" ");
+        out << fmt::format(" ");
     }
     
-    out << sprintf("\n");
+    out << fmt::format("\n");
   }
 }
 
@@ -160,7 +132,7 @@ void J80Assembler::buildDataSegment()
   for (auto &entry : data)
     totalSize += entry->second.length;
   
-  log(Log::INFO, true, "Building data segment, total size: %u bytes", totalSize);
+  log(Log::INFO, true, "Building data segment, total size: {} bytes", totalSize);
   
   dataSegment.alloc(totalSize);
   
@@ -175,7 +147,7 @@ void J80Assembler::buildDataSegment()
     std::copy(data, data + entry->second.length, &dataSegment.data[totalSize]);
     entry->second.offset = totalSize;
     
-    log(Log::VERBOSE_INFO, true, "  > Data %s (%u bytes) at offset %.4Xh", entry->first.c_str(), entry->second.length, entry->second.offset);
+    log(Log::VERBOSE_INFO, true, "  > Data {} ({} bytes) at offset {:4X}h", entry->first, entry->second.length, entry->second.offset);
     
     totalSize += entry->second.length;
   }
@@ -195,10 +167,10 @@ void J80Assembler::buildCodeSegment()
     ++it;
   }
   
-  log(Log::INFO, true, "Building code segment, total size: %u bytes in %lu instruction", totalSize, instructionCount);
+  log(Log::INFO, true, "Building code segment, total size: {} bytes in {} instruction", totalSize, instructionCount);
   
   if (entryPoint.isSet())
-    log(Log::VERBOSE_INFO, true, "  Entry point specified at %.4Xh.", entryPoint.get());
+    log(Log::VERBOSE_INFO, true, "  Entry point specified at {:4X}h.", entryPoint.get());
   
   codeSegment.alloc(totalSize+codeSegment.offset);
   totalSize = 0;
@@ -287,13 +259,13 @@ Result J80Assembler::solveJumps()
     {
       label->solve(address);
       labels[label->getLabel()] = address;
-      log(Log::VERBOSE_INFO, true, "  > Label %s resolved to address %04Xh", label->getLabel().c_str(), address);
+      log(Log::VERBOSE_INFO, true, "  > Label {} resolved to address {:04X}h", label->getLabel(), address);
     }
     else if (intEntryPoint && intEntryPoint->mustBeSolved())
     {
       intEntryPoint->solve(address);
       interrupts[intEntryPoint->getIndex()].set(address);
-      log(Log::VERBOSE_INFO, true, "  > Interrupt %d resolved to address %04Xh", intEntryPoint->getIndex(), address);
+      log(Log::VERBOSE_INFO, true, "  > Interrupt {} resolved to address {:04X}h", intEntryPoint->getIndex(), address);
     }
     else
       address += i->getLength();
@@ -322,7 +294,7 @@ Result J80Assembler::solveJumps()
         else
         {
           //log(Log::ERROR, true, "  Label %s unresolved.", );
-          return Result(fmt::sprintf("Label %s unresolved.", ai->getLabel().c_str()));
+          return Result(fmt::format("Label {} unresolved.", ai->getLabel()));
         }
       }
       else if (ai->getType() == Address::Type::INTERRUPT)
@@ -335,7 +307,7 @@ Result J80Assembler::solveJumps()
         }
         else
         {
-          log(Log::ERROR, true, "  Interrupt entry for %d unresolved.", ai->getIntIndex());
+          log(Log::ERROR, true, "  Interrupt entry for {} unresolved.", ai->getIntIndex());
         }
       }
     }
@@ -348,7 +320,7 @@ Result J80Assembler::solveDataReferences()
 {  
   u16 base = computeDataSegmentOffset();
 
-  log(Log::INFO, true, "Solving data references. Base data segment offset: %04Xh.", base);
+  log(Log::INFO, true, "Solving data references. Base data segment offset: {:04X}h.", base);
   
   Environment env{ *this, data, consts, base };
   

@@ -7,6 +7,7 @@ fpos_t Utils::pos = 0;
 
 std::string Utils::execute(std::string command)
 {
+#if !_WIN32
   FILE* pipe = popen(command.c_str(), "r");
   if (!pipe) return "ERROR";
   char buffer[128];
@@ -17,6 +18,9 @@ std::string Utils::execute(std::string command)
   }
   pclose(pipe);
   return result;
+#else
+  return "";
+#endif
 }
 
 

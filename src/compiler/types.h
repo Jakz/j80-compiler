@@ -2,7 +2,7 @@
 #define __TYPES_H__
 
 #include "utils.h"
-#include "support/format.h"
+#include "support/format/format.h"
 
 namespace nanoc {
   class SymbolTable;
@@ -62,7 +62,7 @@ namespace nanoc {
   public:
     Named(const std::string& name) : name(name) { }
     u16 getSize(const SymbolTable* table) const override;
-    std::string mnemonic() const override { return fmt::sprintf("Named(%s)", name.c_str()); }
+    std::string mnemonic() const override { return fmt::format("Named(%s)", name.c_str()); }
     Named* copy() const override { return new Named(name); }
     bool isStruct(const SymbolTable *table) const override;
   };

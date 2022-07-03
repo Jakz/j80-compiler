@@ -12,3 +12,6 @@ location.hh
 position.hh
 stack.hh
 xcuserdata
+projects/msvc2019/.vs
+projects/msvc2019/*.user
+projects/msvc2019/**/

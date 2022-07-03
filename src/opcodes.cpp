@@ -176,69 +176,69 @@ MnemonicInfo Opcodes::printInstruction(const u8 *data)
   
   switch (opcode) {
       
-    case OPCODE_LD_NN: { info = {fmt::sprintf("%s %s, %.2Xh", opcodeName(opcode), reg8(reg1), unsigned8), 3}; break; }
-    case OPCODE_LD_NNNN: { info = {fmt::sprintf("%s %s, %.4Xh", opcodeName(opcode), reg16(reg1), short1), 3}; break; }
-    case OPCODE_LD_PTR_NNNN: { info = {fmt::sprintf("%s %s, [%.4Xh]",opcodeName(opcode), reg8(reg1), short1), 3}; break; }
-    case OPCODE_LD_PTR_PP: { info = {fmt::sprintf("%s %s, [%s%+d]", opcodeName(opcode), reg8(reg1), reg16(reg2), signed8), 3}; break; }
+    case OPCODE_LD_NN: { info = {fmt::format("{} {}, {:2X}h", opcodeName(opcode), reg8(reg1), unsigned8), 3}; break; }
+    case OPCODE_LD_NNNN: { info = {fmt::format("{} {}, {:4X}h", opcodeName(opcode), reg16(reg1), short1), 3}; break; }
+    case OPCODE_LD_PTR_NNNN: { info = {fmt::format("{} {}, [{:4X}h]",opcodeName(opcode), reg8(reg1), short1), 3}; break; }
+    case OPCODE_LD_PTR_PP: { info = {fmt::format("{} {}, [{}{+d}]", opcodeName(opcode), reg8(reg1), reg16(reg2), signed8), 3}; break; }
       
-    case OPCODE_SD_PTR_NNNN: { info = {fmt::sprintf("%s [%.4Xh], %s ", opcodeName(opcode), short1, reg8(reg1)), 3}; break; }
-    case OPCODE_SD_PTR_PP: { info = {fmt::sprintf("%s [%s%+d], %s ", opcodeName(opcode), reg16(reg2), signed8, reg8(reg1)), 3}; break; }
+    case OPCODE_SD_PTR_NNNN: { info = {fmt::format("{} [{:4X}h], {} ", opcodeName(opcode), short1, reg8(reg1)), 3}; break; }
+    case OPCODE_SD_PTR_PP: { info = {fmt::format("{} [{}%+d], {} ", opcodeName(opcode), reg16(reg2), signed8, reg8(reg1)), 3}; break; }
 
     case OPCODE_JMP_NNNN:
     case OPCODE_JMPC_NNNN:
     {
-      return {fmt::sprintf("%s%s %.4Xh", opcodeName(opcode), condName(cond), short1), 3};
+      return {fmt::format("{}{} %.4Xh", opcodeName(opcode), condName(cond), short1), 3};
     }
       
     case OPCODE_JMP_PP:
     case OPCODE_JMPC_PP:
     {
-      return {fmt::sprintf("%s%s %s", opcodeName(opcode), condName(cond), reg16(reg2)), 2};
+      return {fmt::format("{}{} {}", opcodeName(opcode), condName(cond), reg16(reg2)), 2};
     }
       
     case OPCODE_NOP: { return {opcodeName(opcode), 1}; }
     
-    case OPCODE_PUSH: { return {fmt::sprintf("%s %s", opcodeName(opcode), reg8(reg1)), 1}; }
-    case OPCODE_POP: { return {fmt::sprintf("%s %s", opcodeName(opcode), reg8(reg1)), 1}; }
+    case OPCODE_PUSH: { return {fmt::format("{} {}", opcodeName(opcode), reg8(reg1)), 1}; }
+    case OPCODE_POP: { return {fmt::format("{} {}", opcodeName(opcode), reg8(reg1)), 1}; }
       
-    case OPCODE_PUSH16: { return {fmt::sprintf("%s %s", opcodeName(opcode), reg16(reg1)), 1}; }
-    case OPCODE_POP16: { return {fmt::sprintf("%s %s", opcodeName(opcode), reg16(reg1)), 1}; }
+    case OPCODE_PUSH16: { return {fmt::format("{} {}", opcodeName(opcode), reg16(reg1)), 1}; }
+    case OPCODE_POP16: { return {fmt::format("{} {}", opcodeName(opcode), reg16(reg1)), 1}; }
       
     case OPCODE_RET:
     case OPCODE_RETC:
     {
-      return {fmt::sprintf("%s%s", opcodeName(opcode), condName(cond)), 1};
+      return {fmt::format("{}{}", opcodeName(opcode), condName(cond)), 1};
     }
       
     case OPCODE_CALL:
     case OPCODE_CALLC:
     {
-      return {fmt::sprintf("%s%s %.4Xh", opcodeName(opcode), condName(cond), short1), 3};
+      return {fmt::format("{}{} {:4X}h", opcodeName(opcode), condName(cond), short1), 3};
     }
       
-    case OPCODE_LF: { return {fmt::sprintf("%s %s", opcodeName(opcode), reg8(reg1)), 1}; }
-    case OPCODE_SF: { return {fmt::sprintf("%s %s", opcodeName(opcode), reg8(reg1)), 1}; }
+    case OPCODE_LF: { return {fmt::format("{} {}", opcodeName(opcode), reg8(reg1)), 1}; }
+    case OPCODE_SF: { return {fmt::format("{} {}", opcodeName(opcode), reg8(reg1)), 1}; }
       
     case OPCODE_EI: { return {"EI", 1}; }
     case OPCODE_DI: { return {"DI", 1}; }
       
-    case OPCODE_SEXT: { return {fmt::sprintf("%s %s", opcodeName(opcode), reg8(reg1)), 1}; }
+    case OPCODE_SEXT: { return {fmt::format("{} {}", opcodeName(opcode), reg8(reg1)), 1}; }
       
     case OPCODE_CMP_REG:
     {
       bool extended = (alu & 0b1) == Alu::EXTENDED_BIT;
       
       if (extended)
-        info.value = fmt::sprintf("%s %s, %s", opcodeName(opcode), reg16(reg1), reg16(reg2));
+        info.value = fmt::format("{} {}, {}", opcodeName(opcode), reg16(reg1), reg16(reg2));
       else
-        info.value = fmt::sprintf("%s %s, %s", opcodeName(opcode), reg8(reg1), reg8(reg2));
+        info.value = fmt::format("{} {}, {}", opcodeName(opcode), reg8(reg1), reg8(reg2));
       
       info.length = 2;
       break;
     }
       
-    case OPCODE_CMP_NN: { return {fmt::sprintf("%s %s, %.2Xh", opcodeName(opcode), reg8(reg1), unsigned8), 3}; break; }
-    case OPCODE_CMP_NNNN: { return {fmt::sprintf("%s %s, %.4Xh", opcodeName(opcode), reg16(reg1), short2), 4}; break; }
+    case OPCODE_CMP_NN: { return {fmt::format("{} {}, {:2X}h", opcodeName(opcode), reg8(reg1), unsigned8), 3}; break; }
+    case OPCODE_CMP_NNNN: { return {fmt::format("{} {}, {:4X}h", opcodeName(opcode), reg16(reg1), short2), 4}; break; }
   }
   
   return info;

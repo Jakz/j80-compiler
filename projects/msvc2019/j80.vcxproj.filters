@@ -1,0 +1,190 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{e393b57f-85fd-4e70-b68e-618b82ba5322}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\vm">
+      <UniqueIdentifier>{b55a9eb7-9a8d-4f00-bf9c-cbb566c528e7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\assembler">
+      <UniqueIdentifier>{4f736636-d135-495a-a0a2-d61350a255b5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\compiler">
+      <UniqueIdentifier>{f5c9edb0-decb-4157-9b3b-4bf4783221d5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\support">
+      <UniqueIdentifier>{c0dedb4f-1b89-4828-b4a6-3e3730f7423e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\support\format">
+      <UniqueIdentifier>{45c66166-8236-4e7f-a1cb-697b05592827}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\main.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\opcodes.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\utils.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\vm.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\assembler.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ast.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ast_visitor.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\compiler.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\disassembler.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\instruction.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\compiler\rtl.cpp">
+      <Filter>src\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\compiler\symbol_table.cpp">
+      <Filter>src\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\compiler\types.cpp">
+      <Filter>src\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\compiler\compiler_exceptions.cpp">
+      <Filter>src\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\compiler\nanoc.cpp">
+      <Filter>src\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\assembler\j80.cpp">
+      <Filter>src\assembler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\assembler\j80parser.cpp">
+      <Filter>src\assembler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\support\format\format.cpp">
+      <Filter>src\support\format</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\compiler\nanocparser.cpp">
+      <Filter>src\compiler</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\opcodes.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\utils.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\vm.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\assembler.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ast.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ast_visitor.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\compiler.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\disassembler.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\instruction.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\assembler\j80lexer.h">
+      <Filter>src\assembler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\assembler\location.h">
+      <Filter>src\assembler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\compiler\nanoclexer.h">
+      <Filter>src\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\compiler\rtl.h">
+      <Filter>src\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\compiler\structs.h">
+      <Filter>src\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\compiler\symbol_table.h">
+      <Filter>src\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\compiler\types.h">
+      <Filter>src\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\compiler\compiler_exceptions.h">
+      <Filter>src\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\compiler\enums.h">
+      <Filter>src\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\support\catch.hpp">
+      <Filter>src\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\support\format\format-inl.h">
+      <Filter>src\support\format</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\support\format\locale.h">
+      <Filter>src\support\format</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\support\format\ostream.h">
+      <Filter>src\support\format</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\support\format\printf.h">
+      <Filter>src\support\format</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\support\format\ranges.h">
+      <Filter>src\support\format</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\support\format\chrono.h">
+      <Filter>src\support\format</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\support\format\color.h">
+      <Filter>src\support\format</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\support\format\compile.h">
+      <Filter>src\support\format</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\support\format\core.h">
+      <Filter>src\support\format</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\support\format\format.h">
+      <Filter>src\support\format</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\compiler\nanocparser.hpp">
+      <Filter>src\compiler</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Flex Include="..\..\src\assembler\j80.l">
+      <Filter>src\assembler</Filter>
+    </Flex>
+    <Flex Include="..\..\src\compiler\nanoc.l">
+      <Filter>src\compiler</Filter>
+    </Flex>
+  </ItemGroup>
+  <ItemGroup>
+    <Bison Include="..\..\src\assembler\j80.y">
+      <Filter>src\assembler</Filter>
+    </Bison>
+    <Bison Include="..\..\src\compiler\nanoc.y">
+      <Filter>src\compiler</Filter>
+    </Bison>
+  </ItemGroup>
+</Project>

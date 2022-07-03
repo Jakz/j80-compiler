@@ -4,7 +4,7 @@
 #include <string>
 
 #include "location.hh"
-#include "support/format.h"
+#include "support/format/format.h"
 
 namespace nanoc
 {
@@ -28,7 +28,7 @@ namespace nanoc
     identifier_redefined(const location& loc, const std::string& identifier) : compiler_exception(loc, "identifier already defined"), identifier(identifier) { }
     const char* what() const throw() override
     {
-      buffer = fmt::sprintf("Exception at %u:%u, %s: %s", loc.begin.line, loc.begin.column, compiler_exception::what(), identifier.c_str());
+      buffer = fmt::format("Exception at {}:{}, {}: {}", loc.begin.line, loc.begin.column, compiler_exception::what(), identifier.c_str());
       return buffer.c_str();
     }
   };
@@ -41,7 +41,7 @@ namespace nanoc
     identifier_undeclared(const location& loc, const std::string& identifier) : compiler_exception(loc, "identifier undeclared"), identifier(identifier) { }
     const char* what() const throw() override
     {
-      buffer = fmt::sprintf("Exception at %u:%u, %s: %s", loc.begin.line, loc.begin.column, compiler_exception::what(), identifier.c_str());
+      buffer = fmt::format("Exception at {}:{}, {}: {}", loc.begin.line, loc.begin.column, compiler_exception::what(), identifier.c_str());
       return buffer.c_str();
     }
   };

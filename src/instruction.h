@@ -1,11 +1,14 @@
 #ifndef __INSTRUCTION_H__
 #define __INSTRUCTION_H__
 
+#include <sstream>
 #include <unordered_map>
 #include <vector>
 #include <list>
+#include <algorithm>
+#include <string>
 
-#include "support/format.h"
+#include "support/format/format.h"
 #include "opcodes.h"
 
 namespace Assembler
@@ -26,8 +29,8 @@ namespace Assembler
   struct DataSegmentEntry
   {
     std::unique_ptr<u8[]> data;
-    u16 length;
-    u16 offset;
+    u32 length;
+    u32 offset;
     
     DataSegmentEntry(DataSegmentEntry&& other) : data(std::move(other.data)), length(other.length), offset(other.offset)
     {
@@ -232,7 +235,7 @@ namespace Assembler
     
     const u16 getLength() const { return ilength; }
     
-    virtual std::string mnemonic() const { return fmt::sprintf("NOPx%d", ilength); }
+    virtual std::string mnemonic() const { return fmt::format("NOPx{}", ilength); }
     
     virtual void assemble(u8* dest) const
     {
@@ -305,7 +308,7 @@ namespace Assembler
   {
   public:
     InstructionSimple() : Instruction(LENGTH_1_BYTES) { }
-    std::string mnemonic() const override final { return fmt::sprintf("%s", Opcodes::opcodeName(OPCODE)); }
+    std::string mnemonic() const override final { return fmt::format("{}", Opcodes::opcodeName(OPCODE)); }
     void assemble(u8* dest) const override { dest[0] = OPCODE << 3; }
   };
   
@@ -591,9 +594,9 @@ namespace Assembler
 
     std::string mnemonic() const override {
       if (address.label.empty())
-        return fmt::sprintf("%s%s %.4Xh", Opcodes::opcodeName(OPCODE_JMPC_NNNN), Opcodes::condName(condition), address.address);
+        return fmt::format("{}{} {:4X}h", Opcodes::opcodeName(OPCODE_JMPC_NNNN), Opcodes::condName(condition), address.address);
       else
-        return fmt::sprintf("%s%s %.4Xh (%s)", Opcodes::opcodeName(OPCODE_JMPC_NNNN), Opcodes::condName(condition), address.address, address.label.c_str());
+        return fmt::format("{}{} {:4X}h ({})", Opcodes::opcodeName(OPCODE_JMPC_NNNN), Opcodes::condName(condition), address.address, address.label.c_str());
     }
     
     void assemble(u8* dest) const override
@@ -615,9 +618,9 @@ namespace Assembler
     
     std::string mnemonic() const override {
       if (address.label.empty())
-        return fmt::sprintf("%s%s %.4Xh", Opcodes::opcodeName(OPCODE_CALLC), Opcodes::condName(condition), address.address);
+        return fmt::format("{}{} {:4X}h", Opcodes::opcodeName(OPCODE_CALLC), Opcodes::condName(condition), address.address);
       else
-        return fmt::sprintf("%s%s %.4Xh (%s)", Opcodes::opcodeName(OPCODE_CALLC), Opcodes::condName(condition), address.address, address.label.c_str());
+        return fmt::format("{}{} {:4X}h ({})", Opcodes::opcodeName(OPCODE_CALLC), Opcodes::condName(condition), address.address, address.label.c_str());
     }
     
     void assemble(u8* dest) const override
@@ -637,7 +640,7 @@ namespace Assembler
   public:
     InstructionRET(JumpCondition condition) : Instruction(LENGTH_1_BYTES), condition(condition) { }
     
-    std::string mnemonic() const override { return fmt::sprintf("%s%s", Opcodes::opcodeName(OPCODE_RETC), Opcodes::condName(condition)); }
+    std::string mnemonic() const override { return fmt::format("{}{}", Opcodes::opcodeName(OPCODE_RETC), Opcodes::condName(condition)); }
     void assemble(u8* dest) const override { dest[0] = (OPCODE_RETC << 3) | condition;; }
   };
 
@@ -666,25 +669,25 @@ inline std::ostream& operator<<(std::ostream& os, const Assembler::Value16& valu
 
 inline std::ostream& operator<<(std::ostream& os, const Assembler::Value8& value)
 {
-  os << fmt::sprintf("%.2Xh", value.value);
+  os << fmt::format("{:2X}h", value.value);
   return os;
 }
 
 inline std::ostream& operator<<(std::ostream& os, Alu alu)
 {
-  os << fmt::sprintf("%s", Opcodes::aluName(alu));
+  os << fmt::format("{}", Opcodes::aluName(alu));
   return os;
 }
 
 inline std::ostream& operator<<(std::ostream& os, Assembler::Reg16 reg)
 {
-  os << fmt::sprintf("%s", Opcodes::reg16(reg.reg));
+  os << fmt::format("{}", Opcodes::reg16(reg.reg));
   return os;
 }
 
 inline std::ostream& operator<<(std::ostream& os, Assembler::Reg8 reg)
 {
-  os << fmt::sprintf("%s", Opcodes::reg8(reg.reg));
+  os << fmt::format("{}", Opcodes::reg8(reg.reg));
   return os;
 }
 

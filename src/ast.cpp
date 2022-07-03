@@ -32,6 +32,9 @@ const Type* ASTBinaryExpression::getType(const SymbolTable& table) const
     case Binary::LAND:
     case Binary::LOR:
       return new Bool();
+
+    default:
+      return nullptr;
   }
 }
 
@@ -47,6 +50,8 @@ const Type* ASTUnaryExpression::getType(const SymbolTable& table) const
     case Unary::FLIP:
       return operand->getType(table);
       
+    default:
+      return nullptr;
 
   }
 }

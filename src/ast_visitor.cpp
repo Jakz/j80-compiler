@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <cassert>
 
 using namespace nanoc;
 using namespace std;
@@ -50,7 +51,7 @@ ASTNode* Visitor::dispatch(ASTNode* node)
   DISPATCH(ASTAddressOf)
   DISPATCH(ASTLeftHand)
   
-  string error = fmt::sprintf("visit unhandled on %s", Utils::execute(std::string("c++filt ")+typeid(node).name()).c_str());
+  string error = fmt::format("visit unhandled on {}", Utils::execute(std::string("c++filt ")+typeid(node).name()).c_str());
   cout << error;
   assert(false);
   return nullptr;

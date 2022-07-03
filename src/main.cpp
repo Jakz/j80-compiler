@@ -6,6 +6,8 @@
 //  Copyright (c) 2014 Jack. All rights reserved.
 //
 
+
+
 #include <iostream>
 #include <cstdio>
 #include <vector>
@@ -18,8 +20,15 @@
 #include "ast.h"
 #include "compiler/rtl.h"
 
+#define UI_ENABLED false
+
+#if UI_ENABLED
 #include "vm/ui.h"
+#endif
+
 #include "vm.h"
+
+
 
 using namespace std;
 /*
@@ -80,7 +89,7 @@ void runWithArgs(const vector<string>& args, Assembler::J80Assembler& assembler,
           assembler.saveForLogisim(output);
         }
         else
-          assembler.log(Log::ERROR, true, "Error: %s", result.message.c_str());
+          assembler.log(Log::ERROR, true, "Error: {}", result.message);
       }
     }
     else if (stringEndsWith(args[1], ".nc"))
@@ -100,6 +109,7 @@ int main(int argc, const char * argv[])
   runWithArgs({"j80", "tests/testsuite.j80"}, assembler, compiler);
   return 0;
   
+#if UI_ENABLED
   
   vm.copyToRam(assembler.getCodeSegment().data, assembler.getCodeSegment().length);
   vm.copyToRam(assembler.getDataSegment().data, assembler.getDataSegment().length, assembler.getDataSegment().offset);
@@ -120,6 +130,8 @@ int main(int argc, const char * argv[])
   ui.shutdown();
   
   return 0;
+
+#endif
 
   if (argc > 1)
   {

@@ -3,13 +3,14 @@
 
 #include <vector>
 #include <unordered_map>
+#include <algorithm>
 
 #include "enums.h"
 #include "types.h"
 #include "structs.h"
 #include "compiler_exceptions.h"
 
-#include "support/format.h"
+#include "support/format/format.h"
 #include "ast_visitor.h"
 #include "utils.h"
 
@@ -31,7 +32,7 @@ namespace nanoc
     Symbol& operator=(const Symbol& other) { this->name = other.name; this->type = UniqueType(other.type->copy()); return *this; }
     Symbol(const std::string& name, Type* type) : name(name), type(UniqueType(type->copy())) { }
     
-    const std::string mnemonic() { return fmt::sprintf("Symbol(%s, %s)", name, type->mnemonic().c_str()); }
+    const std::string mnemonic() { return fmt::format("Symbol(%s, %s)", name, type->mnemonic().c_str()); }
     
     const std::string& getName() const { return name; }
     const Type* getType() const { return type.get(); }
@@ -49,7 +50,7 @@ namespace nanoc
     FunctionSymbol& operator=(const FunctionSymbol& other) { this->name = other.name; this->returnType = UniqueType(other.returnType->copy()); this->arguments = other.arguments; return *this; }
     FunctionSymbol(const std::string& name, Type* returnType, const std::vector<Symbol>& arguments) : name(name), returnType(UniqueType(returnType->copy())), arguments(arguments) { }
     
-    const std::string mnemonic() { return fmt::sprintf("Function(%s, %s)", name, returnType->mnemonic().c_str()); }
+    const std::string mnemonic() { return fmt::format("Function(%s, %s)", name, returnType->mnemonic().c_str()); }
 
     
     const std::string& getName() const { return name; }

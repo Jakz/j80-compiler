@@ -10,16 +10,16 @@ u32 Temporary::counter = 0;
 
 std::string Procedure::mnemonic()
 {
-  string result = fmt::sprintf("Procedure(%s, [", name);
+  string result = fmt::format("Procedure({}, [", name);
   for (size_t i = 0; i < arguments.size(); ++i)
   {
     const auto& arg = arguments[i];
-    result += fmt::sprintf("(%s: %s)", arg.temporary.getName().c_str(), arg.name.c_str());
+    result += fmt::format("({}: {})", arg.temporary.getName().c_str(), arg.name.c_str());
     
     if (i < arguments.size()-1)
       result += ", ";
   }
-  result += fmt::sprintf("], %s)", hasReturnValue ? "yes" : "no");
+  result += fmt::format("], {})", hasReturnValue ? "yes" : "no");
   
   return result;
 }

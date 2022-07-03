@@ -2,7 +2,7 @@
 #define __RTL_H__
 
 #include "utils.h"
-#include "support/format.h"
+#include "support/format/format.h"
 
 #include "ast_visitor.h"
 
@@ -76,7 +76,7 @@ namespace rtl
     Jump(const std::string& label) : label(label) { }
     const std::string& getLabel() { return label; }
     
-    std::string mnemonic() const override { return fmt::sprintf("JUMP(%s)", label); }
+    std::string mnemonic() const override { return fmt::format("JUMP(%s)", label); }
   };
   
   class ConditionalJump : public Instruction
@@ -100,7 +100,7 @@ namespace rtl
         case Comparison::LESSEQ: sop = "<="; break;
       }
       
-      return fmt::sprintf("CJUMP(%s %s %s, %s", src1.getName().c_str(), sop, src2.getName().c_str(), label.c_str());
+      return fmt::format("CJUMP(%s %s %s, %s", src1.getName().c_str(), sop, src2.getName().c_str(), label.c_str());
     }
   };
   
@@ -140,8 +140,8 @@ namespace rtl
       switch (type)
       {
         case BOOL_TYPE: return bbvalue ? "true" : "false";
-        case BYTE_TYPE: return fmt::sprintf("%02xh", bvalue);
-        case WORD_TYPE: return fmt::sprintf("%u", wvalue);
+        case BYTE_TYPE: return fmt::format("%02xh", bvalue);
+        case WORD_TYPE: return fmt::format("%u", wvalue);
         case TEMP_TYPE: return temp.getName();
         case REF_TYPE: return rtype;
       }
@@ -164,7 +164,7 @@ namespace rtl
     AssignmentInstruction(struct value value) : dest(), value(value) { }
     const Temporary& getDestination() override { return dest; }
     
-    std::string mnemonic() const override { return fmt::sprintf("ASSIGN(%s, %s)", dest.getName().c_str(), value.mnemonic().c_str()); }
+    std::string mnemonic() const override { return fmt::format("ASSIGN(%s, %s)", dest.getName().c_str(), value.mnemonic().c_str()); }
   };
   
   class OperationInstruction : public ValueInstruction
@@ -185,7 +185,7 @@ namespace rtl
         case Operation::ADDITION: sop = "+"; break;
       }
       
-      return fmt::sprintf("EVAL(%s, %s %s %s)", dest.getName().c_str(), src1.getName().c_str(), sop, src2.getName().c_str());
+      return fmt::format("EVAL(%s, %s %s %s)", dest.getName().c_str(), src1.getName().c_str(), sop, src2.getName().c_str());
     }
     
     const Temporary& getDestination() override { return dest; }
@@ -203,7 +203,7 @@ namespace rtl
     
     std::string mnemonic() const override
     {
-      std::string r = fmt::sprintf("CALL(%s", function);
+      std::string r = fmt::format("CALL(%s", function);
       if (arguments.empty() && !returnValue.isValid())
         return r+")";
       else

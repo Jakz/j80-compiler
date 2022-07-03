@@ -37,6 +37,7 @@
 
 #pragma once
 
+
 #define YY_NULLPTR nullptr
 
 #define TRACK_LOCATIONS 0
@@ -44,7 +45,7 @@
 #if TRACK_LOCATIONS
 #define LOCATION_DEBUG(x, y...) printf(x, y);
 #else
-#define LOCATION_DEBUG(x...) do { } while(false)
+#define LOCATION_DEBUG(x, ...) do { } while(false)
 #endif
 
 #include "utils.h"
@@ -103,7 +104,7 @@ namespace Assembler {
     /// Compute max(min, lhs+rhs) (provided min <= lhs).
     static unsigned int add_ (unsigned int lhs, int rhs, unsigned int min)
     {
-      return (0 < rhs || -static_cast<unsigned int>(rhs) < lhs
+      return (0 < rhs || -static_cast<int>(rhs) < lhs
               ? rhs + lhs
               : min);
     }
