@@ -178,7 +178,6 @@
 start:
   declarations {
     compiler.setAST(new ASTList<ASTDeclaration>(@1, $1));
-    compiler.printAST();
   }
 ;
 
@@ -316,6 +315,7 @@ statement:
   | RETURN SEMICOL { $$ = new ASTReturn(@1); }
   | IDENTIFIER LPAREN optional_expression_list RPAREN SEMICOL { $$ = new ASTCall(@1, $1, $3); }
   | variable_declaration { $$ = $1; }
+  | variable_declaration_initialized { $$ = $1; }
   | array_declaration { $$ = $1; }
   | scope { $$ = $1; }
   | SEMICOL { $$ = nullptr; }

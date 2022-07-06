@@ -19,6 +19,9 @@
     <Filter Include="src\support\format">
       <UniqueIdentifier>{45c66166-8236-4e7f-a1cb-697b05592827}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\compiler\optimizers">
+      <UniqueIdentifier>{c2e8bfce-c5b9-44f1-9985-2b739e1d2906}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\main.cpp">
@@ -169,6 +172,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\compiler\nanocparser.hpp">
       <Filter>src\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\compiler\optimizers\constants_folder.h">
+      <Filter>src\compiler\optimizers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

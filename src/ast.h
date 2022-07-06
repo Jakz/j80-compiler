@@ -49,6 +49,8 @@ namespace nanoc
     
   public:
     ASTNode(const location& loc) : loc(loc) { }
+    virtual ~ASTNode() { }
+
     virtual std::string mnemonic() const = 0;
     
     const location& getLocation() { return loc; }
@@ -61,8 +63,9 @@ namespace nanoc
     std::list<std::unique_ptr<T>> elements;
     
     std::string mnemonic() const override {
-      std::string unmangledName = Utils::execute(std::string("c++filt ")+typeid(T).name());
-      unmangledName.erase(unmangledName.end()-1);
+      /*std::string unmangledName = Utils::execute(std::string("c++filt ")+typeid(T).name());
+      unmangledName.erase(unmangledName.end()-1);*/
+      std::string unmangledName = typeid(T).name();
       size_t namespaceIndex = unmangledName.find("::");
       unmangledName = unmangledName.substr(namespaceIndex+2);
       return fmt::format("List<{}>", unmangledName);
@@ -100,6 +103,9 @@ namespace nanoc
 
     // TODO: make pure virtual and implement in subtypes
     virtual const Type* getType(const SymbolTable& table) const { return nullptr; /* TODO: used to make it compile */ }; // = 0;
+    
+    virtual bool isConstexpr() const { return false; }
+    virtual Value getValue() const;
   };
   
   class ASTNumber : public ASTExpression
@@ -110,10 +116,12 @@ namespace nanoc
   public:
     ASTNumber(const location& loc, Value value) : ASTNode(loc), ASTExpression(loc), value(value) { }
     std::string mnemonic() const override { return fmt::format("Number({})", value); }
-    Value getValue() const { return value; }
     
     //TODO: leak, manage width of immediate
     Type* getType(const SymbolTable& table) const override { return new Word(); }
+
+    bool isConstexpr() const override { return true; }
+    Value getValue() const override { return value; }
   };
   
   class ASTBool : public ASTExpression
@@ -136,6 +144,7 @@ namespace nanoc
     ASTReference(const location& loc, const std::string& name) : ASTNode(loc), ASTExpression(loc), name(name) { }
     std::string mnemonic() const override { return fmt::format("Reference({})", name.c_str()); }
     
+    bool isConstexpr() const override;
     const std::string& getName() { return name; }
   };
   
@@ -159,13 +168,14 @@ namespace nanoc
     std::string name;
     UniqueList<ASTExpression> arguments;
     
-    std::string mnemonic() const override { return fmt::format("Call({})", name.c_str()); }
     
   public:
     ASTCall(const location& loc, const std::string& name) : ASTNode(loc), ASTExpression(loc), name(name) { }
     ASTCall(const location& loc, const std::string& name, std::list<ASTExpression*>& arguments) : ASTNode(loc), ASTExpression(loc), name(name),
       arguments(UniqueList<ASTExpression>(new ASTList<ASTExpression>(loc, arguments))) { }
-    
+
+    std::string mnemonic() const override { return fmt::format("Call({})", name.c_str()); }
+
     const std::string& getName() { return name; }
     std::unique_ptr<ASTList<ASTExpression>>& getArguments() { return arguments; }
   };
@@ -176,12 +186,12 @@ namespace nanoc
     Ternary op;
     UniqueExpression operand1, operand2, operand3;
     
-    std::string mnemonic() const override { return fmt::format("TernaryExpression({})", Mnemonics::mnemonicForTernary(op)); }
-    
   public:
     ASTTernaryExpression(const location& loc, Ternary op, ASTExpression* operand1, ASTExpression* operand2, ASTExpression* operand3) : ASTNode(loc), ASTExpression(loc), op(op),
       operand1(UniqueExpression(operand1)), operand2(UniqueExpression(operand2)), operand3(UniqueExpression(operand3)) { }
     
+    std::string mnemonic() const override { return fmt::format("TernaryExpression({})", Mnemonics::mnemonicForTernary(op)); }
+
     const Type* getType(const SymbolTable& table) const override;
     
     std::unique_ptr<ASTExpression>& getOperand1() { return operand1; }
@@ -195,13 +205,13 @@ namespace nanoc
   protected:
     Binary op;
     UniqueExpression operand1, operand2;
-    
-    std::string mnemonic() const override { return fmt::format("BinaryExpression({})", Mnemonics::mnemonicForBinary(op)); }
-    
+        
   public:
     ASTBinaryExpression(const location& loc, Binary op, ASTExpression* operand1, ASTExpression* operand2) : ASTNode(loc), ASTExpression(loc), op(op),
       operand1(UniqueExpression(operand1)), operand2(UniqueExpression(operand2)) { }
     
+    std::string mnemonic() const override { return fmt::format("BinaryExpression({})", Mnemonics::mnemonicForBinary(op)); }
+
     const Type* getType(const SymbolTable& table) const override;
     
     Binary getOperation() { return op; }
@@ -215,12 +225,12 @@ namespace nanoc
   protected:
     Unary op;
     UniqueExpression operand;
-    
-    std::string mnemonic() const override { return fmt::format("UnaryExpression({})", Mnemonics::mnemonicForUnary(op)); }
-    
+       
   public:
     ASTUnaryExpression(const location& loc, Unary op, ASTExpression* operand) : ASTNode(loc), ASTExpression(loc), op(op), operand(operand) { }
-    
+   
+    std::string mnemonic() const override { return fmt::format("UnaryExpression({})", Mnemonics::mnemonicForUnary(op)); }
+
     const Type* getType(const SymbolTable& table) const override;
     
     std::unique_ptr<ASTExpression>& getOperand() { return operand; }

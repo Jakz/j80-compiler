@@ -5,11 +5,12 @@
 #include <sstream>
 
 #include "ast_visitor.h"
+#include "compiler/optimizers/constants_folder.h"
 
 using namespace std;
 using namespace nanoc;
 
-bool Compiler::parseString(const std::string &string)
+bool Compiler::parseString(const std::string& string)
 {
   file = "none";
   istringstream stream(string);
@@ -21,7 +22,7 @@ bool Compiler::parseString(const std::string &string)
   return res == 0;
 }
 
-bool Compiler::parse(const std::string &filename)
+bool Compiler::parse(const std::string& filename)
 {
   file = filename;
   
@@ -29,11 +30,14 @@ bool Compiler::parse(const std::string &filename)
   
   ifstream is;
   is.open(filename);
-  
+   
   nanoc::Lexer lexer(*this, &is);
   nanoc::Parser parser(lexer, *this);
   parser.set_debug_level(shouldGenerateTrace);
   int res = parser.parse();
+
+  printAST();
+
   return res == 0;
 }
 
@@ -67,6 +71,14 @@ void Compiler::printAST()
     
     EnumReplaceVisitor evisitor = EnumReplaceVisitor(svisitor.getTable());
     evisitor.dispatch(ast.get());
+
+    bool keep = true;
+    while (keep)
+    {
+      nanoc::optimizer::ConstantFolderVisitor constantFolder;
+      constantFolder.dispatch(ast.get());
+      keep = constantFolder.hasFoldedAny();
+    }
     
     PrinterVisitor visitor;
     visitor.dispatch(ast.get());

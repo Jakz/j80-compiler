@@ -1,7 +1,21 @@
 #include "ast.h"
 
+#include <cassert>
+
 using namespace nanoc;
 
+bool ASTReference::isConstexpr() const
+{
+  return false;
+}
+
+
+
+Value ASTExpression::getValue() const
+{
+  assert(false);
+  return 0;
+}
 
 const Type* ASTTernaryExpression::getType(const SymbolTable& table) const
 {

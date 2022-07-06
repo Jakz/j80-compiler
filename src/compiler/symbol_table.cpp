@@ -139,6 +139,14 @@ ASTNode* SymbolsVisitor::exitingNode(ASTEnumDeclaration* node)
   return nullptr;
 }
 
+void SymbolsVisitor::enteringNode(ASTEnumEntry* node)
+{
+  if (node->getHasValue())
+    currentEnum->add(node->getName(), node->getValue());
+  else
+    currentEnum->add(node->getName());
+}
+
 void SymbolsVisitor::enteringNode(ASTStructField* node)
 {
   currentStruct->addField(node->getName(), node->getType());
@@ -159,13 +167,7 @@ ASTNode* SymbolsVisitor::exitingNode(ASTStructDeclaration* node)
   return nullptr;
 }
 
-void SymbolsVisitor::enteringNode(ASTEnumEntry* node)
-{
-  if (node->getHasValue())
-    currentEnum->add(node->getName(), node->getValue());
-  else
-    currentEnum->add(node->getName());
-}
+
 
 void SymbolsVisitor::enteringNode(ASTLeftHand* node)
 {
@@ -175,8 +177,16 @@ void SymbolsVisitor::enteringNode(ASTLeftHand* node)
 
 void SymbolsVisitor::enteringNode(ASTReference* node)
 {
-  if (!table.isIdentifierBound(node->getName()) && !table.isEnumIdentifierBound(node->getName()))
-    throw identifier_undeclared(node->getLocation(), node->getName());
+  const ident_t& ident = node->getName();
+  
+  if (!table.isIdentifierBound(ident) && !table.isEnumIdentifierBound(ident))
+    throw identifier_undeclared(node->getLocation(), ident);
+}
+
+void SymbolsVisitor::enteringNode(ASTCall* node)
+{
+  if (!table.hasFunction(node->getName()))
+    throw function_undeclared(node->getLocation(), node->getName());
 }
 
 #pragma mark EnumReplaceVisitor

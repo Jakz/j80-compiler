@@ -45,6 +45,19 @@ namespace nanoc
       return buffer.c_str();
     }
   };
+
+  class function_undeclared : public compiler_exception
+  {
+  private:
+    std::string identifier;
+  public:
+    function_undeclared(const location& loc, const std::string& identifier) : compiler_exception(loc, "function undeclared"), identifier(identifier) { }
+    const char* what() const throw() override
+    {
+      buffer = fmt::format("Exception at {}:{}, {}: {}", loc.begin.line, loc.begin.column, compiler_exception::what(), identifier.c_str());
+      return buffer.c_str();
+    }
+  };
   
   class wrong_number_of_arguments : public compiler_exception
   {
@@ -58,5 +71,4 @@ namespace nanoc
     
     const char* what() const throw() override;
   };
-
 }

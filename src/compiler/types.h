@@ -5,6 +5,9 @@
 #include "support/format/format.h"
 
 namespace nanoc {
+
+  using ident_t = std::string;
+
   class SymbolTable;
   
   class Type
@@ -62,7 +65,7 @@ namespace nanoc {
   public:
     Named(const std::string& name) : name(name) { }
     u16 getSize(const SymbolTable* table) const override;
-    std::string mnemonic() const override { return fmt::format("Named(%s)", name.c_str()); }
+    std::string mnemonic() const override { return fmt::format("Named({})", name); }
     Named* copy() const override { return new Named(name); }
     bool isStruct(const SymbolTable *table) const override;
   };

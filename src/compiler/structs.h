@@ -11,16 +11,16 @@ namespace nanoc
 class StructField
 {
 private:
-  u16 offset;
+  u32 offset;
   std::string name;
   std::unique_ptr<const RealType> type;
   
 public:
   StructField(const std::string& name, const RealType* type) : name(name), type(std::unique_ptr<const RealType>(type)), offset(0) { }
-  void setOffset(u16 offset) { this->offset = offset; }
+  void setOffset(u32 offset) { this->offset = offset; }
   
   const std::string& getName() const { return name; }
-  u16 getOffset() { return offset; }
+  u32 getOffset() { return offset; }
   const RealType* getType() { return type.get(); }
 };
 
@@ -28,7 +28,7 @@ class Struct
 {
 private:
   std::string name;
-  u16 size;
+  u32 size;
   std::vector<std::unique_ptr<StructField>> fields;
   
 public:
@@ -40,14 +40,14 @@ public:
   }
   
   const std::string& getName() { return name; }
-  u16 getSize() { return size; }
+  u32 getSize() { return size; }
   size_t getFieldCount() { return fields.size(); }
   
   const std::unique_ptr<StructField>& getField(size_t index) { return fields[index]; }
   
   void prepare(SymbolTable* table)
   {
-    u16 offset = 0;
+    u32 offset = 0;
     
     for (auto& sf : fields)
     {

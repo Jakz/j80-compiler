@@ -371,12 +371,12 @@ void InstructionXXX_PTR_PP::assemble(u8* dest) const
   dest[2] = value.value;
 }
 
+
+#pragma mark
 /****************************
  * LD R, [PP+SS]
  * ST [PP+SS], R
  ****************************/
-#pragma mark
-
 std::string InstructionLD_PTR_PP::mnemonic() const
 {
   if (value.value == 0)

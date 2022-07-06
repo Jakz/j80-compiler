@@ -140,7 +140,7 @@ namespace nanoc
     
     bool isEnumIdentifierBound(const std::string& name) const
     {
-      return std::any_of(std::begin(enums), std::end(enums), [name](const decltype(enums)::value_type& e) { return e.second->retrieve(name) == nullptr; });
+      return std::any_of(std::begin(enums), std::end(enums), [name](const decltype(enums)::value_type& e) { return e.second->retrieve(name) != nullptr; });
     }
     
     bool isStructType(const std::string& name) const { return structs.find(name) != structs.end(); }
@@ -211,6 +211,7 @@ namespace nanoc
     
     void enteringNode(ASTReference* node);
     void enteringNode(ASTLeftHand* node);
+    void enteringNode(ASTCall* node);
     
     
     void commonVisit(ASTNode* node) { }

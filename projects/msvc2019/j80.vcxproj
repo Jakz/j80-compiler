@@ -50,6 +50,7 @@
     <ClInclude Include="..\..\src\compiler\enums.h" />
     <ClInclude Include="..\..\src\compiler\nanoclexer.h" />
     <ClInclude Include="..\..\src\compiler\nanocparser.hpp" />
+    <ClInclude Include="..\..\src\compiler\optimizers\constants_folder.h" />
     <ClInclude Include="..\..\src\compiler\rtl.h" />
     <ClInclude Include="..\..\src\compiler\structs.h" />
     <ClInclude Include="..\..\src\compiler\symbol_table.h" />
@@ -181,6 +182,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)..\..\src;D:\dev\libs\win_flex_bison;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4068</DisableSpecificWarnings>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -211,6 +213,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)..\..\src;D:\dev\libs\win_flex_bison;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4068</DisableSpecificWarnings>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
