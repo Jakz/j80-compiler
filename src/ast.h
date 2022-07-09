@@ -155,12 +155,24 @@ namespace nanoc
     UniqueExpression index;
     
   public:
-    ASTArrayReference(const location& loc, ASTExpression* lhs, ASTExpression* index) : ASTNode(loc), ASTExpression(loc), lhs(lhs), index(UniqueExpression(index)) { }
+    ASTArrayReference(const location& loc, ASTExpression* lhs, ASTExpression* index) : ASTExpression(loc), ASTNode(loc), lhs(lhs), index(UniqueExpression(index)) { }
     std::string mnemonic() const override { return fmt::format("ArrayReference({})"); }
     
     UniqueExpression& getLeftHand() { return lhs; }
     std::unique_ptr<ASTExpression>& getIndex() { return index; }
   };
+
+  /*
+  class ASTStructReference : public ASTExpression
+  {
+  protected:
+    ident_t name;
+    ident_t fieldName;
+
+  public:
+    ASTStructReference(const location& loc, const ident_t& name, const ident_t& fieldName) : ASTExpression(loc), name(name), fieldName(fieldName) { }
+  };
+  */
   
   class ASTCall : public ASTExpression
   {
@@ -463,7 +475,7 @@ protected:
 public:
   ASTStructField(const location& loc, ASTVariableDeclaration* entry) : ASTNode(loc), entry(entry) { }
   
-  std::string mnemonic() const override { return "StructField"; }
+  std::string mnemonic() const override { return fmt::format("StructField({}, {})", entry->getName(), entry->getTypeName()); }
   
   const std::string& getName() { return entry->getName(); }
   const RealType* getType() { return static_cast<RealType*>(entry->getType()); }

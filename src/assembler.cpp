@@ -74,7 +74,7 @@ void J80Assembler::printProgram(std::ostream& out) const
     
     for (int i = 0; i < length; ++i)
       out << fmt::format("{:02X}", opcode[i]);
-    for (int i = length; i < LENGTH_4_BYTES+1; ++i)
+    for (int i = length; i < 4+1; ++i)
       out << fmt::format("  ");
     
     std::string mnemonic = i->mnemonic();

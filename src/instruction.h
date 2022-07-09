@@ -15,16 +15,7 @@ namespace Assembler
 {
   
   class J80Assembler;
-  
-  enum InstructionLength : u8
-  {
-    LENGTH_0_BYTES = 0,
-    LENGTH_1_BYTES = 1,
-    LENGTH_2_BYTES = 2,
-    LENGTH_3_BYTES = 3,
-    LENGTH_4_BYTES = 4
-  };
-  
+
 #pragma mark Environment
   struct DataSegmentEntry
   {
@@ -207,10 +198,10 @@ namespace Assembler
   public:
     u8 data[4];
     u16 address;
-    InstructionLength length;
+    u32 length;
     
   public:
-    Instruction(InstructionLength length) : data{0}, length(length) { }
+    Instruction(u32 length) : data{0}, length(length) { }
     
     virtual const u16 getLength() const { return length; }
     
@@ -223,6 +214,8 @@ namespace Assembler
     }
     
     virtual Result solve(const Environment& env) { return Result(); }
+
+    static Instruction* disassemble(const u8* code);
   };
 
   class Padding : public Instruction
@@ -231,7 +224,7 @@ namespace Assembler
     u16 ilength;
     
   public:
-    Padding(u16 ilength) : Instruction(LENGTH_0_BYTES), ilength(ilength) { }
+    Padding(u16 ilength) : Instruction(0), ilength(ilength) { }
     
     const u16 getLength() const { return ilength; }
     
@@ -253,7 +246,7 @@ namespace Assembler
     const Value8 value;
     
   public:
-    InstructionXXX_NN(Opcode opcode, Reg8 dst, Value8 value) : Instruction(LENGTH_3_BYTES), opcode(opcode), dst(dst), value(value) { }
+    InstructionXXX_NN(Opcode opcode, Reg8 dst, Value8 value) : Instruction(3), opcode(opcode), dst(dst), value(value) { }
     
     std::string mnemonic() const override;
     Result solve(const Environment& env) override final;
@@ -264,7 +257,7 @@ namespace Assembler
   {
   protected:
     Address address;
-    InstructionAddressable(InstructionLength length, Address address) : Instruction(length), address(address) { }
+    InstructionAddressable(u32 length, Address address) : Instruction(length), address(address) { }
     
   public:
     
@@ -284,7 +277,7 @@ namespace Assembler
     const Value16 value;
     
   public:
-    InstructionXXX_NNNN(InstructionLength length, Opcode opcode, RegType dst, Value16 value) : Instruction(length), opcode(opcode), dst(dst), value(value) { }
+    InstructionXXX_NNNN(u32 length, Opcode opcode, RegType dst, Value16 value) : Instruction(length), opcode(opcode), dst(dst), value(value) { }
     Result solve(const Environment& env) override final;
     std::string mnemonic() const override;
   };
@@ -296,7 +289,7 @@ namespace Assembler
     Opcode opcode;
     RegType reg;
     
-    InstructionSingleReg(Opcode opcode, RegType reg) : Instruction(LENGTH_1_BYTES), opcode(opcode), reg(reg) { }
+    InstructionSingleReg(Opcode opcode, RegType reg) : Instruction(1), opcode(opcode), reg(reg) { }
     std::string mnemonic() const override final;
     
   public:
@@ -307,7 +300,7 @@ namespace Assembler
   class InstructionSimple : public Instruction
   {
   public:
-    InstructionSimple() : Instruction(LENGTH_1_BYTES) { }
+    InstructionSimple() : Instruction(1) { }
     std::string mnemonic() const override final { return fmt::format("{}", Opcodes::opcodeName(OPCODE)); }
     void assemble(u8* dest) const override { dest[0] = OPCODE << 3; }
   };
@@ -320,7 +313,7 @@ namespace Assembler
     bool solved;
     
   public:
-    Label(const std::string& label) : Instruction(LENGTH_0_BYTES), label(label), address(0), solved(false) { }
+    Label(const std::string& label) : Instruction(0), label(label), address(0), solved(false) { }
     
     const std::string& getLabel() const { return label; }
     
@@ -338,7 +331,7 @@ namespace Assembler
     bool solved;
     
   public:
-    InterruptEntryPoint(u8 index) : Instruction(LENGTH_0_BYTES), index(index), address(0), solved(false) { }
+    InterruptEntryPoint(u8 index) : Instruction(0), index(index), address(0), solved(false) { }
     
     const u8 getIndex() const { return index; }
     
@@ -363,7 +356,7 @@ namespace Assembler
     const Alu alu;
     
   public:
-    InstructionXXX_R_S(Opcode opcode, Reg reg1, Reg reg2, Alu alu, bool extended) : Instruction(LENGTH_2_BYTES),
+    InstructionXXX_R_S(Opcode opcode, Reg reg1, Reg reg2, Alu alu, bool extended) : Instruction(2),
       opcode(opcode), reg1(reg1), reg2(reg2), alu(static_cast<Alu>(alu | (extended ? 0b1 : 0)))
     { }
     
@@ -419,7 +412,7 @@ namespace Assembler
   class InstructionLD_NNNN : public InstructionXXX_NNNN<Reg16>
   {
   public:
-    InstructionLD_NNNN(Reg16 dst, Value16 value) : InstructionXXX_NNNN(LENGTH_3_BYTES, OPCODE_LD_NNNN, dst, value) { }
+    InstructionLD_NNNN(Reg16 dst, Value16 value) : InstructionXXX_NNNN(3, OPCODE_LD_NNNN, dst, value) { }
     void assemble(u8* dest) const override;
   };
   
@@ -427,7 +420,7 @@ namespace Assembler
   class InstructionST_PTR_NNNN : public InstructionXXX_NNNN<Reg8>
   {
   public:
-    InstructionST_PTR_NNNN(Reg8 src, Value16 value) : InstructionXXX_NNNN(LENGTH_3_BYTES, OPCODE_SD_PTR_NNNN, src, value) { }
+    InstructionST_PTR_NNNN(Reg8 src, Value16 value) : InstructionXXX_NNNN(3, OPCODE_SD_PTR_NNNN, src, value) { }
     void assemble(u8* dest) const override;
     std::string mnemonic() const override;
   };
@@ -436,7 +429,7 @@ namespace Assembler
   class InstructionLD_PTR_NNNN : public InstructionXXX_NNNN<Reg8>
   {
   public:
-    InstructionLD_PTR_NNNN(Reg8 src, Value16 value) : InstructionXXX_NNNN(LENGTH_3_BYTES, OPCODE_LD_PTR_NNNN, src, value) { }
+    InstructionLD_PTR_NNNN(Reg8 src, Value16 value) : InstructionXXX_NNNN(3, OPCODE_LD_PTR_NNNN, src, value) { }
     void assemble(u8* dest) const override;
     std::string mnemonic() const override;
   };
@@ -445,7 +438,7 @@ namespace Assembler
   class InstructionCMP_NNNN : public InstructionXXX_NNNN<Reg16>
   {
   public:
-    InstructionCMP_NNNN(Reg16 dst, Value16 value) : InstructionXXX_NNNN(LENGTH_4_BYTES, OPCODE_CMP_NNNN, dst, value) { }
+    InstructionCMP_NNNN(Reg16 dst, Value16 value) : InstructionXXX_NNNN(4, OPCODE_CMP_NNNN, dst, value) { }
     void assemble(u8* dest) const override;
   };
   
@@ -456,7 +449,7 @@ namespace Assembler
     const Reg16 src;
     const Alu alu;
   public:
-    InstructionALU_NNNN(Reg16 dst, Reg16 src, Alu alu, Value16 value) : InstructionXXX_NNNN(LENGTH_4_BYTES, OPCODE_ALU_NNNN, dst, value), src(src), alu(alu) { }
+    InstructionALU_NNNN(Reg16 dst, Reg16 src, Alu alu, Value16 value) : InstructionXXX_NNNN(4, OPCODE_ALU_NNNN, dst, value), src(src), alu(alu) { }
     std::string mnemonic() const override;
     void assemble(u8* dest) const override;
   };
@@ -516,7 +509,7 @@ namespace Assembler
     InstructionALU_R(Reg dst, Reg src1, Reg src2, Alu alu, bool extended) :
     InstructionALU_R(dst, src1, src2, alu | (extended ? 0b1 : 0b0)) { }
     
-    InstructionALU_R(Reg dst, Reg src1, Reg src2, Alu alu) : Instruction(LENGTH_3_BYTES),
+    InstructionALU_R(Reg dst, Reg src1, Reg src2, Alu alu) : Instruction(3),
     alu(alu), dst(dst), src1(src1), src2(src2) { }
     
     std::string mnemonic() const override;
@@ -590,20 +583,34 @@ namespace Assembler
     JumpCondition condition;
     
   public:
-    InstructionJMP_NNNN(JumpCondition condition, Address address) : InstructionAddressable(LENGTH_3_BYTES, address), condition(condition) { }
+    InstructionJMP_NNNN(JumpCondition condition, Address address) : InstructionAddressable(3, address), condition(condition) { }
 
-    std::string mnemonic() const override {
-      if (address.label.empty())
-        return fmt::format("{}{} {:4X}h", Opcodes::opcodeName(OPCODE_JMPC_NNNN), Opcodes::condName(condition), address.address);
-      else
-        return fmt::format("{}{} {:4X}h ({})", Opcodes::opcodeName(OPCODE_JMPC_NNNN), Opcodes::condName(condition), address.address, address.label.c_str());
-    }
+    std::string mnemonic() const override;
     
     void assemble(u8* dest) const override
     {
       dest[0] = (OPCODE_JMPC_NNNN << 3) | condition;
       dest[1] = (address.address >> 8) & 0xFF;
       dest[2] = address.address & 0xFF;
+    }
+  };
+
+#pragma mark JMP PP
+  class InstructionJMP_PP : public Instruction
+  {
+  private:
+    Reg16 reg;
+    JumpCondition condition;
+
+  public:
+    InstructionJMP_PP(JumpCondition condition, Reg16 reg) : Instruction(2), reg(reg), condition(condition) { }
+
+    std::string mnemonic() const override;
+
+    void assemble(u8* dest) const override
+    {
+      dest[0] = (OPCODE_JMPC_PP << 3) | condition;
+      dest[1] = (reg.reg << 5) | Alu::TRANSFER_B16;
     }
   };
   
@@ -614,14 +621,9 @@ namespace Assembler
     JumpCondition condition;
     
   public:
-    InstructionCALL_NNNN(JumpCondition condition, Address address) : InstructionAddressable(LENGTH_3_BYTES, address), condition(condition) { }
+    InstructionCALL_NNNN(JumpCondition condition, Address address) : InstructionAddressable(3, address), condition(condition) { }
     
-    std::string mnemonic() const override {
-      if (address.label.empty())
-        return fmt::format("{}{} {:4X}h", Opcodes::opcodeName(OPCODE_CALLC), Opcodes::condName(condition), address.address);
-      else
-        return fmt::format("{}{} {:4X}h ({})", Opcodes::opcodeName(OPCODE_CALLC), Opcodes::condName(condition), address.address, address.label.c_str());
-    }
+    std::string mnemonic() const override;
     
     void assemble(u8* dest) const override
     {
@@ -638,7 +640,7 @@ namespace Assembler
     JumpCondition condition;
     
   public:
-    InstructionRET(JumpCondition condition) : Instruction(LENGTH_1_BYTES), condition(condition) { }
+    InstructionRET(JumpCondition condition) : Instruction(1), condition(condition) { }
     
     std::string mnemonic() const override { return fmt::format("{}{}", Opcodes::opcodeName(OPCODE_RETC), Opcodes::condName(condition)); }
     void assemble(u8* dest) const override { dest[0] = (OPCODE_RETC << 3) | condition;; }

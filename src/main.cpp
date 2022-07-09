@@ -1,4 +1,4 @@
-//
+﻿//
 //  main.cpp
 //  J80 Compiler
 //
@@ -12,6 +12,8 @@
 #include <cstdio>
 #include <vector>
 #include <string>
+#include <thread>
+#include <array>
 
 #include "assembler.h"
 #include "disassembler.h"
@@ -20,36 +22,9 @@
 #include "ast.h"
 #include "compiler/rtl.h"
 
-#define UI_ENABLED false
-
-#if UI_ENABLED
-#include "vm/ui.h"
-#endif
-
-#include "vm.h"
-
-
+#include "screen.h"
 
 using namespace std;
-/*
-int main(int argc, const char * argv[])
-{
-  ASTList* list = new ASTList();
-  
-  ASTList* list2 = new ASTList();
-  list2->add(unique_ptr<ASTNode>(new ASTNumber(50)));
-  
-  list->add(unique_ptr<ASTNode>(new ASTNumber(10)));
-  list->add(unique_ptr<ASTNode>(new ASTUnaryOperator(Unary::NOT, unique_ptr<ASTNode>(new ASTNumber(20)))));
-  list->add(unique_ptr<ASTNode>(list2));
-  list->recursivePrint(0);
-  
-
-  
-  
-  
-  return 0;
-}*/
 
 bool stringEndsWith(const string& text, const string& suffix)
 {
@@ -66,6 +41,16 @@ string trimExtension(const string& text)
   else
     return text;
 }
+
+class PrintfStdOut : public StdOut
+{
+  void out(u8 value) override
+  {
+    printf("%c", (char)value);
+  }
+};
+
+static bool shouldStopVM = false;
 
 void runWithArgs(const vector<string>& args, Assembler::J80Assembler& assembler, nanoc::Compiler& compiler)
 {
@@ -87,6 +72,22 @@ void runWithArgs(const vector<string>& args, Assembler::J80Assembler& assembler,
           
           string output = trimExtension(args[1]) + ".bin";
           assembler.saveForLogisim(output);
+
+          std::thread thread = std::thread([&assembler] {
+            VM vm;
+            vm.copyToRam(assembler.getCodeSegment().data, assembler.getCodeSegment().length);
+            vm.copyToRam(assembler.getDataSegment().data, assembler.getDataSegment().length, assembler.getDataSegment().offset);
+            vm.setStdOut(new PrintfStdOut());
+
+            
+            while (!shouldStopVM)
+              vm.executeInstruction();
+          });
+
+          thread.detach();
+
+          getchar();
+          shouldStopVM = true;
         }
         else
           assembler.log(Log::ERROR, true, "Error: {}", result.message);
@@ -102,36 +103,32 @@ void runWithArgs(const vector<string>& args, Assembler::J80Assembler& assembler,
 int main(int argc, const char * argv[])
 {
   VM vm;
-  
+
+
   Assembler::J80Assembler assembler;
   nanoc::Compiler compiler;
-  
-  runWithArgs({"j80", "tests/testsuite.j80"}, assembler, compiler);
-  return 0;
-  
-#if UI_ENABLED
-  
+
+  runWithArgs({ "j80", "tests/testsuite.j80" }, assembler, compiler);
+
+  //return 0;
+
   vm.copyToRam(assembler.getCodeSegment().data, assembler.getCodeSegment().length);
   vm.copyToRam(assembler.getDataSegment().data, assembler.getDataSegment().length, assembler.getDataSegment().offset);
+  vm.setDataSegmentStart(assembler.getDataSegment().offset);
   
-  vm::UI ui = vm::UI(vm);
-  ui.init();
-  
-  vm.setStdOut(ui.getStdOut());
-  
-  bool exit = false;
-  do
-  {
-    ui.draw();
-    ui.handleEvents();
-    exit = ui.shouldExit();
-  } while (!exit);
-  
-  ui.shutdown();
-  
-  return 0;
+  ui::Screen screen;
 
-#endif
+  screen.init(80, 60);
+  screen.setVM(&vm);
+  
+  screen.drawLayout();
+  screen.refresh();
+
+  screen.loop();
+
+  screen.deinit();
+
+  return 0;
 
   if (argc > 1)
   {

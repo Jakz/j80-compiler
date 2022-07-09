@@ -177,12 +177,12 @@ MnemonicInfo Opcodes::printInstruction(const u8 *data)
   switch (opcode) {
       
     case OPCODE_LD_NN: { info = {fmt::format("{} {}, {:2X}h", opcodeName(opcode), reg8(reg1), unsigned8), 3}; break; }
-    case OPCODE_LD_NNNN: { info = {fmt::format("{} {}, {:4X}h", opcodeName(opcode), reg16(reg1), short1), 3}; break; }
-    case OPCODE_LD_PTR_NNNN: { info = {fmt::format("{} {}, [{:4X}h]",opcodeName(opcode), reg8(reg1), short1), 3}; break; }
-    case OPCODE_LD_PTR_PP: { info = {fmt::format("{} {}, [{}{+d}]", opcodeName(opcode), reg8(reg1), reg16(reg2), signed8), 3}; break; }
+    case OPCODE_LD_NNNN: { info = {fmt::format("{} {}, {:04X}h", opcodeName(opcode), reg16(reg1), short1), 3}; break; }
+    case OPCODE_LD_PTR_NNNN: { info = {fmt::format("{} {}, [{:04X}h]",opcodeName(opcode), reg8(reg1), short1), 3}; break; }
+    case OPCODE_LD_PTR_PP: { info = {fmt::format("{} {}, [{}{:+d}]", opcodeName(opcode), reg8(reg1), reg16(reg2), signed8), 3}; break; }
       
-    case OPCODE_SD_PTR_NNNN: { info = {fmt::format("{} [{:4X}h], {} ", opcodeName(opcode), short1, reg8(reg1)), 3}; break; }
-    case OPCODE_SD_PTR_PP: { info = {fmt::format("{} [{}%+d], {} ", opcodeName(opcode), reg16(reg2), signed8, reg8(reg1)), 3}; break; }
+    case OPCODE_SD_PTR_NNNN: { info = {fmt::format("{} [{:04X}h], {} ", opcodeName(opcode), short1, reg8(reg1)), 3}; break; }
+    case OPCODE_SD_PTR_PP: { info = {fmt::format("{} [{}{:+d}], {} ", opcodeName(opcode), reg16(reg2), signed8, reg8(reg1)), 3}; break; }
 
     case OPCODE_JMP_NNNN:
     case OPCODE_JMPC_NNNN:
@@ -213,7 +213,7 @@ MnemonicInfo Opcodes::printInstruction(const u8 *data)
     case OPCODE_CALL:
     case OPCODE_CALLC:
     {
-      return {fmt::format("{}{} {:4X}h", opcodeName(opcode), condName(cond), short1), 3};
+      return {fmt::format("{}{} {:04X}h", opcodeName(opcode), condName(cond), short1), 3};
     }
       
     case OPCODE_LF: { return {fmt::format("{} {}", opcodeName(opcode), reg8(reg1)), 1}; }
@@ -236,9 +236,25 @@ MnemonicInfo Opcodes::printInstruction(const u8 *data)
       info.length = 2;
       break;
     }
-      
-    case OPCODE_CMP_NN: { return {fmt::format("{} {}, {:2X}h", opcodeName(opcode), reg8(reg1), unsigned8), 3}; break; }
-    case OPCODE_CMP_NNNN: { return {fmt::format("{} {}, {:4X}h", opcodeName(opcode), reg16(reg1), short2), 4}; break; }
+
+    case OPCODE_ALU_NN: { return { fmt::format("{} {}, {}, {+d}", aluName(alu), reg8(reg1), reg8(reg2), signed8) }; break; }
+    case OPCODE_ALU_NNNN: { return { fmt::format("{} {}, {}, {:04X}h", aluName(alu), reg16(reg1), reg16(reg2), short2) }; break; }
+    case OPCODE_ALU_REG: 
+    {
+      if ((u8)alu & (u8)Alu::EXTENDED_BIT)
+      {
+        return { fmt::format("{} {}, {}, {}", aluName(alu), reg8(reg1), reg8(reg2), reg8(reg3)) }; break;
+      }
+      else
+      {
+        return { fmt::format("{} {}, {}, {}", aluName(alu), reg16(reg1), reg16(reg2), reg16(reg3)) }; break;
+      }
+    }
+
+    case OPCODE_CMP_NN: { return {fmt::format("{} {}, {:02X}h", opcodeName(opcode), reg8(reg1), unsigned8), 3}; break; }
+    case OPCODE_CMP_NNNN: { return {fmt::format("{} {}, {:04X}h", opcodeName(opcode), reg16(reg1), short2), 4}; break; }
+
+    default: assert(false);
   }
   
   return info;

@@ -8,6 +8,8 @@
 
 using namespace Assembler;
 
+//TODO: move them to use them in ui::Screen class
+
 template<>
 struct fmt::formatter<Reg16> : fmt::formatter<std::string>
 {
@@ -44,7 +46,7 @@ struct fmt::formatter<Value8> : fmt::formatter<std::string>
   template<typename Context>
   auto format(const Value8& c, Context& ctx)
   {
-    return format_to(ctx.out(), "{}", c.value);
+    return format_to(ctx.out(), "{:02X}h", c.value);
   }
 };
 
@@ -54,7 +56,7 @@ struct fmt::formatter<Value16> : fmt::formatter<std::string>
   template<typename Context>
   auto format(const Value16& c, Context& ctx)
   {
-    return format_to(ctx.out(), "{}", c.value);
+    return format_to(ctx.out(), "{:04X}h", c.value);
   }
 };
 
@@ -393,3 +395,97 @@ std::string InstructionST_PTR_PP::mnemonic() const
     return fmt::format("{} [{}{}], {}", opcode, raddr, (s8)value.value, dst);
 }
 
+#pragma mark
+/***************************
+* JMPC PP
+* JMP PP
+****************************/
+std::string InstructionJMP_PP::mnemonic() const
+{
+  return fmt::format("{}{} {}", Opcodes::opcodeName(OPCODE_JMPC_PP), Opcodes::condName(condition), reg);
+}
+
+#pragma mark
+std::string InstructionCALL_NNNN::mnemonic() const
+{
+  if (address.label.empty())
+    return fmt::format("{}{} {:04X}h", Opcodes::opcodeName(OPCODE_CALLC), Opcodes::condName(condition), address.address);
+  else
+    return fmt::format("{}{} {:04X}h ({})", Opcodes::opcodeName(OPCODE_CALLC), Opcodes::condName(condition), address.address, address.label);
+}
+
+std::string InstructionJMP_NNNN::mnemonic() const
+{
+  if (address.label.empty())
+    return fmt::format("{}{} {:04X}h", Opcodes::opcodeName(OPCODE_JMPC_NNNN), Opcodes::condName(condition), address.address);
+  else
+    return fmt::format("{}{} {:04X}h ({})", Opcodes::opcodeName(OPCODE_JMPC_NNNN), Opcodes::condName(condition), address.address, address.label);
+}
+
+#pragma mark
+Instruction* Instruction::disassemble(const u8* code)
+{
+  static constexpr u32 OPCODE_MASK = 0x1F;
+  static constexpr u32 OPCODE_SHIFT = 3;
+  
+  static constexpr u32 ALU_MASK = 0x1F;
+
+  static constexpr u32 REG_MASK = 0x7;
+
+  Opcode opcode = Opcode((code[0] >> OPCODE_SHIFT) & OPCODE_MASK);
+  Reg reg1 = Reg(code[0] & REG_MASK);
+  Reg reg2 = Reg((code[1] >> 5) & REG_MASK);
+  Reg reg3 = Reg((code[2] >> 5) & REG_MASK);
+  
+  Alu alu = Alu(code[1] & ALU_MASK);
+  JumpCondition condition = JumpCondition(code[0] & 0x0F);
+
+  uint8_t uint8 = code[2];
+
+  uint16_t uint16h = code[2] | (code[3] << 8);
+  uint16_t uint16l = code[2] | (code[1] << 8);
+
+  bool extended = (u32)alu & (u32)Alu::EXTENDED_BIT;
+
+  switch (opcode)
+  {
+    case OPCODE_NOP: return new InstructionNOP();
+    case OPCODE_SEXT: return new InstructionSEXT(Reg8(reg1));
+    case OPCODE_EI: return new InstructionEI();
+    case OPCODE_DI: return new InstructionDI();
+
+    case OPCODE_ALU_REG: return new InstructionALU_R(reg1, reg2, reg3, alu);
+    case OPCODE_ALU_NN: return new InstructionALU_R_NN(reg1, reg2, alu, uint8);
+    case OPCODE_ALU_NNNN: return new InstructionALU_NNNN(reg1, reg2, alu, uint16h);
+    case OPCODE_LF: return new InstructionLF(reg1);
+
+    case OPCODE_PUSH16: return new InstructionPUSH16(reg1);
+    case OPCODE_SF: return new InstructionSF(reg1);
+    case OPCODE_POP16: return new InstructionPOP16(reg1);
+    case OPCODE_CMP_REG: return new InstructionCMP_R_S(reg1, reg2, extended);
+
+    case OPCODE_CMP_NN: return new InstructionCMP_NN(reg1, uint8);
+    case OPCODE_CMP_NNNN: return new InstructionCMP_NNNN(reg1, uint16h);
+    case OPCODE_POP: return new InstructionPOP8(reg1);
+    case OPCODE_LD_RSH_LSH: return new InstructionLD_LSH_RSH(reg1, reg2, alu, extended);
+
+    case OPCODE_LD_NN: return new InstructionLD_NN(reg1, uint8);
+    case OPCODE_LD_NNNN: return new InstructionLD_NNNN(reg1, uint16l);
+    case OPCODE_PUSH: return new InstructionPUSH8(reg1);
+    case OPCODE_LD_PTR_NNNN: return new InstructionLD_PTR_NNNN(reg1, uint16l);
+
+    case OPCODE_LD_PTR_PP: return new InstructionLD_PTR_PP(reg1, reg2, uint8);
+    case OPCODE_SD_PTR_NNNN: return new InstructionST_PTR_NNNN(reg1, uint16l);
+    case OPCODE_SD_PTR_PP: return new InstructionST_PTR_PP(reg1, reg2, uint8);
+    case OPCODE_JMPC_NNNN: return new InstructionJMP_NNNN(condition, uint16l);
+
+    case OPCODE_JMP_NNNN: return new InstructionJMP_NNNN(condition, uint16l);
+    case OPCODE_JMPC_PP: return new InstructionJMP_PP(condition, reg2);
+    case OPCODE_JMP_PP: return new InstructionJMP_PP(condition, reg2);
+    case OPCODE_RETC: return new InstructionRET(condition);
+
+    case OPCODE_RET: return new InstructionRET(condition);
+    case OPCODE_CALLC: return new InstructionCALL_NNNN(condition, uint16l);
+    case OPCODE_CALL: return new InstructionCALL_NNNN(condition, uint16l);
+  }
+}

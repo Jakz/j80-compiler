@@ -93,9 +93,6 @@ namespace Assembler
     DataSegment dataSegment;
     CodeSegment codeSegment;
     
-    //static Instruction *build(InstructionLength len) { return new Instruction(len, position); }
-    //static void insert(Instruction *i) { position += i->length; instructions.push_back(i); }
-    
   public:
     J80Assembler();
     
@@ -124,7 +121,7 @@ namespace Assembler
     bool setStackBase(u16 address) { return stackBase.set(address); }
     bool setEntryPoint(u16 address) { return entryPoint.set(address); }
     
-    Instruction* preamble(InstructionLength len)
+    Instruction* preamble(u32 len)
     {
       return new Instruction(len);
     }
@@ -140,16 +137,6 @@ namespace Assembler
     {
       position += i->getLength();
       instructions.push_back(std::unique_ptr<Instruction>(i));
-    }
-
-    void assembleJMP_PP(JumpCondition cond, Reg reg)
-    {
-      Instruction* i = preamble(LENGTH_2_BYTES);
-      
-      i->data[0] = (OPCODE_JMPC_PP << 3) | cond;
-      i->data[1] = (reg << 5) | Alu::TRANSFER_B16;
-      
-      postamble(i);
     }
 
     void addData(const std::string& label, const DataSegmentEntry& entry)

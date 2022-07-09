@@ -49,6 +49,7 @@
 %token
   END 0 "end of file"
   EOL "\n"
+  DOT "."
   COLON ":"
   COMMA ","
   SEMICOL ";"
@@ -107,6 +108,7 @@
 
 %token <std::string>
   IDENTIFIER "identifier"
+  STRUCT_ACCESSOR "struct accessor"
   LITERAL "string literal"
 ;
 
@@ -338,6 +340,7 @@ expression:
   | BOOL_VALUE { $$ = new ASTBool(@1, $1); }
   | IDENTIFIER { $$ = new ASTReference(@1, $1); }
   | IDENTIFIER LPAREN optional_expression_list RPAREN { $$ = new ASTCall(@1, $1, $3); }
+  /*| STRUCT_ACCESSOR { auto i = strchr($1, '.'); $1[i] = '\0'; $$ = new ASTStructReference(@1, $1, $1); }*/
   | expression LBRACK expression RBRACK { $$ = new ASTArrayReference(@1, $1, $3); }
   | LPAREN expression RPAREN { $$ = $2; }
   | expression PLUS expression { $$ = new ASTBinaryExpression(@1, Binary::ADDITION, $1, $3); }

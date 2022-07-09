@@ -197,7 +197,7 @@ instruction:
 }
 
 | JMP address { assembler.add(new InstructionJMP_NNNN($1, $2)); }
-| JMP REG16 { assembler.assembleJMP_PP($1, (Reg)$2); }
+| JMP REG16 { assembler.add(new InstructionJMP_PP($1, (Reg)$2)); }
 | CALL address { assembler.add(new InstructionCALL_NNNN($1, $2)); }
 | RET { assembler.add(new InstructionRET($1)); }
 

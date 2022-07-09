@@ -20,11 +20,6 @@ enum Test
 Test testVar;
 Test*[10] asdiu;
 
-function void main()
-{
-  return 1 + 2;
-}
-
 byte[] array = {1,2,3,4};
 
 function void antani(byte x, byte y, Test asda)

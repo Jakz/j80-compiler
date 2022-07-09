@@ -2,34 +2,6 @@
 
 #include "opcodes.h"
 
-u8& VM::reg8(Reg r)
-{
-  switch (r) {
-    case Reg::A: return regs.A;
-    case Reg::B: return regs.B;
-    case Reg::C: return regs.C;
-    case Reg::D: return regs.D;
-    case Reg::E: return regs.E;
-    case Reg::F: return regs.F;
-    case Reg::X: return regs.X;
-    case Reg::Y: return regs.Y;
-  }
-}
-
-u16& VM::reg16(Reg r)
-{
-  switch (r) {
-    case Reg::BA: return regs.BA;
-    case Reg::CD: return regs.CD;
-    case Reg::EF: return regs.EF;
-    case Reg::XY: return regs.XY;
-    case Reg::SP: return regs.SP;
-    case Reg::FP: return regs.FP;
-    case Reg::IX: return regs.IX;
-    case Reg::IY: return regs.IY;
-  }
-}
-
 bool VM::isConditionTrue(JumpCondition condition) const
 {
   u8 flags = regs.FLAGS;
@@ -63,31 +35,7 @@ template <typename W> void aluFlagsArithmetic(const W& op1, const W& op2, const 
   setFlag(FLAG_OVERFLOW, !(isNegative(op1) ^ isNegative(op2)) && (isNegative(op1) ^ isNegative(dest)));
 }
 
-
-template <typename W> void VM::add(const W& op1, const W& op2, W& dest, bool flags)
-{
-  dest = op1 + op2;
-
-  if (flags)
-    aluFlagsArithmetic(op1, op2, dest);
-}
-
-template <typename W> void VM::adc(const W& op1, const W& op2, W& dest, bool flags)
-{
-  
-}
-
-template <typename W> void VM::sub(const W& op1, const W& op2, W& dest, bool flags)
-{
-  
-}
-
-template <typename W> void VM::sbc(const W& op1, const W& op2, W& dest, bool flags)
-{
-  
-}
-
-template <typename W> void VM::alu(Alu op, const W &op1, const W &op2, W &dest, bool flags)
+template <typename W> void VM::alu(Alu op, const W &op1, const W &op2, W &dest, bool saveResult, bool saveFlags)
 {
   bool setArithmeticFlags = false;
   s32 result = 0;
@@ -174,7 +122,7 @@ template <typename W> void VM::alu(Alu op, const W &op1, const W &op2, W &dest, 
     }
   }
   
-  if (flags)
+  if (saveResult)
     dest = result;
   
   if (setArithmeticFlags)
@@ -182,7 +130,9 @@ template <typename W> void VM::alu(Alu op, const W &op1, const W &op2, W &dest, 
     setFlag(FLAG_SIGN, isNegative(result));
     setFlag(FLAG_OVERFLOW, !(isNegative(op1) ^ isNegative(op2)) && (isNegative(op1) ^ isNegative(result)));
   }
-  setFlag(FLAG_ZERO, dest == 0);
+
+  if (saveFlags)
+    setFlag(FLAG_ZERO, (saveResult ? dest : W(result)) == 0);
 }
 
 void VM::executeInstruction()
@@ -203,65 +153,71 @@ void VM::executeInstruction()
   JumpCondition cond = static_cast<JumpCondition>(d[0] & 0b1111);
   
   bool saveFlags = true;
-  
-  if (opcode == OPCODE_CMP_NN)
-  {
-    aluop = Alu::SUB8;
-    saveFlags = false;
-  }
-  else if (opcode == OPCODE_CMP_NNNN)
-  {
-    aluop = Alu::SUB16;
-    saveFlags = false;
-  }
-  else if (opcode == OPCODE_CMP_REG)
-  {
-    aluop = (aluop & 0x1) == Alu::EXTENDED_BIT ? Alu::SUB8 : Alu::SUB16;
-    saveFlags = false;
-  }
-  
-  
+
   switch (opcode)
   {
     // R8 <- R8, R16 <- R16, RSH/LSH R8, RSH/LSH R16
     case OPCODE_LD_RSH_LSH:
     {
       if ((aluop & 0x1) == Alu::EXTENDED_BIT)
-        alu<u16>(aluop, reg16(reg1), reg16(reg2), reg16(reg1), saveFlags);
+        alu<u16>(aluop, reg16(reg1), reg16(reg2), reg16(reg1), true, saveFlags);
       else
-        alu<u8>(aluop, reg8(reg1), reg8(reg2), reg8(reg1), saveFlags);
+        alu<u8>(aluop, reg8(reg1), reg8(reg2), reg8(reg1), true, saveFlags);
       
       length = 2;
       break;
     }
       
     case OPCODE_CMP_NN:
+    {
+      alu<u8>(aluop, reg8(reg1), unsigned8, reg8(reg1), false, saveFlags);
+
+      length = 3;
+      break;
+    }
+
     case OPCODE_ALU_NN:
     {
-      alu<u8>(aluop, reg8(reg2), unsigned8, reg8(reg1), saveFlags);
+      alu<u8>(aluop, reg8(reg2), unsigned8, reg8(reg1), true, saveFlags);
       
       length = 3;
       break;
     }
       
     case OPCODE_CMP_NNNN:
+    {
+      alu<u16>(aluop, reg16(reg1), short2, reg16(reg1), false, saveFlags);
+      length = 4;
+      break;
+    }
+
     case OPCODE_ALU_NNNN:
     {
-      alu<u16>(aluop, reg16(reg2), short2, reg16(reg1), saveFlags);
+      alu<u16>(aluop, reg16(reg2), short2, reg16(reg1), true, saveFlags);
       
       length = 4;
       break;
     }
-      
-    case OPCODE_CMP_REG:
+
     case OPCODE_ALU_REG:
     {
       if ((aluop & 0x1) == Alu::EXTENDED_BIT)
-        alu<u16>(aluop, reg16(reg2), reg16(reg3), reg16(reg1), saveFlags);
+        alu<u16>(aluop, reg16(reg2), reg16(reg3), reg16(reg1), true, saveFlags);
       else
-        alu<u8>(aluop, reg8(reg2), reg8(reg3), reg8(reg1), saveFlags);
-      
+        alu<u8>(aluop, reg8(reg2), reg8(reg3), reg8(reg1), true, saveFlags);
+
       length = 3;
+      break;
+    }
+      
+    case OPCODE_CMP_REG:
+    {
+      if ((aluop & 0x1) == Alu::EXTENDED_BIT)
+        alu<u16>(aluop, reg16(reg1), reg16(reg2), reg16(reg1), false, saveFlags);
+      else
+        alu<u8>(aluop, reg8(reg1), reg8(reg2), reg8(reg1), false, saveFlags);
+      
+      length = 2;
       break;
     }
       
@@ -489,7 +445,7 @@ void VM::executeInstruction()
     case OPCODE_SEXT:
     {
       u8& r = reg8(reg1);
-      u8& h = reg8(static_cast<Reg>(reg1 | 0x100));
+      u8& h = reg8(static_cast<Reg>(reg1 | 0b100));
       h = r & 0x80 ? 0xFF : 0x00;
       
       length = 1;

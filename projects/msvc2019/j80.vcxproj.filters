@@ -4,9 +4,6 @@
     <Filter Include="src">
       <UniqueIdentifier>{e393b57f-85fd-4e70-b68e-618b82ba5322}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\vm">
-      <UniqueIdentifier>{b55a9eb7-9a8d-4f00-bf9c-cbb566c528e7}</UniqueIdentifier>
-    </Filter>
     <Filter Include="src\assembler">
       <UniqueIdentifier>{4f736636-d135-495a-a0a2-d61350a255b5}</UniqueIdentifier>
     </Filter>
@@ -80,6 +77,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\compiler\nanocparser.cpp">
       <Filter>src\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\screen.cpp">
+      <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -175,6 +175,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\compiler\optimizers\constants_folder.h">
       <Filter>src\compiler\optimizers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\screen.h">
+      <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

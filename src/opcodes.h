@@ -75,7 +75,6 @@ inline Alu operator|(const Alu& alu, const Alu& v) { return static_cast<Alu>(sta
 inline Alu operator&(const Alu& alu, const int& v) { return static_cast<Alu>(static_cast<int>(alu) & v); }
 inline bool operator&&(const Alu& alu, const Alu& f) { return ((std::underlying_type_t<Alu>)alu & (std::underlying_type_t<Alu>)f) == (std::underlying_type_t<Alu>)f; }
 
-
 const u8 BASE_OPCODE = 0b00001;
 
 enum Opcode : u8

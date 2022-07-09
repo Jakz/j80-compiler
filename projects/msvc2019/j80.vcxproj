@@ -35,6 +35,7 @@
     <ClCompile Include="..\..\src\instruction.cpp" />
     <ClCompile Include="..\..\src\main.cpp" />
     <ClCompile Include="..\..\src\opcodes.cpp" />
+    <ClCompile Include="..\..\src\screen.cpp" />
     <ClCompile Include="..\..\src\support\format\format.cpp" />
     <ClCompile Include="..\..\src\utils.cpp" />
     <ClCompile Include="..\..\src\vm.cpp" />
@@ -58,6 +59,7 @@
     <ClInclude Include="..\..\src\disassembler.h" />
     <ClInclude Include="..\..\src\instruction.h" />
     <ClInclude Include="..\..\src\opcodes.h" />
+    <ClInclude Include="..\..\src\screen.h" />
     <ClInclude Include="..\..\src\support\catch.hpp" />
     <ClInclude Include="..\..\src\support\format\chrono.h" />
     <ClInclude Include="..\..\src\support\format\color.h" />
@@ -179,7 +181,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\src;D:\dev\libs\win_flex_bison;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\src;D:\dev\libs\win_flex_bison;$(SolutionDir)libs\bearlib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4068</DisableSpecificWarnings>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -187,6 +189,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>$(SolutionDir)libs\bearlib\lib\win_x64\BearLibTerminal.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Flex>
       <OutputFile>%(Filename).cpp</OutputFile>
@@ -210,7 +213,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\src;D:\dev\libs\win_flex_bison;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\src;D:\dev\libs\win_flex_bison;$(SolutionDir)libs\bearlib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4068</DisableSpecificWarnings>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -220,6 +223,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>$(SolutionDir)libs\bearlib\lib\win_x64\BearLibTerminal.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Flex>
       <OutputFile>%(Filename).cpp</OutputFile>

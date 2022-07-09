@@ -40,6 +40,7 @@
   loc.step ();
 %}
 
+"." { return Parser::make_DOT(loc); }
 ":" { return Parser::make_COLON(loc); }
 "," { return Parser::make_COMMA(loc); }
 ";" { return Parser::make_SEMICOL(loc); }
@@ -118,7 +119,6 @@
 <scomment>\n|"\r\n" { loc.lines(yyleng); loc.step();  }
 <scomment>.+ { }
 
-
 [a-zA-Z_][a-zA-Z0-9_]* { return Parser::make_IDENTIFIER(yytext,loc); }
 
 "//"[^\n]*\n { Parser::make_EOL(loc); loc.lines(1); loc.step(); }
@@ -135,3 +135,4 @@
 // \"(\\.|[^\\"])*\" { j80lval.str = strdup(&yytext[1]); j80lval.str[strlen(yytext)-2] = 0; return STRING_LITERAL; }
 // <sstring>\\[a-fA-F0-9]{1,2} { buffer += strtol(&yytext[1], NULL, 16); }
 
+// [a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_]* { return Parser::make_STRUCT_ACCESSOR(yytext, loc);  }

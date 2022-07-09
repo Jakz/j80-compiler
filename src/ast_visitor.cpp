@@ -51,7 +51,7 @@ ASTNode* Visitor::dispatch(ASTNode* node)
   DISPATCH(ASTAddressOf)
   DISPATCH(ASTLeftHand)
   
-  string error = fmt::format("visit unhandled on {}", Utils::execute(std::string("c++filt ")+typeid(node).name()).c_str());
+  string error = fmt::format("visit unhandled on {}", typeid(node).name());
   cout << error;
   assert(false);
   return nullptr;
