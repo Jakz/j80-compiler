@@ -10,6 +10,41 @@ using namespace nanoc;
 
 u32 Temporary::counter = 0;
 
+template<>
+struct fmt::formatter<Temporary> : fmt::formatter<std::string>
+{
+  template<typename Context>
+  auto format(const Temporary& c, Context& ctx)
+  {
+    return format_to(ctx.out(), "t{}", c.i());
+  }
+};
+
+template<>
+struct fmt::formatter<std::reference_wrapper<const Temporary>> : fmt::formatter<std::string>
+{
+  template<typename Context>
+  auto format(const std::reference_wrapper<const Temporary>& c, Context& ctx)
+  {
+    return format_to(ctx.out(), "t{}", c.get().i());
+  }
+};
+
+template<>
+struct fmt::formatter<rtl::Argument> : fmt::formatter<std::string>
+{
+  template<typename Context>
+  auto format(const rtl::Argument& c, Context& ctx)
+  {
+    return format_to(ctx.out(), "({} : {})", c.temporary, c.name);
+  }
+};
+
+
+template<typename... Args> void log(const std::string& format, Args&&... args)
+{
+  printf("%s\n", fmt::format(format, std::forward<Args>(args)...).c_str());
+}
 
 
 InstructionBlock::InstructionBlock()
@@ -20,8 +55,8 @@ InstructionBlock::InstructionBlock()
 
 void Procedure::buildCFG()
 {
-  std::unique_ptr<InstructionBlock> block = std::move(instructions.front());
-  instructions.pop_back();
+  std::unique_ptr<InstructionBlock> block = std::move(blocks.front());
+  blocks.pop_back();
   InstructionBlock* current = addBlock();
 
   for (auto& i : *block)
@@ -44,9 +79,9 @@ void Procedure::buildCFG()
 
   /* map jumps and labels to link control flow graph */
   {
-    for (size_t i = 0; i < instructions.size(); ++i)
+    for (size_t i = 0; i < blocks.size(); ++i)
     {
-      const auto& block = instructions[i];
+      const auto& block = blocks[i];
       auto* last = block->last();
       
       const Return* retn = dynamic_cast<const Return*>(last);
@@ -56,52 +91,101 @@ void Procedure::buildCFG()
 
 
       /* add link to next block which always happens unless RETN or JUMP instruction */
-      if ((cjump || (!jump && !retn)) && i < instructions.size() - 1)
-        block->link(instructions[i + 1].get());
+      if ((cjump || (!jump && !retn)) && i < blocks.size() - 1)
+        block->link(blocks[i + 1].get());
 
       /* add link to label destination if last instruction is a jump */
       if (jump)
       {
-        auto it = std::find_if(instructions.begin(), instructions.end(), [jl = jump->label()](const auto& block) {
+        auto it = std::find_if(blocks.begin(), blocks.end(), [jl = jump->label()](const auto& block) {
           const Label* label = dynamic_cast<const Label*>(block->first());
           return label && label->label() == jl;
         });
 
-        if (it != instructions.end())
+        if (it != blocks.end())
           block->link(it->get());
       }
     }
   }
 }
 
+void Procedure::liveAnalysis()
+{
+  bool finished = false;
+
+  log("starting live-in analysis");
+
+  log("  computing def and use sets");
+
+  for (const auto& block : blocks)
+  {
+    for (const auto& rtl : *block)
+    {
+      const Assignment* assign = dynamic_cast<const Assignment*>(rtl.get());
+      const OperationInstruction* operation = dynamic_cast<const OperationInstruction*>(rtl.get());
+
+      /* add dest to def and add src to use if it's temporary unless it was in def */
+      if (assign)
+      {
+        block->live.def.push_back(std::reference_wrapper<const Temporary>(assign->destination()));
+
+        if (assign->value().type == value::Type::Temp && !block->live.isDefined(assign->value().temp))
+          block->live.use.push_back(std::reference_wrapper<const Temporary>(assign->value().temp));
+      }
+      else if (operation)
+      {
+        block->live.def.push_back(std::reference_wrapper<const Temporary>(operation->destination()));
+
+        if (!block->live.isDefined(operation->operand1()))
+          block->live.use.push_back(std::reference_wrapper<const Temporary>(operation->operand1()));
+
+        if (!block->live.isDefined(operation->operand2()))
+          block->live.use.push_back(std::reference_wrapper<const Temporary>(operation->operand2()));
+      }
+
+    }
+  }
+
+  for (const auto& block : blocks)
+  {
+    std::stringstream ss;
+
+    log("    block {}", block->index);
+    log("      def {}", fmt::join(block->live.def, " "));
+    log("      use {}", fmt::join(block->live.use, " "));
+  }
+
+  /* compute use and def */
+  while (!finished)
+  {
+    finished = true;
+
+   
+  }
+
+}
+
 std::string Procedure::mnemonic()
 {
-  string result = fmt::format("Procedure({}, [", name);
-  for (size_t i = 0; i < arguments.size(); ++i)
-  {
-    const auto& arg = arguments[i];
-    result += fmt::format("({}: {})", arg.temporary.getName().c_str(), arg.name.c_str());
-    
-    if (i < arguments.size()-1)
-      result += ", ";
-  }
-  result += fmt::format("], {})", hasReturnValue ? "yes" : "no");
-  
-  return result;
+  return fmt::format("Procedure({}, [{}], {}", 
+    name, 
+    fmt::join(arguments, ", "), 
+    hasReturnValue ? "yes" : "no"
+  );
 }
 
 ASTNode* RTLBuilder::exitingNode(ASTReference* node)
 {
-  AssignmentInstruction* i = new AssignmentInstruction(value(node->getName()));
-  temporaries.push(reference_wrapper<const Temporary>(i->getDestination()));
+  Assignment* i = new Assignment(value(node->getName()));
+  temporaries.push(reference_wrapper<const Temporary>(i->destination()));
   add(i);
   return nullptr;
 }
 
 ASTNode* RTLBuilder::exitingNode(ASTNumber* node)
 {
-  AssignmentInstruction* i = new AssignmentInstruction(value((u16)node->getValue()));
-  temporaries.push(reference_wrapper<const Temporary>(i->getDestination()));
+  Assignment* i = new Assignment(value((u16)node->getValue()));
+  temporaries.push(reference_wrapper<const Temporary>(i->destination()));
   add(i);
   return nullptr;
 }
@@ -114,7 +198,7 @@ ASTNode* RTLBuilder::exitingNode(ASTBinaryExpression* node)
   temporaries.pop();
   
   OperationInstruction* i = new OperationInstruction(src1, src2, node->getOperation());
-  temporaries.push(reference_wrapper<const Temporary>(i->getDestination()));
+  temporaries.push(reference_wrapper<const Temporary>(i->destination()));
   add(i);
   return nullptr;
 }
@@ -179,6 +263,7 @@ void RTLBuilder::enteringNode(ASTFuncDeclaration* node)
 nanoc::ASTNode* RTLBuilder::exitingNode(nanoc::ASTFuncDeclaration* node)
 {
   currentProcedure->buildCFG();
+  currentProcedure->liveAnalysis();
   return nullptr;
 }
 
@@ -186,11 +271,11 @@ void RTLBuilder::computeConstants()
 {
   for (const auto& procedure : code)
   {
-    for (const auto& block : procedure->instructions)
+    for (const auto& block : procedure->blocks)
     {
       for (const auto& i : *block)
       {
-        AssignmentInstruction* assignment = dynamic_cast<AssignmentInstruction*>(i.get());
+        Assignment* assignment = dynamic_cast<Assignment*>(i.get());
 
         /* if value is constant then also temporary is constant */
         if (assignment)
@@ -208,7 +293,7 @@ void RTLBuilder::print()
   {
     printf("%s\n", proc->mnemonic().c_str());
     
-    for (const auto& b : proc->instructions)
+    for (const auto& b : proc->blocks)
     {
       std::stringstream ss;
 

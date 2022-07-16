@@ -44,6 +44,7 @@ namespace rtl
     Temporary(u32 index) : index(index), constant(false) { }
     
     const std::string getName() const { return std::string("t")+std::to_string(index); }
+    s32 i() const { return index; }
     
     const bool operator==(const Temporary& other) const { return other.index == index; }
     const bool operator!=(const Temporary& other) const { return !(other == *this); }
@@ -111,19 +112,13 @@ namespace rtl
   class ValueInstruction : public Instruction
   {
   public:
-    virtual const Temporary& getDestination() = 0;
+    virtual const Temporary& destination() const = 0;
   };
   
   struct value
   {
-    enum Type
-    {
-      BOOL_TYPE,
-      BYTE_TYPE,
-      WORD_TYPE,
-      TEMP_TYPE,
-      REF_TYPE,
-    } type;
+    enum class Type { Bool, Byte, Word, Temp, Ref };
+    Type type;
     
     union
     {
@@ -138,51 +133,54 @@ namespace rtl
     {
       switch (type)
       {
-        case BOOL_TYPE: return bbvalue ? "true" : "false";
-        case BYTE_TYPE: return fmt::format("{:02x}h", bvalue);
-        case WORD_TYPE: return fmt::format("{}", wvalue);
-        case TEMP_TYPE: return temp.getName();
-        case REF_TYPE: return rtype;
+        case Type::Bool: return bbvalue ? "true" : "false";
+        case Type::Byte: return fmt::format("{:02x}h", bvalue);
+        case Type::Word: return fmt::format("{}", wvalue);
+        case Type::Temp: return temp.getName();
+        case Type::Ref: return rtype;
       }
     }
     
-    value(bool b) : type(BOOL_TYPE), bbvalue(b), temp(*reinterpret_cast<const Temporary*>(NULL)) { }
+    value(bool b) : type(Type::Bool), bbvalue(b), temp(*reinterpret_cast<const Temporary*>(NULL)) { }
     //value(u8 b) : type(BYTE_TYPE), bvalue(b), temp(*reinterpret_cast<const Temporary*>(NULL)) { }
-    value(u16 b) : type(WORD_TYPE), wvalue(b), temp(*reinterpret_cast<const Temporary*>(NULL)) { }
-    value(const std::string& rtype) : type(REF_TYPE), rtype(rtype), temp(*reinterpret_cast<const Temporary*>(NULL)) { }
-    value(const Temporary& temp) : type(TEMP_TYPE), temp(temp) { }
+    value(u16 b) : type(Type::Word), wvalue(b), temp(*reinterpret_cast<const Temporary*>(NULL)) { }
+    value(const std::string& rtype) : type(Type::Ref), rtype(rtype), temp(*reinterpret_cast<const Temporary*>(NULL)) { }
+    value(const Temporary& temp) : type(Type::Temp), temp(temp) { }
 
-    bool isConstant() const { return type != REF_TYPE && (type != TEMP_TYPE || temp.isConstant()); }
+    bool isConstant() const { return type != Type::Ref && (type != Type::Temp || temp.isConstant()); }
+    
+    const bool operator==(const Temporary& other) const { return type == Type::Ref && other.i() == temp.i(); }
   };
   
-  class AssignmentInstruction : public ValueInstruction
+  class Assignment : public ValueInstruction
   {
   private:
-    Temporary dest;
-    value value;
+    Temporary _dest;
+    value _value;
     
   public:
-    AssignmentInstruction(struct value value) : dest(), value(value) { }
-    const Temporary& getDestination() override { return dest; }
+    Assignment(struct value value) : _dest(), _value(value) { }
+    const Temporary& destination() const override { return _dest; }
+    const value& value() const  { return _value; }
     
-    std::string mnemonic() const override { return fmt::format("ASSIGN({}, {})", dest.getName(), value.mnemonic()); }
+    std::string mnemonic() const override { return fmt::format("ASSIGN({}, {})", _dest.getName(), _value.mnemonic()); }
   };
   
   class OperationInstruction : public ValueInstruction
   {
   private:
-    nanoc::Binary op;
-    const Temporary& src1, src2;
-    Temporary dest;
+    nanoc::Binary _op;
+    const Temporary& _src1, _src2;
+    Temporary _dest;
     
     
   public:
-    OperationInstruction(const Temporary& src1, const Temporary& src2, nanoc::Binary op) : src1(src1), src2(src2), dest(), op(op) { }
+    OperationInstruction(const Temporary& src1, const Temporary& src2, nanoc::Binary op) : _src1(src1), _src2(src2), _dest(), _op(op) { }
     
     std::string mnemonic() const override
     {
       const char* sop = "=|=";
-      switch (op)
+      switch (_op)
       {
         case nanoc::Binary::ADDITION: sop = "+"; break;
         case nanoc::Binary::SUBTRACTION: sop = "-"; break;
@@ -197,10 +195,12 @@ namespace rtl
         case nanoc::Binary::LOR: sop = "||"; break;
       }
       
-      return fmt::format("EVAL({}, {} {} {})", dest.getName(), src1.getName(), sop, src2.getName());
+      return fmt::format("EVAL({}, {} {} {})", _dest.getName(), _src1.getName(), sop, _src2.getName());
     }
     
-    const Temporary& getDestination() override { return dest; }
+    const Temporary& destination() const override { return _dest; }
+    const Temporary& operand1() const { return _src1; }
+    const Temporary& operand2() const { return _src2; }
   };
 
   class Return : public Instruction
@@ -259,11 +259,36 @@ namespace rtl
     Temporary temporary;
   };
 
+  struct LiveData
+  {
+    using list_t = std::vector<std::reference_wrapper<const Temporary>>;
+
+    list_t in, out, def, use;
+
+    bool isUsed(const Temporary& temp)
+    {
+      auto it = std::find_if(use.begin(), use.end(), [this, &temp](const auto& ref) {
+        return temp == ref.get();
+        });
+      return it != use.end();
+    }
+
+    bool isDefined(const Temporary& temp)
+    {
+      auto it = std::find_if(def.begin(), def.end(), [this, &temp](const auto& ref) {
+        return temp == ref.get();
+        });
+      return it != def.end();
+    }
+  };
+
   struct InstructionBlock
   {
     size_t index;
     std::vector<std::unique_ptr<Instruction>> instructions;
     std::vector<InstructionBlock*> outgoing;
+
+    LiveData live;
 
     InstructionBlock();
 
@@ -288,7 +313,7 @@ namespace rtl
     std::vector<Argument> arguments;
     bool hasReturnValue;
     
-    std::vector<std::unique_ptr<InstructionBlock>> instructions;
+    std::vector<std::unique_ptr<InstructionBlock>> blocks;
     
     std::string mnemonic();
 
@@ -299,11 +324,12 @@ namespace rtl
 
     InstructionBlock* addBlock()
     {
-      instructions.push_back(std::make_unique<InstructionBlock>());
-      return instructions.back().get();
+      blocks.push_back(std::make_unique<InstructionBlock>());
+      return blocks.back().get();
     }
 
     void buildCFG();
+    void liveAnalysis();
   };
   
   
@@ -317,7 +343,7 @@ namespace rtl
 
     s32 ifLabelCounter;
 
-    void add(Instruction* i) { currentProcedure->instructions[0]->add(i); }
+    void add(Instruction* i) { currentProcedure->blocks[0]->add(i); }
     std::string label(const std::string& type, s32 v) const { return fmt::format("{}{}", type, v); }
     
   public:
