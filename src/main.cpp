@@ -16,7 +16,6 @@
 #include <array>
 
 #include "assembler.h"
-#include "disassembler.h"
 #include "compiler.h"
 
 #include "ast.h"
@@ -96,6 +95,12 @@ void runWithArgs(const vector<string>& args, Assembler::J80Assembler& assembler,
     else if (stringEndsWith(args[1], ".nc"))
     {
       compiler.parse(args[1]);
+      const auto& root = compiler.getAST();
+
+      rtl::RTLBuilder builder;
+      builder.dispatch(root.get());
+      builder.print();
+      
     }
   }
 }
@@ -108,9 +113,10 @@ int main(int argc, const char * argv[])
   Assembler::J80Assembler assembler;
   nanoc::Compiler compiler;
 
-  runWithArgs({ "j80", "tests/testsuite.j80" }, assembler, compiler);
+  runWithArgs({ "j80", "tests/test.nc" }, assembler, compiler);
+  //runWithArgs({ "j80", "tests/testsuite.j80" }, assembler, compiler);
 
-  //return 0;
+  return 0;
 
   vm.copyToRam(assembler.getCodeSegment().data, assembler.getCodeSegment().length);
   vm.copyToRam(assembler.getDataSegment().data, assembler.getDataSegment().length, assembler.getDataSegment().offset);
@@ -142,7 +148,7 @@ int main(int argc, const char * argv[])
   }
   else if (argc == 1)
   {
-    runWithArgs({"j80", "tests/testsuite.j80"}, assembler, compiler);
+    runWithArgs({"j80", "tests/test.nc"}, assembler, compiler);
   }
     
   

@@ -197,7 +197,7 @@ namespace Assembler
   {
   public:
     u8 data[4];
-    u16 address;
+    u16 addressInROM;
     u32 length;
     
   public:
@@ -212,6 +212,9 @@ namespace Assembler
     {
       memcpy(dest, &data, sizeof(u8)*length);
     }
+
+    void setAddress(u16 address) { this->addressInROM = address; }
+    u16 getAddressInROM() const { return addressInROM; }
     
     virtual Result solve(const Environment& env) { return Result(); }
 
@@ -265,6 +268,7 @@ namespace Assembler
     const std::string& getLabel() const { return address.label; }
     bool mustBeSolved() const { return address.type != Address::Type::ABSOLUTE; }
     Address::Type getType() const { return address.type; }
+    const Address& getAddress() const { return address; }
     void solve(u16 address) { this->address.address = address; this->address.type = Address::Type::ABSOLUTE; }
   };
   

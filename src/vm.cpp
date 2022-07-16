@@ -108,7 +108,7 @@ template <typename W> void VM::alu(Alu op, const W &op1, const W &op2, W &dest, 
     case Alu::LSH16:
     case Alu::LSH8:
     {
-      setFlag(FLAG_CARRY, isNegative(op1));
+      setFlag(FLAG_CARRY, isNegative<W>(op1));
       dest = op1 << 1;
       break;
     }
@@ -121,15 +121,15 @@ template <typename W> void VM::alu(Alu op, const W &op1, const W &op2, W &dest, 
       break;
     }
   }
-  
-  if (saveResult)
-    dest = result;
-  
+    
   if (setArithmeticFlags)
   {
-    setFlag(FLAG_SIGN, isNegative(result));
-    setFlag(FLAG_OVERFLOW, !(isNegative(op1) ^ isNegative(op2)) && (isNegative(op1) ^ isNegative(result)));
+    setFlag(FLAG_SIGN, isNegative<W>(result));
+    setFlag(FLAG_OVERFLOW, (isNegative<W>(op1) ^ isNegative<W>(result)) != 0);
   }
+
+  if (saveResult)
+    dest = result;
 
   if (saveFlags)
     setFlag(FLAG_ZERO, (saveResult ? dest : W(result)) == 0);

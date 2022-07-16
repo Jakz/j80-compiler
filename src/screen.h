@@ -2,10 +2,10 @@
 
 #include "vm.h"
 #include "BearLibTerminal.h"
-#include "disassembler.h"
 
 #include <vector>
 #include <regex>
+#include <bitset>
 
 namespace ui
 {
@@ -144,9 +144,10 @@ namespace ui
     ui::LineEncoding mapping;
     s32 w, h;
 
+    std::vector<std::unique_ptr<Assembler::Instruction>> buffer;
     Regs regs;
 
-    Box REGISTERS_BOX = Box(0, 0, 11, 10);
+    Box REGISTERS_BOX;
     Box INSTRUCTIONS_BOX;
 
     enum Colors
@@ -156,8 +157,10 @@ namespace ui
 
       Normal = 0xffcbff87,
       Boxes = 0xff8eff00,
-
     };
+
+
+    
 
 
   public:
@@ -172,6 +175,7 @@ namespace ui
 
     void drawRegs();
     void drawInstructions();
+    void drawJumps();
 
     void drawLayout();
 
@@ -185,7 +189,7 @@ namespace ui
     w = width;
     h = height;
 
-    REGISTERS_BOX = Box(0, 0, 11, 13);
+    REGISTERS_BOX = Box(0, 0, 11, 15);
     INSTRUCTIONS_BOX = Box(REGISTERS_BOX.trx() + 1, 0, w - REGISTERS_BOX.w(), h);
     
     terminal_open();
@@ -242,6 +246,8 @@ namespace ui
 
   void Screen::drawInstructions()
   {
+    buffer.clear();
+    
     s32 current = vm->pc();
 
     terminal_clear_area(INSTRUCTIONS_BOX.x() + 1, INSTRUCTIONS_BOX.y() + 1, INSTRUCTIONS_BOX.w() - 2, INSTRUCTIONS_BOX.h() - 2);
@@ -252,6 +258,9 @@ namespace ui
         break;
 
       auto* instruction = Assembler::Instruction::disassemble(vm->ram() + current);
+      instruction->setAddress(current);
+
+      buffer.push_back(std::unique_ptr<Assembler::Instruction>(instruction));
 
       std::stringstream ss;
       for (s32 s = 0; s < 4; ++s)
@@ -273,6 +282,62 @@ namespace ui
     }
   }
 
+  void Screen::drawJumps()
+  {
+    static constexpr s32 MAX_WIDTH = 20;
+    
+    std::vector<std::bitset<MAX_WIDTH>> matrix;
+    matrix.resize(buffer.size());
+    
+    for (s32 i = 0; i < buffer.size(); ++i)
+    {
+      const auto* jump = dynamic_cast<const Assembler::InstructionJMP_NNNN*>(buffer[i].get());
+      
+      
+      if (jump)
+      {
+        for (s32 j = 0; j < buffer.size(); ++j)
+        {
+          auto start = i;
+          
+          if (buffer[j]->getAddressInROM() == jump->getAddress().address)
+          {
+            auto min = std::min(i, j);
+            auto max = std::max(i, j);
+            auto end = j;
+
+            for (s32 u = 1; u < MAX_WIDTH; ++u)
+            {
+              bool free = true;
+
+              for (int o = min; o <= max; ++o)
+                if (matrix[o][u] && ((o != min && o != max) || matrix[o][u-1]))
+                {
+                  free = false;
+                  break;
+                }
+
+              if (free)
+              {
+                for (int o = min; o <= max; ++o)
+                {
+                  terminal_put(INSTRUCTIONS_BOX.x() + 40 + u, INSTRUCTIONS_BOX.y() + 1 + o, o == min ? U'┐' : (o == max ? U'┘' : U'│'));
+                  matrix[o][u] = true;
+                }
+
+                terminal_put(INSTRUCTIONS_BOX.x() + 40 + u - 1, INSTRUCTIONS_BOX.y() + 1 + end, '<');
+
+                break;
+              }
+            }
+          }
+        }
+
+
+      }
+    }
+  }
+
   void Screen::drawRegs()
   {
     std::array<Reg, 8> regs = {
@@ -282,13 +347,15 @@ namespace ui
 
     std::array<Flag, 4> flags = { Flag::FLAG_CARRY, Flag::FLAG_ZERO, Flag::FLAG_SIGN, Flag::FLAG_OVERFLOW };
 
+    terminal_print(REGISTERS_BOX.x() + 1, REGISTERS_BOX.y() + 1, fmt::format("PC: {:04x}h", vm->pc()).c_str());
+
     for (s32 i = 0; i < regs.size(); ++i)
     {
       terminal_color(vm->allRegs().reg16(regs[i]) != this->regs.reg16(regs[i]) ? Colors::CurrentInstruction : Colors::Normal);
-      terminal_print(REGISTERS_BOX.x() + 1, REGISTERS_BOX.y() + 1 + i, fmt::format("{}: {:04x}h", Opcodes::reg16(regs[i]), vm->reg16(regs[i])).c_str());
+      terminal_print(REGISTERS_BOX.x() + 1, REGISTERS_BOX.y() + 3 + i, fmt::format("{}: {:04x}h", Opcodes::reg16(regs[i]), vm->reg16(regs[i])).c_str());
     }
 
-    const auto flagsY = REGISTERS_BOX.y() + regs.size() + 2;
+    const auto flagsY = REGISTERS_BOX.y() + regs.size() + 2 + 2;
     terminal_print(REGISTERS_BOX.x() + 1, flagsY, "CZSO");
     for (s32 i = 0; i < flags.size(); ++i)
     {
@@ -302,6 +369,7 @@ namespace ui
     terminal_color(Colors::Normal);
     drawRegs();
     drawInstructions();
+    drawJumps();
     flip();
   }
 

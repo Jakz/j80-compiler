@@ -7,7 +7,8 @@
 
 #define VISITOR_FUNCTIONALITY(__CLASS_NAME__) virtual ASTNode* visit(__CLASS_NAME__* node);\
 virtual void enteringNode(__CLASS_NAME__* node);\
-virtual ASTNode* exitingNode(__CLASS_NAME__* node);
+virtual ASTNode* exitingNode(__CLASS_NAME__* node);\
+virtual void stepNode(__CLASS_NAME__* node);
 
 namespace nanoc
 {

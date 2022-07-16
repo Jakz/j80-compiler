@@ -45,9 +45,6 @@
     <ClCompile Include="..\..\src\compiler.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\disassembler.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\instruction.cpp">
       <Filter>src</Filter>
     </ClCompile>
@@ -102,9 +99,6 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\compiler.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\disassembler.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\instruction.h">

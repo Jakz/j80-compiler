@@ -31,7 +31,6 @@
     <ClCompile Include="..\..\src\compiler\rtl.cpp" />
     <ClCompile Include="..\..\src\compiler\symbol_table.cpp" />
     <ClCompile Include="..\..\src\compiler\types.cpp" />
-    <ClCompile Include="..\..\src\disassembler.cpp" />
     <ClCompile Include="..\..\src\instruction.cpp" />
     <ClCompile Include="..\..\src\main.cpp" />
     <ClCompile Include="..\..\src\opcodes.cpp" />
@@ -56,7 +55,6 @@
     <ClInclude Include="..\..\src\compiler\structs.h" />
     <ClInclude Include="..\..\src\compiler\symbol_table.h" />
     <ClInclude Include="..\..\src\compiler\types.h" />
-    <ClInclude Include="..\..\src\disassembler.h" />
     <ClInclude Include="..\..\src\instruction.h" />
     <ClInclude Include="..\..\src\opcodes.h" />
     <ClInclude Include="..\..\src\screen.h" />

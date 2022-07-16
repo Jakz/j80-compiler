@@ -14,7 +14,8 @@ using namespace std;
 #define DISPATCH(__CLASS_NAME__) { if (dynamic_cast<__CLASS_NAME__*>(node)) return visit(dynamic_cast<__CLASS_NAME__*>(node)); }
 #define OPTIONAL_DISPATCH(__METHOD__) { auto* n = __METHOD__; if (n) dispatch(n.get()); }
 #define VISITOR_FUNCTIONALITY_IMPL(__CLASS_NAME__) void Visitor::enteringNode(__CLASS_NAME__* node) { commonEnteringNode(node); }\
-ASTNode* Visitor::exitingNode(__CLASS_NAME__* node) { commonExitingNode(node); return nullptr; }
+ASTNode* Visitor::exitingNode(__CLASS_NAME__* node) { commonExitingNode(node); return nullptr; }\
+void Visitor::stepNode(__CLASS_NAME__* node) { }
 
 ASTNode* Visitor::dispatch(ASTNode* node)
 {
@@ -268,6 +269,7 @@ ASTNode* Visitor::visit(ASTIfBlock* node)
   enteringNode(node);
   
   dispatchAndReplace(node->getCondition());
+  stepNode(node);
   dispatchAndReplace(node->getBody());
   
   return exitingNode(node);

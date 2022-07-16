@@ -118,7 +118,7 @@ class VM
     template <typename W> void sbc(const W& op1, const W& op2, W& dest, bool flags = true);
     template <typename W> void alu(Alu op, const W& op1, const W& op2, W& dest, bool result, bool flags);
   
-    template <typename W> bool isNegative(W& value) { return (value & (1 << (sizeof(W)*8-1))) != 0; }
+    template <typename W> bool isNegative(u32 value) { return (value & (1 << (sizeof(W)*8-1))) != 0; }
 
     inline void setFlag(Flag flag, bool value) { if (value) setFlag(flag); else unsetFlag(flag); }
     inline void setFlag(Flag flag) { regs.FLAGS |= flag; }
