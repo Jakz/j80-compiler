@@ -506,13 +506,14 @@ public:
   class ASTWhile : public ASTStatement
   {
   protected:
+    bool isDoWhile;
     UniqueExpression condition;
     std::unique_ptr<ASTStatement> body;
     
-    std::string mnemonic() const override { return "While"; }
+    std::string mnemonic() const override { return isDoWhile ? "DoWhile" : "While"; }
     
   public:
-    ASTWhile(const location& loc, ASTExpression* condition, ASTStatement* body) : ASTNode(loc), ASTStatement(loc), condition(UniqueExpression(condition)),
+    ASTWhile(const location& loc, ASTExpression* condition, ASTStatement* body, bool isDoWhile) : ASTNode(loc), ASTStatement(loc), condition(UniqueExpression(condition)), isDoWhile(isDoWhile),
       body(std::unique_ptr<ASTStatement>(body)) { }
     
     std::unique_ptr<ASTExpression>& getCondition() { return condition; }

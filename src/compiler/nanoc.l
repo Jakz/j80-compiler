@@ -83,6 +83,7 @@
 "word" { return Parser::make_WORD(loc); }
 
 "while" { return Parser::make_WHILE(loc); }
+"do" { return Parser::make_DO(loc); }
 "if" { return Parser::make_IF(loc); }
 "else" { return Parser::make_ELSE(loc); }
 "for" { return Parser::make_FOR(loc); }

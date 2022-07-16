@@ -86,6 +86,7 @@
   ELSE "else"
   ELSEIF "elseif"
   WHILE "while"
+  DO "do"
   FOR "for"
   RETURN "return"
   THEN "then"
@@ -311,7 +312,8 @@ statements:
 
 statement:
   left_hand EQUAL expression SEMICOL { $$ = new ASTAssign(@1, $1,$3); }
-  | WHILE LPAREN expression RPAREN statement { $$ = new ASTWhile(@1, $3, $5); }
+  | WHILE LPAREN expression RPAREN statement { $$ = new ASTWhile(@1, $3, $5, false); }
+  | DO statement WHILE LPAREN expression RPAREN { $$ = new ASTWhile(@1, $5, $2, true); }
   | if_statement { $$ = new ASTConditional(@1, $1); }
   | RETURN expression SEMICOL { $$ = new ASTReturn(@1, $2); }
   | RETURN SEMICOL { $$ = new ASTReturn(@1); }

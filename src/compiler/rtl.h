@@ -8,6 +8,7 @@
 
 #include <string>
 #include <vector>
+#include <set>
 #include <stack>
 
 namespace nanoc
@@ -46,6 +47,7 @@ namespace rtl
     const std::string getName() const { return std::string("t")+std::to_string(index); }
     s32 i() const { return index; }
     
+    const bool operator<(const Temporary& other) const { return other.index < index; }
     const bool operator==(const Temporary& other) const { return other.index == index; }
     const bool operator!=(const Temporary& other) const { return !(other == *this); }
     
@@ -53,6 +55,18 @@ namespace rtl
 
     bool isValid() const { return index != -1; }
     bool isConstant() const { return constant; }
+  };
+
+  struct TemporaryRef
+  {
+    std::reference_wrapper<const Temporary> ref;
+
+    TemporaryRef(const Temporary& ref) : ref(ref) { }
+
+    bool operator<(const TemporaryRef& other) const { return other.ref.get() < ref.get(); }
+    bool operator==(const TemporaryRef& other) const { return other.ref.get() == ref.get(); }
+    bool operator==(const Temporary& other) const { return other == ref.get(); }
+
   };
 
   enum class Branch { None, After, Before };
@@ -206,12 +220,13 @@ namespace rtl
   class Return : public Instruction
   {
   private:
-    const Temporary& value;
+    const Temporary& _value;
 
   public:
-    Return(const Temporary& value) : value(value) { }
+    Return(const Temporary& value) : _value(value) { }
 
-    std::string mnemonic() const override { return fmt::format("RETN({})", value.getName()); }
+    std::string mnemonic() const override { return fmt::format("RETN({})", _value.getName()); }
+    const auto& value() const { return _value; }
   };
   
   class CallInstruction : public Instruction
@@ -251,6 +266,9 @@ namespace rtl
         return r+")";
       }
     }
+
+    const auto& args() const { return arguments; }
+    const auto& retnValue() const { return returnValue; }
   };
   
   struct Argument
@@ -259,27 +277,50 @@ namespace rtl
     Temporary temporary;
   };
 
+  struct LiveSet
+  {
+    std::set<TemporaryRef> data;
+
+    void add(const Temporary& temporary) { data.insert(temporary); }
+    bool contains(const Temporary& temp) const
+    {
+      return data.find(temp) != data.end();
+    }
+
+    LiveSet operator+(const LiveSet& other) const
+    {
+      LiveSet r;
+      r.data.insert(data.begin(), data.end());
+      r.data.insert(other.data.begin(), other.data.end());
+      return r;
+    }
+
+    LiveSet operator-(const LiveSet& other) const
+    {
+      LiveSet r;
+      std::set_difference(data.begin(), data.end(), other.data.begin(), other.data.end(),
+        std::inserter(r.data, r.data.end()));
+      return r;
+    }
+
+    LiveSet& operator+=(const LiveSet& other)
+    {
+      data.insert(other.data.begin(), other.data.end());
+      return *this;
+    }
+
+    bool operator==(const LiveSet& other) const { return data == other.data; }
+    bool operator!=(const LiveSet& other) const { return data != other.data; }
+
+    auto begin() { return data.begin(); }
+    auto end() { return data.end(); }
+    auto begin() const { return data.begin(); }
+    auto end() const { return data.end(); }
+  };
+
   struct LiveData
   {
-    using list_t = std::vector<std::reference_wrapper<const Temporary>>;
-
-    list_t in, out, def, use;
-
-    bool isUsed(const Temporary& temp)
-    {
-      auto it = std::find_if(use.begin(), use.end(), [this, &temp](const auto& ref) {
-        return temp == ref.get();
-        });
-      return it != use.end();
-    }
-
-    bool isDefined(const Temporary& temp)
-    {
-      auto it = std::find_if(def.begin(), def.end(), [this, &temp](const auto& ref) {
-        return temp == ref.get();
-        });
-      return it != def.end();
-    }
+    LiveSet in, out, def, use;
   };
 
   struct InstructionBlock
@@ -300,6 +341,8 @@ namespace rtl
     auto end() const { return instructions.end(); }
 
     void link(InstructionBlock* block) { outgoing.push_back(block); }
+
+    void setIndex(size_t index) { this->index = index; }
 
     const Instruction* first() const { return instructions.front().get(); }
     const Instruction* last() const { return instructions.back().get(); }
