@@ -40,9 +40,10 @@ namespace rtl
     
     static u32 counter;
     
-  public:
-    explicit Temporary() : index(counter++), constant(false) { }
     Temporary(u32 index) : index(index), constant(false) { }
+
+  public:
+    Temporary() : index(-1) { }
     
     const std::string getName() const { return std::string("t")+std::to_string(index); }
     s32 i() const { return index; }
@@ -55,18 +56,46 @@ namespace rtl
 
     bool isValid() const { return index != -1; }
     bool isConstant() const { return constant; }
+
+    static Temporary generate() { return Temporary(counter++); }
+    static Temporary invalid() { return Temporary(-1); }
   };
 
-  struct TemporaryRef
+  struct value
   {
-    std::reference_wrapper<const Temporary> ref;
+    enum class Type { Bool, Byte, Word, Temp, Ref };
+    Type type;
 
-    TemporaryRef(const Temporary& ref) : ref(ref) { }
+    union
+    {
+      bool bbvalue;
+      u8 bvalue;
+      u16 wvalue;
+    };
+    std::string rtype;
+    Temporary temp;
 
-    bool operator<(const TemporaryRef& other) const { return other.ref.get() < ref.get(); }
-    bool operator==(const TemporaryRef& other) const { return other.ref.get() == ref.get(); }
-    bool operator==(const Temporary& other) const { return other == ref.get(); }
+    std::string mnemonic() const
+    {
+      switch (type)
+      {
+        case Type::Bool: return bbvalue ? "true" : "false";
+        case Type::Byte: return fmt::format("{:02x}h", bvalue);
+        case Type::Word: return fmt::format("{}", wvalue);
+        case Type::Temp: return temp.getName();
+        case Type::Ref: return rtype;
+      }
+    }
 
+    value(bool b) : type(Type::Bool), bbvalue(b), temp(Temporary::invalid()) { }
+    //value(u8 b) : type(BYTE_TYPE), bvalue(b), temp(Temporary(-1)) { }
+    value(u16 b) : type(Type::Word), wvalue(b), temp(Temporary::invalid()) { }
+    value(const std::string& rtype) : type(Type::Ref), rtype(rtype), temp(Temporary::invalid()) { }
+    value(const Temporary& temp) : type(Type::Temp), temp(temp) { }
+
+    bool isConstant() const { return type != Type::Ref && (type != Type::Temp || temp.isConstant()); }
+
+    const bool operator==(const Temporary& other) const { return type == Type::Ref && other.i() == temp.i(); }
   };
 
   enum class Branch { None, After, Before };
@@ -110,14 +139,14 @@ namespace rtl
   class ConditionalJump : public Jump
   {
   private:
-    const Temporary& condition;
-    bool negate;
+    value _condition;
+    bool _negate;
     
   public:
-    ConditionalJump(const std::string& label, const Temporary& condition, bool negate) : Jump(label), condition(condition), negate(negate) { }
+    ConditionalJump(const std::string& label, const value& condition, bool negate) : Jump(label), _condition(condition), _negate(negate) { }
     
     std::string mnemonic() const override {      
-      return fmt::format("CJUMP({}, {}{})", _label, negate ? "!" : "", condition.getName());
+      return fmt::format("CJUMP({}, {}{})", _label, _negate ? "!" : "", _condition.mnemonic());
     }
 
     Branch branch() const override { return Branch::After; }
@@ -128,44 +157,7 @@ namespace rtl
   public:
     virtual const Temporary& destination() const = 0;
   };
-  
-  struct value
-  {
-    enum class Type { Bool, Byte, Word, Temp, Ref };
-    Type type;
     
-    union
-    {
-      bool bbvalue;
-      u8 bvalue;
-      u16 wvalue;
-    };
-    std::string rtype;
-    const Temporary& temp;
-    
-    std::string mnemonic() const
-    {
-      switch (type)
-      {
-        case Type::Bool: return bbvalue ? "true" : "false";
-        case Type::Byte: return fmt::format("{:02x}h", bvalue);
-        case Type::Word: return fmt::format("{}", wvalue);
-        case Type::Temp: return temp.getName();
-        case Type::Ref: return rtype;
-      }
-    }
-    
-    value(bool b) : type(Type::Bool), bbvalue(b), temp(*reinterpret_cast<const Temporary*>(NULL)) { }
-    //value(u8 b) : type(BYTE_TYPE), bvalue(b), temp(*reinterpret_cast<const Temporary*>(NULL)) { }
-    value(u16 b) : type(Type::Word), wvalue(b), temp(*reinterpret_cast<const Temporary*>(NULL)) { }
-    value(const std::string& rtype) : type(Type::Ref), rtype(rtype), temp(*reinterpret_cast<const Temporary*>(NULL)) { }
-    value(const Temporary& temp) : type(Type::Temp), temp(temp) { }
-
-    bool isConstant() const { return type != Type::Ref && (type != Type::Temp || temp.isConstant()); }
-    
-    const bool operator==(const Temporary& other) const { return type == Type::Ref && other.i() == temp.i(); }
-  };
-  
   class Assignment : public ValueInstruction
   {
   private:
@@ -173,7 +165,7 @@ namespace rtl
     value _value;
     
   public:
-    Assignment(struct value value) : _dest(), _value(value) { }
+    Assignment(const Temporary& dest, struct value value) : _dest(dest), _value(value) { }
     const Temporary& destination() const override { return _dest; }
     const value& value() const  { return _value; }
     
@@ -184,12 +176,12 @@ namespace rtl
   {
   private:
     nanoc::Binary _op;
-    const Temporary& _src1, _src2;
+    value _src1, _src2;
     Temporary _dest;
     
     
   public:
-    OperationInstruction(const Temporary& src1, const Temporary& src2, nanoc::Binary op) : _src1(src1), _src2(src2), _dest(), _op(op) { }
+    OperationInstruction(const value& src1, const value& src2, nanoc::Binary op) : _src1(src1), _src2(src2), _dest(Temporary::generate()), _op(op) { }
     
     std::string mnemonic() const override
     {
@@ -209,23 +201,23 @@ namespace rtl
         case nanoc::Binary::LOR: sop = "||"; break;
       }
       
-      return fmt::format("EVAL({}, {} {} {})", _dest.getName(), _src1.getName(), sop, _src2.getName());
+      return fmt::format("EVAL({}, {} {} {})", _dest.getName(), _src1.mnemonic(), sop, _src2.mnemonic());
     }
     
     const Temporary& destination() const override { return _dest; }
-    const Temporary& operand1() const { return _src1; }
-    const Temporary& operand2() const { return _src2; }
+    const value& operand1() const { return _src1; }
+    const value& operand2() const { return _src2; }
   };
 
   class Return : public Instruction
   {
   private:
-    const Temporary& _value;
+    value _value;
 
   public:
-    Return(const Temporary& value) : _value(value) { }
+    Return(const value& value) : _value(value) { }
 
-    std::string mnemonic() const override { return fmt::format("RETN({})", _value.getName()); }
+    std::string mnemonic() const override { return fmt::format("RETN({})", _value.mnemonic()); }
     const auto& value() const { return _value; }
   };
   
@@ -233,39 +225,13 @@ namespace rtl
   {
   private:
     std::string function;
-    std::vector<std::reference_wrapper<const Temporary>> arguments;
+    std::vector<value> arguments;
     Temporary returnValue;
   public:
-    CallInstruction(const std::string& name, const decltype(arguments)& arguments) : function(name), arguments(arguments), returnValue(-1) { }
-    CallInstruction(const std::string& name, const decltype(arguments)& arguments, bool hasReturnValue) : function(name), arguments(arguments), returnValue() { }
+    CallInstruction(const std::string& name, const decltype(arguments)& arguments) : function(name), arguments(arguments), returnValue(Temporary::invalid()) { }
+    CallInstruction(const std::string& name, const decltype(arguments)& arguments, bool hasReturnValue) : function(name), arguments(arguments), returnValue(hasReturnValue ? Temporary::generate() : Temporary::invalid()) { }
     
-    std::string mnemonic() const override
-    {
-      std::string r = fmt::format("CALL({}", function);
-      if (arguments.empty() && !returnValue.isValid())
-        return r+")";
-      else
-      {
-        r += ", ";
-        if (!arguments.empty())
-        {
-          for (int i = 0; i < arguments.size(); ++i)
-          {
-            r += arguments[i].get().getName();
-            if (i < arguments.size()-1)
-              r += ", ";
-          }
-        }
-        
-        if (returnValue.isValid())
-        {
-          if (!arguments.empty()) r+= ", "; else r+=" ";
-          r += "ret: " + returnValue.getName();
-        }
-        
-        return r+")";
-      }
-    }
+    std::string mnemonic() const override;
 
     const auto& args() const { return arguments; }
     const auto& retnValue() const { return returnValue; }
@@ -279,7 +245,7 @@ namespace rtl
 
   struct LiveSet
   {
-    std::set<TemporaryRef> data;
+    std::set<Temporary> data;
 
     void add(const Temporary& temporary) { data.insert(temporary); }
     bool contains(const Temporary& temp) const
@@ -335,6 +301,7 @@ namespace rtl
 
     void add(Instruction* i) { instructions.push_back(std::unique_ptr<Instruction>(i)); }
 
+    bool empty() const { return instructions.empty(); }
     auto begin() { return instructions.begin(); }
     auto end() { return instructions.end(); }
     auto begin() const { return instructions.begin(); }
@@ -346,7 +313,6 @@ namespace rtl
 
     const Instruction* first() const { return instructions.front().get(); }
     const Instruction* last() const { return instructions.back().get(); }
-
   };
   
   class Procedure
@@ -354,6 +320,7 @@ namespace rtl
   public:
     std::string name;
     std::vector<Argument> arguments;
+    std::unordered_map<std::string, Temporary> locals;
     bool hasReturnValue;
     
     std::vector<std::unique_ptr<InstructionBlock>> blocks;
@@ -381,24 +348,32 @@ namespace rtl
   {
   private:
     std::vector<std::unique_ptr<Procedure>> code;
-    std::stack<std::reference_wrapper<const Temporary>> temporaries;
+    std::stack<value> values;
     Procedure* currentProcedure;
 
     s32 ifLabelCounter;
+    s32 whileLabelCounter;
 
     void add(Instruction* i) { currentProcedure->blocks[0]->add(i); }
     std::string label(const std::string& type, s32 v) const { return fmt::format("{}{}", type, v); }
     
   public:
-    RTLBuilder() : currentProcedure(nullptr), ifLabelCounter(0) { }
+    RTLBuilder() : currentProcedure(nullptr), ifLabelCounter(0), whileLabelCounter(0) { }
     
     nanoc::ASTNode* exitingNode(nanoc::ASTReference* node) override;
     nanoc::ASTNode* exitingNode(nanoc::ASTNumber* node) override;
     nanoc::ASTNode* exitingNode(nanoc::ASTBinaryExpression* node) override;
     nanoc::ASTNode* exitingNode(nanoc::ASTCall* node) override;
 
+    void enteringNode(nanoc::ASTDeclarationValue* node) override;
+    nanoc::ASTNode* exitingNode(nanoc::ASTDeclarationValue* node) override;
+
     void stepNode(nanoc::ASTIfBlock* node) override;
     nanoc::ASTNode* exitingNode(nanoc::ASTIfBlock* node) override;
+
+    void enteringNode(nanoc::ASTWhile* node) override;
+    void stepNode(nanoc::ASTWhile* node) override;
+    nanoc::ASTNode* exitingNode(nanoc::ASTWhile* node) override;
 
     nanoc::ASTNode* exitingNode(nanoc::ASTReturn* node) override;
 

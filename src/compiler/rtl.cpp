@@ -22,22 +22,12 @@ struct fmt::formatter<Temporary> : fmt::formatter<std::string>
 };
 
 template<>
-struct fmt::formatter<TemporaryRef> : fmt::formatter<std::string>
+struct fmt::formatter<value> : fmt::formatter<std::string>
 {
   template<typename Context>
-  auto format(const TemporaryRef& c, Context& ctx)
+  auto format(const value& c, Context& ctx)
   {
-    return format_to(ctx.out(), "{}", c.ref.get());
-  }
-};
-
-template<>
-struct fmt::formatter<std::reference_wrapper<const Temporary>> : fmt::formatter<std::string>
-{
-  template<typename Context>
-  auto format(const std::reference_wrapper<const Temporary>& c, Context& ctx)
-  {
-    return format_to(ctx.out(), "t{}", c.get().i());
+    return format_to(ctx.out(), "t{}", c.mnemonic());
   }
 };
 
@@ -86,6 +76,9 @@ void Procedure::buildCFG()
 
     }
   }
+
+  auto nend = std::remove_if(blocks.begin(), blocks.end(), [](const auto& block) { return block->empty(); });
+  blocks.erase(nend, blocks.end());
 
   /* map jumps and labels to link control flow graph */
   {
@@ -138,7 +131,7 @@ void Procedure::liveAnalysis()
       const CallInstruction* call = dynamic_cast<const CallInstruction*>(rtl.get());
 
       /* add dest to def and add src to use if it's temporary unless it was in def */
-      if (assign)
+      /*if (assign)
       {
         block->live.def.add(assign->destination());
 
@@ -168,7 +161,7 @@ void Procedure::liveAnalysis()
         for (auto& arg : call->args())
           if (!block->live.def.contains(arg))
             block->live.use.add(arg);
-      }
+      }*/
 
     }
   }
@@ -241,40 +234,66 @@ void Procedure::liveAnalysis()
   }
 }
 
+std::string CallInstruction::mnemonic() const
+{
+  return fmt::format("CALL({}, [{}], {})", 
+    function, 
+    fmt::join(arguments, ", "), 
+    returnValue
+  );
+}
+
 std::string Procedure::mnemonic()
 {
-  return fmt::format("Procedure({}, [{}], {}", 
+  std::string result = fmt::format("Procedure({}, [{}], {})", 
     name, 
     fmt::join(arguments, ", "), 
     hasReturnValue ? "yes" : "no"
   );
+
+  for (const auto& local : locals)
+    result += local.first + ": " + local.second.getName() + "\n";
+
+  return result;
+}
+
+void RTLBuilder::enteringNode(nanoc::ASTDeclarationValue* node)
+{
+  currentProcedure->locals[node->getName()] = Temporary::generate();
+}
+
+nanoc::ASTNode* RTLBuilder::exitingNode(nanoc::ASTDeclarationValue* node)
+{
+  if (node->getInitializer())
+  {
+    add(new Assignment(currentProcedure->locals[node->getName()], value(values.top())));
+    values.pop();
+  }
+
+  return nullptr;
 }
 
 ASTNode* RTLBuilder::exitingNode(ASTReference* node)
 {
-  Assignment* i = new Assignment(value(node->getName()));
-  temporaries.push(reference_wrapper<const Temporary>(i->destination()));
-  add(i);
+  values.push(currentProcedure->locals[node->getName()]);
   return nullptr;
 }
 
 ASTNode* RTLBuilder::exitingNode(ASTNumber* node)
-{
-  Assignment* i = new Assignment(value((u16)node->getValue()));
-  temporaries.push(reference_wrapper<const Temporary>(i->destination()));
-  add(i);
+{  
+  values.push(value((u16)node->getValue()));
   return nullptr;
 }
 
 ASTNode* RTLBuilder::exitingNode(ASTBinaryExpression* node)
 {
-  auto src2 = temporaries.top();
-  temporaries.pop();
-  auto src1 = temporaries.top();
-  temporaries.pop();
+  value src2 = values.top();
+  values.pop();
+  value src1 = values.top();
+  values.pop();
   
   OperationInstruction* i = new OperationInstruction(src1, src2, node->getOperation());
-  temporaries.push(reference_wrapper<const Temporary>(i->destination()));
+  values.push(i->destination());
   add(i);
   return nullptr;
 }
@@ -282,11 +301,11 @@ ASTNode* RTLBuilder::exitingNode(ASTBinaryExpression* node)
 ASTNode* RTLBuilder::exitingNode(ASTCall* node)
 {
   size_t count = node->getArguments()->getElements().size();
-  vector<reference_wrapper<const Temporary>> arguments;
+  std::vector<value> arguments;
   
   for (int i = 0; i < count; ++i)
   {
-    auto ref = temporaries.top();
+    value ref = values.top();
     arguments.insert(arguments.begin(), ref);
   }
 
@@ -303,20 +322,40 @@ ASTNode* RTLBuilder::exitingNode(ASTCall* node)
 
 nanoc::ASTNode* RTLBuilder::exitingNode(nanoc::ASTReturn* node)
 {
-  add(new Return(temporaries.top()));
-  temporaries.pop();
+  add(new Return(values.top()));
+  values.pop();
   return nullptr;
 }
 
 void RTLBuilder::stepNode(ASTIfBlock* node)
 {
-  auto cond = temporaries.top();
-  add(new ConditionalJump(label("jump", ifLabelCounter), cond.get(), true));
+  auto cond = values.top();
+  add(new ConditionalJump(label("jump", ifLabelCounter), cond, true));
+  values.pop();
 }
 
 ASTNode* RTLBuilder::exitingNode(ASTIfBlock* node)
 {
   add(new Label(label("jump", ifLabelCounter++)));
+  return nullptr;
+}
+
+void RTLBuilder::enteringNode(nanoc::ASTWhile* node)
+{
+  add(new Label(label("whileStart", whileLabelCounter)));
+}
+
+void RTLBuilder::stepNode(ASTWhile* node)
+{
+  auto cond = values.top();
+  add(new ConditionalJump(label("whileEnd", whileLabelCounter), cond, true));
+  values.pop();
+}
+
+ASTNode* RTLBuilder::exitingNode(ASTWhile* node)
+{
+  add(new Jump(label("whileStart", whileLabelCounter)));
+  add(new Label(label("whileEnd", whileLabelCounter++)));
   return nullptr;
 }
 
@@ -329,7 +368,7 @@ void RTLBuilder::enteringNode(ASTFuncDeclaration* node)
   
   for (const auto& arg : node->getArguments())
   {
-    procedure->arguments.push_back({arg.name, Temporary()});
+    procedure->arguments.push_back({arg.name, Temporary::generate()});
   }
 
   code.push_back(unique_ptr<Procedure>(procedure));

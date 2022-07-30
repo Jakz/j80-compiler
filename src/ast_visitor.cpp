@@ -414,6 +414,7 @@ ASTNode* Visitor::visit(ASTWhile* node)
   enteringNode(node);
   
   dispatchAndReplace(node->getCondition());
+  stepNode(node);
   dispatchAndReplace(node->getBody());
   
   return exitingNode(node);
